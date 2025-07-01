@@ -74,5 +74,3 @@
 - Publicaciones en redes sociales y blog de desarrollo
 
 ---
-
-## 📁 Estructura del Proyecto (resumen)
