@@ -14,6 +14,18 @@ config/name="Project-Ascend"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[file_customization]
+
+folder_colors={
+"res://assets/": "orange",
+"res://autoload/": "teal",
+"res://docs/": "purple",
+"res://resources/": "yellow",
+"res://scenes/": "green",
+"res://scripts/": "blue",
+"res://tests/": "red"
+}
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
