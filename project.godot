@@ -14,14 +14,20 @@ config/name="Project-Ascend"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/rv_state_machine/plugin.cfg")
+
 [file_customization]
 
 folder_colors={
+"res://addons/": "gray",
 "res://assets/": "orange",
 "res://autoload/": "teal",
 "res://docs/": "purple",
 "res://resources/": "yellow",
 "res://scenes/": "green",
+"res://script_templates/": "gray",
 "res://scripts/": "blue",
 "res://tests/": "red"
 }

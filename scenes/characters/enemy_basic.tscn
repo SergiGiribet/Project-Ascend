@@ -1,0 +1,43 @@
+[gd_scene load_steps=7 format=3 uid="uid://gjwnjuow8woq"]
+
+[ext_resource type="Script" uid="uid://8sebw0iasrfl" path="res://addons/rv_state_machine/state_machine_node.gd" id="1_04ypi"]
+[ext_resource type="Script" uid="uid://vlnmpm8jo1jy" path="res://scripts/characters/enemies/enemy_basic.gd" id="1_a8f41"]
+[ext_resource type="Script" uid="uid://ygyd5bphtlqj" path="res://scripts/ai/fsm/states/patrol_state.gd" id="2_t8edj"]
+[ext_resource type="Script" uid="uid://c6qw82k07jlij" path="res://scripts/ai/fsm/states/attack_state.gd" id="3_a8f41"]
+[ext_resource type="Script" uid="uid://f2t27spgq7he" path="res://scripts/ai/fsm/states/idle_state.gd" id="3_une7y"]
+[ext_resource type="Script" uid="uid://bsnk2014044mi" path="res://scripts/ai/fsm/states/flee_state.gd" id="4_une7y"]
+
+[node name="EnemyBasic" type="CharacterBody3D"]
+script = ExtResource("1_a8f41")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+
+[node name="PatrolPoint1" type="Marker3D" parent="."]
+
+[node name="PatrolPoint2" type="Marker3D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="AnimationPlayer2" type="AnimationPlayer" parent="."]
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("1_04ypi")
+metadata/_custom_type_script = "uid://8sebw0iasrfl"
+
+[node name="Idle" type="Node" parent="StateMachine"]
+script = ExtResource("3_une7y")
+metadata/_custom_type_script = "uid://domnc1jvrd5hv"
+
+[node name="Patrol" type="Node" parent="StateMachine"]
+script = ExtResource("2_t8edj")
+metadata/_custom_type_script = "uid://domnc1jvrd5hv"
+
+[node name="Attack" type="Node" parent="StateMachine"]
+script = ExtResource("3_a8f41")
+metadata/_custom_type_script = "uid://domnc1jvrd5hv"
+
+[node name="Flee" type="Node" parent="StateMachine"]
+script = ExtResource("4_une7y")
+metadata/_custom_type_script = "uid://domnc1jvrd5hv"
