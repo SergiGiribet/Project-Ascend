@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://cpnfbbk5c20a1"]
+
+[ext_resource type="Texture2D" uid="uid://bvv3teyl6kaln" path="res://assets/textures/characters/ally_dummy_prototype.png" id="1_d8j5g"]
+
+[resource]
+albedo_texture = ExtResource("1_d8j5g")
+texture_filter = 2

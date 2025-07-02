@@ -32,6 +32,10 @@ folder_colors={
 "res://tests/": "red"
 }
 
+[layer_names]
+
+3d_render/layer_1="GROUND"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

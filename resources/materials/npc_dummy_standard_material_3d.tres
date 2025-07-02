@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" load_steps=2 format=3 uid="uid://m76jueg4bqwt"]
+
+[ext_resource type="Texture2D" uid="uid://ci2y4fe881hcr" path="res://assets/textures/characters/npc_dummy_prototype.png" id="1_4y6or"]
+
+[resource]
+albedo_texture = ExtResource("1_4y6or")
+texture_filter = 2

@@ -1,18 +1,26 @@
-[gd_scene load_steps=7 format=3 uid="uid://gjwnjuow8woq"]
+[gd_scene load_steps=9 format=3 uid="uid://gjwnjuow8woq"]
 
 [ext_resource type="Script" uid="uid://8sebw0iasrfl" path="res://addons/rv_state_machine/state_machine_node.gd" id="1_04ypi"]
 [ext_resource type="Script" uid="uid://vlnmpm8jo1jy" path="res://scripts/characters/enemies/enemy_basic.gd" id="1_a8f41"]
+[ext_resource type="ArrayMesh" uid="uid://c3fprbb4y3mt1" path="res://resources/meshes/entities/enemies/enemy_dummy_mesh.tres" id="2_3s5bq"]
 [ext_resource type="Script" uid="uid://ygyd5bphtlqj" path="res://scripts/ai/fsm/states/patrol_state.gd" id="2_t8edj"]
 [ext_resource type="Script" uid="uid://c6qw82k07jlij" path="res://scripts/ai/fsm/states/attack_state.gd" id="3_a8f41"]
 [ext_resource type="Script" uid="uid://f2t27spgq7he" path="res://scripts/ai/fsm/states/idle_state.gd" id="3_une7y"]
 [ext_resource type="Script" uid="uid://bsnk2014044mi" path="res://scripts/ai/fsm/states/flee_state.gd" id="4_une7y"]
 
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_w0icc"]
+radius = 0.188516
+height = 1.62777
+
 [node name="EnemyBasic" type="CharacterBody3D"]
 script = ExtResource("1_a8f41")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.809657, 0)
+shape = SubResource("CapsuleShape3D_w0icc")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = ExtResource("2_3s5bq")
 
 [node name="PatrolPoint1" type="Marker3D" parent="."]
 
@@ -22,8 +30,9 @@ script = ExtResource("1_a8f41")
 
 [node name="AnimationPlayer2" type="AnimationPlayer" parent="."]
 
-[node name="StateMachine" type="Node" parent="."]
+[node name="StateMachine" type="Node" parent="." node_paths=PackedStringArray("initial_node_state")]
 script = ExtResource("1_04ypi")
+initial_node_state = NodePath("Patrol")
 metadata/_custom_type_script = "uid://8sebw0iasrfl"
 
 [node name="Idle" type="Node" parent="StateMachine"]
