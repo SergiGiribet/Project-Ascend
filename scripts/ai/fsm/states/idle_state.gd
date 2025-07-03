@@ -1,5 +1,10 @@
 extends StateNode
 
+@export var character : EnemyBasic
+@export var animation_tree : AnimationTree
+
+@export_category("Physics Friction")
+@export var slow_down_speed : int = 1700
 
 func _on_process(_delta : float) -> void:
 	pass
@@ -18,7 +23,7 @@ func _on_next_transitions() -> void:
 
 
 func _on_enter() -> void:
-	pass
+	EnemyBasicAnimationTreeTransitions.play_idle_animation(animation_tree)
 
 
 func _on_exit() -> void:
