@@ -1,33 +1,20 @@
 class_name EnemyBasic
 extends CharacterBody3D
 
-@export var speed: float = 2.0
-@export var health: int = 100
+@onready var navigation_agent_3d: NavigationAgent3D = $NavigationAgent3D
 
-func patrol(delta):
-	var points = get_patrol_points()
-	if points.is_empty(): return
-	var target = points[0] # simplificado
-	move_towards(target, speed, delta)
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_accept"):
+		var random_position := Vector3.ZERO
+		random_position.x = randf_range(-5.0, 5.0)
+		random_position.z = randf_range(-5.0, 5.0)
+		navigation_agent_3d.set_target_position(random_position)
+		
 
-func attack_player():
-	print("🗡️ Attacking!")
-
-func flee_from_player():
-	print("🏃 Fleeing!")
-	velocity = -transform.basis.z * speed * 1.5
-	move_and_slide()
-
-func is_safe() -> bool:
-	return true
-
-func can_see_player() -> bool:
-	return false
-
-func get_patrol_points() -> Array:
-	return [$PatrolPoint1.global_position, $PatrolPoint2.global_position]
-
-func move_towards(target: Vector3, speed: float, delta: float):
-	var dir = (target - global_position).normalized()
-	velocity = dir * speed
+func _physics_process(delta: float) -> void:
+	var destination = navigation_agent_3d.get_next_path_position()
+	var local_destination = destination - global_position
+	var direction = local_destination.normalized()
+	
+	velocity = direction * 5.0
 	move_and_slide()

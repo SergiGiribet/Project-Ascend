@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://c4aei730pagyf"]
+[gd_scene load_steps=9 format=3 uid="uid://c4aei730pagyf"]
 
 [ext_resource type="PackedScene" uid="uid://gjwnjuow8woq" path="res://scenes/characters/enemy_basic.tscn" id="1_pep1f"]
 [ext_resource type="Script" uid="uid://cyaxefc0ar21u" path="res://scripts/systems/camera_controller.gd" id="1_q4nsi"]
+[ext_resource type="MeshLibrary" uid="uid://dd6ec7l8or3ny" path="res://resources/meshes/environment/prototype_mesh_library.res" id="3_jtgf7"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_pep1f"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -15,9 +16,17 @@ background_mode = 2
 sky = SubResource("Sky_q4nsi")
 tonemap_mode = 2
 
-[sub_resource type="PlaneMesh" id="PlaneMesh_q4nsi"]
+[sub_resource type="NavigationMesh" id="NavigationMesh_7lacn"]
+vertices = PackedVector3Array(-12, 0.5, -4.25, -6.5, 0.5, -4.25, -6.5, 0.5, -6.25, -4.25, 0.5, -6.5, -4.25, 0.5, -12, -12, 0.5, -12, 0.5, 0.5, -6.5, 0.5, 0.5, -12, 2.75, 0.5, -6.25, 12, 0.5, -12, 2.75, 0.5, 1.75, 2.5, 0.5, 4.5, 12, 0.5, 4.75, 2.75, 0.5, -0.75, 0.75, 2, -3.25, 1.75, 2.5, -5.5, -0.25, 2.5, -5.5, -0.5, 2.5, -4.25, -0.25, 2.5, -3.25, 1.75, 0.75, -0.75, 0.5, 0.75, -0.75, -1.25, 0.5, -1.25, -1.25, 0.5, 1.5, -3.75, 2.5, -2, -1.5, 2.5, -4.25, -1.75, 2.5, -5.5, -5.5, 2.5, -5.5, 0.75, 1.25, -1.75, 1.75, 2.5, -4.3125, -5.5, 2.5, 3.75, -4, 2.5, -0.25, 1.75, 2.5, 3.75, 1.75, 2.5, 2.5, -2, 2.5, 2.5, -2.25, 2.5, 0, -0.25, 2.5, -2.25, -5.25, 0.5, -5.25, -5.25, 0.5, -4.5, -4.5, 0.5, -4.5, -4.5, 0.5, -5.25, -3.25, 0.5, -5.25, -3.25, 0.5, -4.5, -2.5, 0.5, -4.5, -2.5, 0.5, -5.25, -1.25, 0.5, -5.25, -1.25, 0.5, -4.5, -0.5, 0.5, -4.5, -0.5, 0.5, -5.25, 0.75, 0.5, -5.25, 0.75, 0.5, -4.5, 1.5, 0.5, -4.5, 1.5, 0.5, -5.25, -12, 0.5, 2.5, -6.5, 0.5, 2.5, -5.25, 0.5, -3.25, -5.25, 0.5, -2.5, -4.5, 0.5, -2.5, -4.5, 0.5, -3.25, -3.25, 0.5, -3.25, -3.25, 0.5, -2.5, -2.5, 0.5, -2.5, -2.5, 0.5, -3.25, -1.25, 0.5, -3.25, -1.25, 0.5, -2.5, -0.5, 0.5, -2.5, -0.5, 0.5, -3.25, -5.25, 0.5, -1.25, -5.25, 0.5, -0.5, -4.5, 0.5, -0.5, -4.5, 0.5, -1.25, -3.25, 0.5, -1.25, -3.25, 0.5, -0.5, -2.5, 0.5, -0.5, -2.5, 0.5, -1.25, -5.25, 0.5, 0.75, -5.25, 0.5, 1.5, -4.5, 0.5, 1.5, -4.5, 0.5, 0.75, -3.25, 0.5, 0.75, -3.25, 0.5, 1.5, -2.5, 0.5, 1.5, -2.5, 0.5, 0.75, -6.5, 0.5, 4.5, -5, 0.5, 12, -4.75, 0.5, 4.75, -12, 0.5, 12, -5.25, 0.5, 2.75, -5.25, 0.5, 3.5, -4.5, 0.5, 3.5, -4.5, 0.5, 2.75, -3.25, 0.5, 2.75, -3.25, 0.5, 3.5, -2.5, 0.5, 3.5, -2.5, 0.5, 2.75, -1.25, 0.5, 2.75, -1.25, 0.5, 3.5, -0.5, 0.5, 3.5, -0.5, 0.5, 2.75, 0.75, 0.5, 2.75, 0.75, 0.5, 3.5, 1.5, 0.5, 3.5, 1.5, 0.5, 2.75, 0.75, 0.5, 4.75, 1, 0.5, 12, 12, 0.5, 12)
+polygons = [PackedInt32Array(2, 1, 0), PackedInt32Array(4, 3, 2), PackedInt32Array(0, 5, 2), PackedInt32Array(2, 5, 4), PackedInt32Array(4, 7, 3), PackedInt32Array(3, 7, 6), PackedInt32Array(6, 7, 8), PackedInt32Array(8, 7, 9), PackedInt32Array(10, 12, 11), PackedInt32Array(12, 10, 13), PackedInt32Array(13, 8, 12), PackedInt32Array(12, 8, 9), PackedInt32Array(18, 17, 14), PackedInt32Array(14, 17, 16), PackedInt32Array(14, 16, 15), PackedInt32Array(19, 13, 10), PackedInt32Array(22, 21, 20), PackedInt32Array(19, 10, 20), PackedInt32Array(20, 10, 22), PackedInt32Array(24, 23, 25), PackedInt32Array(25, 23, 26), PackedInt32Array(27, 19, 20), PackedInt32Array(15, 28, 14), PackedInt32Array(14, 28, 27), PackedInt32Array(27, 28, 19), PackedInt32Array(23, 30, 26), PackedInt32Array(26, 30, 29), PackedInt32Array(32, 31, 33), PackedInt32Array(33, 31, 29), PackedInt32Array(34, 33, 30), PackedInt32Array(30, 33, 29), PackedInt32Array(17, 18, 24), PackedInt32Array(24, 18, 35), PackedInt32Array(24, 35, 23), PackedInt32Array(39, 38, 36), PackedInt32Array(36, 38, 37), PackedInt32Array(43, 42, 40), PackedInt32Array(40, 42, 41), PackedInt32Array(47, 46, 44), PackedInt32Array(44, 46, 45), PackedInt32Array(51, 50, 48), PackedInt32Array(48, 50, 49), PackedInt32Array(0, 1, 52), PackedInt32Array(52, 1, 53), PackedInt32Array(57, 56, 54), PackedInt32Array(54, 56, 55), PackedInt32Array(61, 60, 58), PackedInt32Array(58, 60, 59), PackedInt32Array(65, 64, 62), PackedInt32Array(62, 64, 63), PackedInt32Array(69, 68, 66), PackedInt32Array(66, 68, 67), PackedInt32Array(73, 72, 70), PackedInt32Array(70, 72, 71), PackedInt32Array(77, 76, 74), PackedInt32Array(74, 76, 75), PackedInt32Array(81, 80, 78), PackedInt32Array(78, 80, 79), PackedInt32Array(52, 53, 82), PackedInt32Array(82, 84, 83), PackedInt32Array(83, 85, 82), PackedInt32Array(82, 85, 52), PackedInt32Array(89, 88, 86), PackedInt32Array(86, 88, 87), PackedInt32Array(93, 92, 90), PackedInt32Array(90, 92, 91), PackedInt32Array(97, 96, 94), PackedInt32Array(94, 96, 95), PackedInt32Array(101, 100, 98), PackedInt32Array(98, 100, 99), PackedInt32Array(102, 11, 103), PackedInt32Array(103, 11, 12), PackedInt32Array(103, 12, 104), PackedInt32Array(84, 102, 83), PackedInt32Array(83, 102, 103)]
+geometry_parsed_geometry_type = 0
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_jtgf7"]
+size = Vector2(25, 25)
 
 [node name="TestSceneCamera" type="Node3D"]
+
+[node name="EnemyBasic" parent="." instance=ExtResource("1_pep1f")]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
@@ -30,8 +39,21 @@ environment = SubResource("Environment_jtgf7")
 transform = Transform3D(1, 0, 0, 0, 0.854722, 0.519087, 0, -0.519087, 0.854722, 0.446916, 10.0792, 13.3813)
 script = ExtResource("1_q4nsi")
 
-[node name="EnemyBasic" parent="." instance=ExtResource("1_pep1f")]
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_7lacn")
 
-[node name="Floor" type="MeshInstance3D" parent="."]
-transform = Transform3D(20, 0, 0, 0, 20, 0, 0, 0, 20, 0, 0, 0)
-mesh = SubResource("PlaneMesh_q4nsi")
+[node name="GridMap" type="GridMap" parent="NavigationRegion3D"]
+mesh_library = ExtResource("3_jtgf7")
+cell_center_y = false
+data = {
+"cells": PackedInt32Array(65534, 1, 4, 65535, 1, 4, 0, 1, 4, 65534, 0, 4, 65534, 65535, 4, 65534, 65534, 4, 65535, 65533, 4, 0, 65533, 4, 0, 65534, 2, 65534, 65533, 1441796, 131071, 65533, 23, 131070, 65535, 22, 65535, 65534, 1441796, 65533, 1, 1441796, 65533, 0, 1441796, 65533, 65535, 1441796, 65533, 65534, 1441796, 65533, 65533, 1441796)
+}
+metadata/_editor_floor_ = Vector3(0, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D"]
+mesh = SubResource("PlaneMesh_jtgf7")
+
+[node name="CSGBox3D" type="CSGBox3D" parent="NavigationRegion3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+use_collision = true
+size = Vector3(25, 1, 25)

@@ -9,7 +9,7 @@ extends Camera3D
 @export var zoom_speed := 150.0
 @export var min_fov := 30.0 
 @export var max_fov := 90.0
-@export var rotation_speed := 60.0 # graus per segon
+@export var rotation_speed := 60.0
 
 var zoom_delta := 0.0
 
@@ -32,8 +32,7 @@ func _physics_process(delta):
 		zoom_delta = 0.0
 
 
-
 	# Rotació horitzontal
 	var rot_input = InputCamera.camera_rotation_input()
 	if rot_input != 0:
-		rotate_y(deg_to_rad(-rot_input * rotation_speed * delta))
+		rotate_y(deg_to_rad(rot_input * rotation_speed * delta))
