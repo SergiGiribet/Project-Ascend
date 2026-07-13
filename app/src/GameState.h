@@ -1,0 +1,1 @@
+// GameState (GDD §3.4) represents the current state of the game, including the roster of living units, the game map, and other relevant information.
