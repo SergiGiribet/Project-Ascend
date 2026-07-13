@@ -1,2 +1,0 @@
-This FBX file has no animations; it’s designed for you to use in Mixamo (https://www.mixamo.com/). Just drag and drop it on the site.  
-If you want to use animations created by me, use the GLTF file `dummy_platformer.gltf`, which already includes a small animation pack made by me.
