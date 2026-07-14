@@ -1,0 +1,8 @@
+Knight
+Blacksmith
+Peasant
+Merchant
+Gravedigger
+Poacher
+Herbalist
+Deserter
