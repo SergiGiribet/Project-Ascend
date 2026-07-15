@@ -19,8 +19,10 @@
 
 class Team {
 public:
+    // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Team();
 
+    // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void addMember(int id, const Roster &roster);
     // Pre: id must be a valid unit id present in the roster and not already in
     //      the team (throws std::runtime_error otherwise).
@@ -30,20 +32,19 @@ public:
     // Pre: None
     // Post: Removes the unit with the specified id from the team; does nothing if no
     //      unit has that id.
-    
-    void printTeam(const Roster &roster) const;
-    // Pre: roster must be a valid Roster object.
-    // Post: Prints the composition of the team, resolving ids to names/stats through the
-    //       provided roster.
 
     void purgeDeadMembers(const Roster &roster);
     // Pre: roster must be a valid Roster object.
     // Post: Removes from the team any members whose ids are no longer present in the roster
 
+    // Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    void printTeam(const Roster &roster) const;
+    // Pre: roster must be a valid Roster object.
+    // Post: Prints the composition of the team, resolving ids to names/stats through the
+    //       provided roster.
+
 private:
     std::vector<int> memberIds_;
-    // Pre: None
-    // Post: Stores the ids of the units that are part of the team.
 };
 
 #endif // TEAM_H

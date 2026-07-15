@@ -7,11 +7,7 @@
 
 Roster::Roster() : units_() {}
 
-// Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void Roster::addUnit(const Unit &unit)
-{
-    units_.push_back(unit);
-}
+// Consultors ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Unit &Roster::findUnitById(int id)
 {
@@ -37,6 +33,25 @@ const Unit &Roster::findUnitById(int id) const
     throw std::runtime_error("Unit with id " + std::to_string(id) + " not found.");
 }
 
+// Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void Roster::addUnit(const Unit &unit)
+{
+    units_.push_back(unit);
+}
+
+// Consultors ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+bool Roster::contains(int id) const
+{
+    for (const auto &unit : units_)
+    {
+        if (unit.getId() == id)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Roster::removeUnitById(int id)
 {
     units_.erase(std::remove_if(units_.begin(), units_.end(),
@@ -44,6 +59,7 @@ void Roster::removeUnitById(int id)
                  units_.end());
 }
 
+// Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Roster::printRoster() const
 {
     std::cout << "Roster:" << std::endl;

@@ -2,8 +2,10 @@
 #include "src/Team.h"
 #include "src/Necropolis.h"
 #include "src/Roster.h"
+#include "src/Generator.h"
 
 #include <iostream>
+#include <fstream>
 #include <limits>
 
 void Menu()
@@ -40,11 +42,6 @@ void IncursionMenu()
     std::cout << "-------------------------" << std::endl;
 }
 
-Unit invokeUnit(int id, const std::string &name, int race, int level, int health, int maxHealth, int strength, int constitution)
-{
-    return Unit(id, name, race, level, health, maxHealth, strength, constitution);
-}
-
 int readChoice()
 {
     int c;
@@ -60,120 +57,132 @@ int readChoice()
 int main()
 {
     int choice = 0;
-
-    do
+    try
     {
-        Menu();
+        Generator gen("resources");
+        Roster roster;
+        int nextId = 1;
 
-        choice = readChoice();
+        do
+        {
+            Menu();
 
-        switch (choice)
-        {
-        case 1:
-        {
-            std::cout << "Invoking..." << std::endl;
-            Unit newUnit = invokeUnit(1, "Arthas", 1, 10, 100, 100, 15, 12);
-            std::cout << "Unit Invoked: ";
-            newUnit.printUnit();
-            std::cout << std::endl;
-            break;
-        }
-        case 2:
-        {
-            do
+            choice = readChoice();
+
+            switch (choice)
             {
-                TeamMenu();
-                choice = readChoice();
-
-                switch (choice)
-                {
-                case 1:
-                {
-                    std::cout << "Adding a unit to the team..." << std::endl;
-                    // Add logic for adding a unit to the team
-                    break;
-                }
-                case 2:
-                {
-                    std::cout << "Removing a unit from the team..." << std::endl;
-                    // Add logic for removing a unit from the team
-                    break;
-                }
-                case 3:
-                {
-                    std::cout << "Viewing team composition..." << std::endl;
-                    // Add logic for viewing team composition
-                    break;
-                }
-                case 6:
-                {
-                    std::cout << "Returning to main menu..." << std::endl;
-                    break;
-                }
-                default:
-                {
-                    std::cout << "Invalid choice. Please try again." << std::endl;
-                    break;
-                }
-                }
-
-            } while (choice != 6);
-            break;
-        }
-        case 3:
-        {
-            do
+            case 1:
             {
-                IncursionMenu();
-                choice = readChoice();
+                std::cout << "Invoking..." << std::endl;
+                Unit newUnit = gen.generateUnit(nextId++);
+                roster.addUnit(newUnit);
+                std::cout << "Unit Invoked: " << std::endl;
+                newUnit.printUnit();
+                std::cout << std::endl;
+                break;
+            }
+            case 2:
+            {
+                do
+                {
+                    TeamMenu();
+                    choice = readChoice();
 
-                switch (choice)
-                {
-                case 1:
-                {
-                    std::cout << "Starting a new incursion..." << std::endl;
-                    // Add logic for starting a new incursion
-                    break;
-                }
-                case 3:
-                {
-                    std::cout << "Returning to main menu..." << std::endl;
-                    break;
-                }
-                default:
-                {
-                    std::cout << "Invalid choice. Please try again." << std::endl;
-                    break;
-                }
-                }
+                    switch (choice)
+                    {
+                    case 1:
+                    {
+                        std::cout << "Adding a unit to the team..." << std::endl;
+                        // Add logic for adding a unit to the team
+                        break;
+                    }
+                    case 2:
+                    {
+                        std::cout << "Removing a unit from the team..." << std::endl;
+                        // Add logic for removing a unit from the team
+                        break;
+                    }
+                    case 3:
+                    {
+                        std::cout << "Viewing team composition..." << std::endl;
+                        // Add logic for viewing team composition
+                        break;
+                    }
+                    case 6:
+                    {
+                        std::cout << "Returning to main menu..." << std::endl;
+                        break;
+                    }
+                    default:
+                    {
+                        std::cout << "Invalid choice. Please try again." << std::endl;
+                        break;
+                    }
+                    }
 
-            } while (choice != 3);
-            break;
-        }
-        case 6:
-        {
-            std::cout << "Entering Necropolis..." << std::endl;
-            // Add logic for visiting Necropolis
-            break;
-        }
-        case 8:
-        {
-            std::cout << "Viewing stats..." << std::endl;
-            // Add logic for viewing stats
-            break;
-        }
-        case 9:
-        {
-            std::cout << "Exiting the program. Goodbye!" << std::endl;
-            return 0;
-        }
-        default:
-        {
-            std::cout << "Invalid choice. Please try again." << std::endl;
-            break;
-        }
-        }
-    } while (choice != 9);
+                } while (choice != 6);
+                break;
+            }
+            case 3:
+            {
+                do
+                {
+                    IncursionMenu();
+                    choice = readChoice();
+
+                    switch (choice)
+                    {
+                    case 1:
+                    {
+                        std::cout << "Starting a new incursion..." << std::endl;
+                        // Add logic for starting a new incursion
+                        break;
+                    }
+                    case 3:
+                    {
+                        std::cout << "Returning to main menu..." << std::endl;
+                        break;
+                    }
+                    default:
+                    {
+                        std::cout << "Invalid choice. Please try again." << std::endl;
+                        break;
+                    }
+                    }
+
+                } while (choice != 3);
+                break;
+            }
+            case 6:
+            {
+                std::cout << "Entering Necropolis..." << std::endl;
+                // Add logic for visiting Necropolis
+                break;
+            }
+            case 8:
+            {
+                std::cout << "Viewing stats..." << std::endl;
+                // Add logic for viewing stats
+                break;
+            }
+            case 9:
+            {
+                std::cout << "Exiting the program. Goodbye!" << std::endl;
+                return 0;
+            }
+            default:
+            {
+                std::cout << "Invalid choice. Please try again." << std::endl;
+                break;
+            }
+            }
+        } while (choice != 9);
+    }
+    catch (const std::exception &e)
+    {
+        std::cout << "Fatal error: " << e.what() << std::endl;
+        return 1;
+    }
 
     return 0;
 }

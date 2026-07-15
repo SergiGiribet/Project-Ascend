@@ -102,7 +102,7 @@ void Unit::printUnit() const
 {
     std::cout << "Unit ID: " << id << std::endl;
     std::cout << "Name: " << name << std::endl;
-    std::cout << "Race: " << race << std::endl;
+    std::cout << "Race: " << race << "*" << std::endl; //"★"
     std::cout << "Level: " << level << std::endl;
     stats.printStats();
     std::cout << "Experience: " << experience << std::endl;

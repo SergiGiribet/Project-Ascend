@@ -19,12 +19,10 @@
 
 class Roster {
 public:
+    // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Roster();
 
-    void addUnit(const Unit &unit);
-    // Pre: unit must be a valid Unit object with a unique id.
-    // Post: Adds the unit to the roster, taking ownership of it.
-    
+    // Consultors --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Unit &findUnitById(int id);
     // Pre: id must be a valid unit id (throws std::runtime_error otherwise).
     // Post: Returns a reference to the unit with the specified id; changes made through it affect the roster.
@@ -33,10 +31,20 @@ public:
     // Pre: id must be a valid unit id (throws std::runtime_error otherwise).
     // Post: Returns a read-only reference to the unit with the specified id.
 
+    bool contains(int id) const;
+    // Pre: None
+    // Post: Returns true if a unit with the specified id is in the roster; false otherwise.
+
+    // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    void addUnit(const Unit &unit);
+    // Pre: unit must be a valid Unit object with a unique id.
+    // Post: Adds the unit to the roster, taking ownership of it.
+
     void removeUnitById(int id);
     // Pre: None
     // Post: Removes the unit with the specified id from the roster; does nothing if no unit has that id.
 
+    // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void printRoster() const;
     // Pre: None
     // Post: Prints the full roster.
