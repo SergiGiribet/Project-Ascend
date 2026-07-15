@@ -13,8 +13,7 @@ static std::vector<std::string> loadBank(const std::string &path) {
 }
 
 // Constructor -------------------------------------------------------------------
-Generator::Generator(const std::string &resourcesDir) 
-    : banks_(), rng_(std::random_device{}()) {
+Generator::Generator(const std::string &resourcesDir, std::mt19937 &rng) : banks_(), rng_(rng) {
         banks_["name"] = loadBank(resourcesDir + "/names.txt");
         banks_["job"] = loadBank(resourcesDir + "/jobs.txt");
         banks_["motivation"] = loadBank(resourcesDir + "/motivations.txt");

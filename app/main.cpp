@@ -3,6 +3,7 @@
 #include "src/Necropolis.h"
 #include "src/Roster.h"
 #include "src/Generator.h"
+#include "src/Incursion.h"
 
 #include <iostream>
 #include <fstream>
@@ -34,9 +35,6 @@ void TeamMenu()
 void IncursionMenu()
 {
     std::cout << "Incursion Menu:" << std::endl;
-    std::cout << "Team 1: " << std::endl;
-    // TODO: print the actual team once main owns the instances:
-    //       IncursionMenu(const Team &team, const Roster &roster) -> team.printTeam(roster);
     std::cout << "1. Start the incursion" << std::endl;
     std::cout << "3. Return to main menu" << std::endl;
     std::cout << "-------------------------" << std::endl;
@@ -59,8 +57,11 @@ int main()
     int choice = 0;
     try
     {
-        Generator gen("resources");
+        Team team;
         Roster roster;
+
+        std::mt19937 rng(std::random_device{}());
+        Generator gen("resources", rng);
         int nextId = 1;
 
         do
@@ -92,20 +93,32 @@ int main()
                     {
                     case 1:
                     {
-                        std::cout << "Adding a unit to the team..." << std::endl;
-                        // Add logic for adding a unit to the team
+                        std::cout << "Select the unit you want add (unit id)" << std::endl;
+                        roster.printRoster();
+                        team.printTeam(roster);
+                        int selectedUnitId = readChoice();
+                        try
+                        {
+                            team.addMember(selectedUnitId, roster);
+                            std::cout << "Unit added to the team." << std::endl;
+                        }
+                        catch (const std::runtime_error &e)
+                        {
+                            std::cout << e.what() << std::endl;
+                        }
                         break;
                     }
                     case 2:
                     {
-                        std::cout << "Removing a unit from the team..." << std::endl;
-                        // Add logic for removing a unit from the team
-                        break;
+                        std::cout << "Select the unit you want remove (unit id)" << std::endl;
+                        team.printTeam(roster);
+                        int selectedUnitId = readChoice();
+                        team.removeMember(selectedUnitId);
                     }
                     case 3:
                     {
-                        std::cout << "Viewing team composition..." << std::endl;
-                        // Add logic for viewing team composition
+                        std::cout << "Team Composition:" << std::endl;
+                        team.printTeam(roster);
                         break;
                     }
                     case 6:
@@ -128,6 +141,7 @@ int main()
                 do
                 {
                     IncursionMenu();
+                    team.printTeam(roster);
                     choice = readChoice();
 
                     switch (choice)
