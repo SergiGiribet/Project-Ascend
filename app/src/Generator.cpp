@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <stdexcept>
+#include <algorithm>
 
 static std::vector<std::string> loadBank(const std::string &path) {
     std::vector<std::string> bank;
@@ -59,7 +60,14 @@ Unit Generator::generateUnit(int id, const Necropolis &necropolis) {
     std::discrete_distribution<int> raceDist{40, 25, 15, 10, 7, 3};
     int race = raceDist(rng_)+1; // this returns 0-5 +1 for the 1-6*
     unit.setRace(race);
-    unit.setStats(Stats(80 + race * 20, 80 + race * 20, 8 + race * 2, 8 + race * 2));
+    Stats stats(80 + race * 20, 80 + race * 20, 8 + race * 2, 8 + race * 2);
+    const std::vector<std::string> &skills = unit.getSkills();
+    if (std::find(skills.begin(), skills.end(), "Reckless") != skills.end()) {
+        stats.setMaxHealth(stats.getMaxHealth() + 30);
+        stats.setHealth(stats.getHealth() + 30);
+        stats.setConstitution(stats.getConstitution() + 5);
+    }
+    unit.setStats(stats);
     unit.setHistory(fillTemplate(pickRandom(banks_.at("template"))));
 
     if (!necropolis.empty()) {

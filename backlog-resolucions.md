@@ -1,4 +1,19 @@
-# Backlog: resolucions d'encontres (material guardat)
+# Backlog: idees aparcades i material guardat
+
+## Idees de futur (Fase 1+)
+
+- **Fusio de traits/skills per experiencia**: que els trets i les habilitats es puguin fusionar
+  o transformar segons el que la unitat viu a les incursions (p. ex. un Cowardly que sobreviu
+  prou vegades esdeve una altra cosa). Idea del 2026-07-16; casa amb els trets contradictoris
+  (Cowardly + Brave) que la generacio ja produeix — serien material de partida, no un bug.
+- **Epitets per a noms repetits** (GDD): la solucio real a les colisions de noms; ampliar el banc
+  (fet: 20 -> 60 noms) nomes en redueix la frequencia, no les elimina (paradoxa de l'aniversari).
+- **Curacio via objectes**: descartat per Fase 0 (arrossega inventari/drops). El dial de Fase 0
+  es "descansar entre incursions" si les ferides acumulades ofeguen el joc.
+- **Tercer camp d'Encounter** (`description|cause|resolution`): sabor narratiu en superar un pis
+  amb exit — vegeu el material de sota.
+
+## Resolucions d'encontres (material guardat)
 
 Aquests textos es van escriure originalment com a segon camp d'`encounters.txt`, pero
 descrivien *com es supera l'encontre*, no com hi mor una unitat (el camp es una causa de mort:

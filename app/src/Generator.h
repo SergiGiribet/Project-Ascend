@@ -22,8 +22,9 @@ class Generator {
         Unit generateUnit(int id, const Necropolis &necropolis);
         // Pre: id must be a unique identifier.
         // Post: Returns a randomly generated unit: name, 1-2 distinct traits, weighted race,
-        //       stats derived from race, and a filled backstory. If necropolis is not empty,
-        //       the unit has a 40% chance of carrying a hook that references a fallen unit.
+        //       stats derived from race (Reckless units are born with +30 max HP and +5 CON),
+        //       and a filled backstory. If necropolis is not empty, the unit has a 40% chance
+        //       of carrying a hook that references a fallen unit.
 
     private:
         std::map<std::string, std::vector<std::string>> banks_;

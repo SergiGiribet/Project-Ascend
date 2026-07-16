@@ -5,6 +5,19 @@
 #include <iostream>
 #include <stdexcept>
 
+struct TraitEvent
+{
+    std::string trait;
+    int attackModifier;
+    std::string deed;
+};
+
+static const std::vector<TraitEvent> TRAIT_EVENTS = {
+    {"Brave", 8, "holds the line steady"},
+    {"Cowardly", -12, "hangs back and leaves a gap in the line"},
+    {"Reckless", 12, "charges headfirst into the danger"},
+};
+
 void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
@@ -48,6 +61,33 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         const Encounter &enc = encounters[pickEnc(rng)];
         std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
 
+        int forcedVictimId = -1;
+
+        std::vector<std::pair<int, const TraitEvent*>> candidates;
+        for (int id : team.getMembersIds()) {
+            const Unit &u = roster.findUnitById(id);
+            for (const TraitEvent &ev : TRAIT_EVENTS)
+                if (std::find(u.getSkills().begin(), u.getSkills().end(), ev.trait) != u.getSkills().end())
+                    candidates.push_back({id, &ev});
+        }
+
+        if (!candidates.empty()) {
+            std::uniform_int_distribution<int> coin(0, 1);
+            if (coin(rng) == 1) {
+                auto selected = candidates[std::uniform_int_distribution<size_t>(0, candidates.size() - 1)(rng)];
+                const TraitEvent *event = selected.second;
+
+                const Unit &actor = roster.findUnitById(selected.first);
+                std::cout << "  " << actor.getName() << ", " << event->trait << " as ever, "
+                          << event->deed << "." << std::endl;
+                
+                attack += event->attackModifier;
+
+                if (event->trait == "Reckless")
+                    forcedVictimId = selected.first;
+            }
+        }
+
         if (attack >= danger * 12 / 10)
         {
             std::cout << "  The team advances with ease." << std::endl;
@@ -63,15 +103,21 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         }
         else if (attack >= danger)
         {
+            int victimId;
+            if (forcedVictimId != -1)
+                victimId = forcedVictimId;
+            else {
+                const std::vector<int> &ids = team.getMembersIds();
+                std::uniform_int_distribution<size_t> pick(0, ids.size() -1);
+                victimId = ids[pick(rng)];
+            }
+            
             std::cout << "  The team advances with difficulty." << std::endl;
             for (int id : team.getMembersIds())
                 if (roster.findUnitById(id).addExperience(floor * 10) > 0)
                     std::cout << "  " << roster.findUnitById(id).getName() << " reaches level "
                               << roster.findUnitById(id).getLevel() << "!" << std::endl;
 
-            const std::vector<int> &ids = team.getMembersIds();
-            std::uniform_int_distribution<size_t> pick(0, ids.size() - 1);
-            int victimId = ids[pick(rng)];
 
             std::uniform_int_distribution<int> dmg(15, 40);
             Unit &victim = roster.findUnitById(victimId);
