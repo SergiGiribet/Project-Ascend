@@ -39,19 +39,32 @@ void Team::removeMember(int id)
 void Team::purgeDeadMembers(const Roster &roster)
 {
     memberIds_.erase(std::remove_if(memberIds_.begin(), memberIds_.end(),
-                                    [&roster](int id) { return !roster.contains(id); }),
+                                    [&roster](int id)
+                                    { return !roster.contains(id); }),
                      memberIds_.end());
 }
 
 // Display -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Team::printTeam(const Roster &roster) const
 {
+    if (memberIds_.empty())
+    {
+        std::cout << "The team is empty." << std::endl;
+        return;
+    }
+
     std::cout << "Team (" << memberIds_.size() << " members):" << std::endl;
     for (int id : memberIds_)
     {
         const Unit &unit = roster.findUnitById(id);
-        std::cout << "  ID: " << unit.getId()
-                  << ", Name: " << unit.getName()
-                  << ", Level: " << unit.getLevel() << std::endl;
+        const Stats s = unit.getStats();
+        std::cout << "  [" << unit.getId() << "] " << unit.getName()
+                  << " (" << unit.getRace() << "*)"
+                  << " - Lv " << unit.getLevel()
+                  << " - HP " << s.getHealth() << "/" << s.getMaxHealth()
+                  << " - XP " << unit.getExperience() << std::endl;
+
+        if (!unit.getHook().empty())
+            std::cout << "        " << unit.getHook() << std::endl;
     }
 }

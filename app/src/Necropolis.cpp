@@ -1,6 +1,7 @@
 #include "Necropolis.h"
 
 #include <iostream>
+#include <stdexcept>
 
 Necropolis::Necropolis() : records_() {}
 
@@ -33,7 +34,7 @@ void Necropolis::print() const
     std::cout << "=== The Necropolis (" << records_.size() << " fallen) ===" << std::endl;
     for (const DeathRecord &r : records_)
     {
-        std::cout << r.name;
+        std::cout << "  " << r.name;
 
         if (!r.skills.empty())
         {

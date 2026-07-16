@@ -113,19 +113,25 @@ bool Unit::isAlive() const { return stats.isAlive(); }
 // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Unit::printUnit() const
 {
-    std::cout << "Unit ID: " << id << std::endl;
-    std::cout << "Name: " << name << std::endl;
-    std::cout << "Race: " << race << "*" << std::endl; //"★"
-    std::cout << "Level: " << level << std::endl;
-    stats.printStats();
-    std::cout << "Experience: " << experience << std::endl;
-    std::cout << "Skills: ";
+    std::cout << "----------------------------------------" << std::endl;
+    std::cout << "  " << name << " (" << race << "*)  [ID " << id << "]" << std::endl;
+    std::cout << "  Level " << level << "  |  XP " << experience << std::endl;
+    std::cout << "  HP " << stats.getHealth() << "/" << stats.getMaxHealth()
+              << "  |  STR " << stats.getStrength()
+              << "  |  CON " << stats.getConstitution() << std::endl;
+    std::cout << "  Traits: ";
+    bool first = true;
     for (const auto &skill : skills)
     {
-        std::cout << skill << " ";
+        if (!first)
+            std::cout << ", ";
+        std::cout << skill;
+        first = false;
     }
     std::cout << std::endl;
-    std::cout << "History: " << history << std::endl;
-    std::cout << "Hook: " << hook << std::endl;
+    std::cout << "  Story:  " << history << std::endl;
+    if (!hook.empty())
+        std::cout << "  Hook:   " << hook << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 }
 

@@ -8,38 +8,35 @@
 #include "src/GameState.h"
 
 #include <iostream>
-#include <fstream>
-#include <limits>
 
 void Menu()
 {
-
-    std::cout << "Welcome to the Unit Management System!" << std::endl;
-    std::cout << "1. Invoke a new unit" << std::endl;
-    std::cout << "2. Modify team composition" << std::endl;
-    std::cout << "3. Initialize a new incursion" << std::endl;
-    std::cout << "6. Visit Necropolis" << std::endl;
-    std::cout << "8. View stats" << std::endl;
-    std::cout << "9. Exit" << std::endl;
-    std::cout << "-------------------------" << std::endl;
+    std::cout << std::endl;
+    std::cout << "=== PROJECT ASCEND ===" << std::endl;
+    std::cout << "  1. Invoke a new unit" << std::endl;
+    std::cout << "  2. Manage the team" << std::endl;
+    std::cout << "  3. Enter the tower" << std::endl;
+    std::cout << "  6. Visit the Necropolis" << std::endl;
+    std::cout << "  8. View the roster" << std::endl;
+    std::cout << "  9. Exit" << std::endl;
 }
 
 void TeamMenu()
 {
-    std::cout << "Team Management Menu:" << std::endl;
-    std::cout << "1. Add a unit to the team" << std::endl;
-    std::cout << "2. Remove a unit from the team" << std::endl;
-    std::cout << "3. View teams composition" << std::endl;
-    std::cout << "6. Return to main menu" << std::endl;
-    std::cout << "-------------------------" << std::endl;
+    std::cout << std::endl;
+    std::cout << "=== Team Management ===" << std::endl;
+    std::cout << "  1. Add a unit to the team" << std::endl;
+    std::cout << "  2. Remove a unit from the team" << std::endl;
+    std::cout << "  3. View team composition" << std::endl;
+    std::cout << "  6. Return to main menu" << std::endl;
 }
 
 void IncursionMenu()
 {
-    std::cout << "Incursion Menu:" << std::endl;
-    std::cout << "1. Start the incursion" << std::endl;
-    std::cout << "3. Return to main menu" << std::endl;
-    std::cout << "-------------------------" << std::endl;
+    std::cout << std::endl;
+    std::cout << "=== The Tower ===" << std::endl;
+    std::cout << "  1. Start the incursion" << std::endl;
+    std::cout << "  3. Return to main menu" << std::endl;
 }
 
 int main()
@@ -65,12 +62,11 @@ int main()
             {
             case 1:
             {
-                std::cout << "Invoking..." << std::endl;
+                std::cout << std::endl;
+                std::cout << "The summoning circle glows..." << std::endl;
                 Unit newUnit = gen.generateUnit(nextId++, state.necropolis);
                 roster.addUnit(newUnit);
-                std::cout << "Unit Invoked: " << std::endl;
                 newUnit.printUnit();
-                std::cout << std::endl;
                 break;
             }
             case 2:
@@ -84,7 +80,8 @@ int main()
                     {
                     case 1:
                     {
-                        std::cout << "Select the unit you want add (unit id)" << std::endl;
+                        std::cout << std::endl;
+                        std::cout << "Who joins the team? (unit id)" << std::endl;
                         roster.printRoster();
                         team.printTeam(roster);
                         int selectedUnitId = readChoice();
@@ -101,20 +98,22 @@ int main()
                     }
                     case 2:
                     {
-                        std::cout << "Select the unit you want remove (unit id)" << std::endl;
+                        std::cout << std::endl;
+                        std::cout << "Who leaves the team? (unit id)" << std::endl;
                         team.printTeam(roster);
                         int selectedUnitId = readChoice();
                         team.removeMember(selectedUnitId);
+                        team.printTeam(roster);
+                        break;
                     }
                     case 3:
                     {
-                        std::cout << "Team Composition:" << std::endl;
+                        std::cout << std::endl;
                         team.printTeam(roster);
                         break;
                     }
                     case 6:
                     {
-                        std::cout << "Returning to main menu..." << std::endl;
                         break;
                     }
                     default:
@@ -133,19 +132,18 @@ int main()
                 {
                     IncursionMenu();
                     team.printTeam(roster);
+                    std::cout << "Tower record: floor " << state.highestFloor << std::endl;
                     choice = readChoice();
 
                     switch (choice)
                     {
                     case 1:
                     {
-                        std::cout << "Starting a new incursion..." << std::endl;
                         runIncursion(team, roster, state, rng);
                         break;
                     }
                     case 3:
                     {
-                        std::cout << "Returning to main menu..." << std::endl;
                         break;
                     }
                     default:
@@ -160,19 +158,21 @@ int main()
             }
             case 6:
             {
-                std::cout << "Entering Necropolis..." << std::endl;
+                std::cout << std::endl;
                 state.necropolis.print();
                 break;
             }
             case 8:
             {
-                std::cout << "Viewing stats..." << std::endl;
-                // Add logic for viewing stats
+                std::cout << std::endl;
+                roster.printRoster();
+                std::cout << "Tower record: floor " << state.highestFloor
+                          << "  |  Incursions launched: " << state.incursionCount << std::endl;
                 break;
             }
             case 9:
             {
-                std::cout << "Exiting the program. Goodbye!" << std::endl;
+                std::cout << "The tower will be waiting. Goodbye!" << std::endl;
                 return 0;
             }
             default:
