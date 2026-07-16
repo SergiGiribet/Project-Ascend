@@ -9,6 +9,27 @@
 
 #include <iostream>
 
+void printIntro()
+{
+    std::cout << std::endl;
+    std::cout << "=== PROJECT ASCEND ===" << std::endl;
+    std::cout << std::endl;
+    std::cout << "The tower appeared without warning, and it has no top." << std::endl;
+    std::cout << "Those who climb it do not come back. Yet the summoning" << std::endl;
+    std::cout << "circle keeps offering souls -- each one with a name," << std::endl;
+    std::cout << "a past, and a reason of their own to climb." << std::endl;
+    std::cout << std::endl;
+    std::cout << "Invoke them. Choose who ascends. Push higher, floor by" << std::endl;
+    std::cout << "floor, and decide when courage becomes greed." << std::endl;
+    std::cout << std::endl;
+    std::cout << "When they die -- and they will -- they are gone for good." << std::endl;
+    std::cout << "Only the Necropolis remembers. And sometimes, the newly" << std::endl;
+    std::cout << "summoned arrive already carrying the echo of the fallen." << std::endl;
+    std::cout << std::endl;
+    std::cout << "How high will you climb on their shoulders?" << std::endl;
+}
+
+
 void Menu()
 {
     std::cout << std::endl;
@@ -52,6 +73,8 @@ int main()
         Generator gen("resources", rng);
         std::vector<Encounter> encounters = loadEncounters("resources/encounters.txt");
         int nextId = 1;
+
+        printIntro();
 
         do
         {
