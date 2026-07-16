@@ -26,6 +26,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       keep climbing): increments state.incursionCount; survivors gain XP and may level up;
 //       each casualty is recorded in state.necropolis BEFORE being removed from roster and
 //       purged from team; state.highestFloor grows if a new record floor is cleared.
+//       Survivors are fully healed when the incursion ends (the dead stay dead).
 //       Prints a notice and does nothing if team is empty.
 
 #endif

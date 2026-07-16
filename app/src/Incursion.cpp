@@ -63,24 +63,27 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
         int forcedVictimId = -1;
 
-        std::vector<std::pair<int, const TraitEvent*>> candidates;
-        for (int id : team.getMembersIds()) {
+        std::vector<std::pair<int, const TraitEvent *>> candidates;
+        for (int id : team.getMembersIds())
+        {
             const Unit &u = roster.findUnitById(id);
             for (const TraitEvent &ev : TRAIT_EVENTS)
                 if (std::find(u.getSkills().begin(), u.getSkills().end(), ev.trait) != u.getSkills().end())
                     candidates.push_back({id, &ev});
         }
 
-        if (!candidates.empty()) {
+        if (!candidates.empty())
+        {
             std::uniform_int_distribution<int> coin(0, 1);
-            if (coin(rng) == 1) {
+            if (coin(rng) == 1)
+            {
                 auto selected = candidates[std::uniform_int_distribution<size_t>(0, candidates.size() - 1)(rng)];
                 const TraitEvent *event = selected.second;
 
                 const Unit &actor = roster.findUnitById(selected.first);
                 std::cout << "  " << actor.getName() << ", " << event->trait << " as ever, "
                           << event->deed << "." << std::endl;
-                
+
                 attack += event->attackModifier;
 
                 if (event->trait == "Reckless")
@@ -106,18 +109,18 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             int victimId;
             if (forcedVictimId != -1)
                 victimId = forcedVictimId;
-            else {
+            else
+            {
                 const std::vector<int> &ids = team.getMembersIds();
-                std::uniform_int_distribution<size_t> pick(0, ids.size() -1);
+                std::uniform_int_distribution<size_t> pick(0, ids.size() - 1);
                 victimId = ids[pick(rng)];
             }
-            
+
             std::cout << "  The team advances with difficulty." << std::endl;
             for (int id : team.getMembersIds())
                 if (roster.findUnitById(id).addExperience(floor * 10) > 0)
                     std::cout << "  " << roster.findUnitById(id).getName() << " reaches level "
                               << roster.findUnitById(id).getLevel() << "!" << std::endl;
-
 
             std::uniform_int_distribution<int> dmg(15, 40);
             Unit &victim = roster.findUnitById(victimId);
@@ -188,12 +191,20 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
     team.purgeDeadMembers(roster);
 
+    for (int id : team.getMembersIds())
+    {
+        Unit &u = roster.findUnitById(id);
+        u.heal(u.getStats().getMaxHealth());
+    }
+
     std::cout << std::endl;
     std::cout << "=== Incursion " << state.incursionCount << " over ===" << std::endl;
     std::cout << "Highest floor this run: " << highestFloorThisRun
               << "  |  Tower record: " << state.highestFloor << std::endl;
-    if (!team.getMembersIds().empty())
+    if (!team.getMembersIds().empty()) {
+        std::cout << "The survivors rest and tend their wounds." << std::endl;
         team.printTeam(roster);
+    }
 }
 
 std::vector<Encounter> loadEncounters(const std::string &path)
