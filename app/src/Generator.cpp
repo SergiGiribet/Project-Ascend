@@ -20,6 +20,7 @@ Generator::Generator(const std::string &resourcesDir, std::mt19937 &rng) : banks
         banks_["place"] = loadBank(resourcesDir + "/places.txt");
         banks_["trait"] = loadBank(resourcesDir + "/traits.txt");
         banks_["template"] = loadBank(resourcesDir + "/templates.txt");
+        banks_["hook"] = loadBank(resourcesDir + "/hooks.txt");
 
         for (const auto &pair : banks_)
             if (pair.second.empty())
@@ -44,7 +45,7 @@ std::string Generator::fillTemplate(const std::string &tmpl) {
     return result;
 }
 
-Unit Generator::generateUnit(int id) {
+Unit Generator::generateUnit(int id, const Necropolis &necropolis) {
     Unit unit(id);
     unit.setName(pickRandom(banks_.at("name")));
     std::string t1 = pickRandom(banks_.at("trait"));
@@ -60,5 +61,17 @@ Unit Generator::generateUnit(int id) {
     unit.setRace(race);
     unit.setStats(Stats(80 + race * 20, 80 + race * 20, 8 + race * 2, 8 + race * 2));
     unit.setHistory(fillTemplate(pickRandom(banks_.at("template"))));
+
+    if (!necropolis.empty()) {
+        std::uniform_int_distribution<int> chance(1, 100);
+        if (chance(rng_) <= 40) {
+            const DeathRecord &fallen = necropolis.pickRandom(rng_);
+            std::string hook = pickRandom(banks_.at("hook"));
+            size_t pos = hook.find("{fallen}");
+            if (pos != std::string::npos)
+                hook.replace(pos, 8, fallen.name);
+            unit.setHook(hook + ".");
+        }
+    }
     return unit;
 }

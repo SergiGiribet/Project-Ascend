@@ -185,8 +185,8 @@ Invertir 1 i 2 = intentar registrar una unitat que ja no existeix.
 | 1. Unit + imprimir | ✅ Fet |
 | 2. Roster + menú | ✅ Fet (roster viu al main, invoke + view stats reals) |
 | 3. Generador amb bancs | ✅ Fet (Generator amb 6 bancs, rasa ponderada, fillTemplate) |
-| 4. Incursió (selecció + resolució + XP) | 🟡 Team fet (la selecció); falta la resolució ← ARA |
-| 5. Permadeath + Necròpolis | ⬜ Contracte escrit; falta implementar |
-| 6. Ganxos condicionats per la Necròpolis | ⬜ La mecànica central de l'experiment |
-| 7. Polir narració | ⬜ |
-| 8. Jugar i avaluar (§1.1) | ⬜ El veritable objectiu |
+| 4. Incursió (selecció + resolució + XP) | ✅ Fet (runIncursion: 5 pisos, 3 desenllaços, dany i mort possibles) |
+| 5. Permadeath + Necròpolis | ✅ Fet (DeathRecord amb causa i torn; flux registrar→esborrar→purgar; menú 6) |
+| 6. Ganxos condicionats per la Necròpolis | ✅ Fet (hooks.txt + {fallen} + 40% si hi ha caiguts) — LA MECÀNICA CENTRAL FUNCIONA |
+| 7. Polir narració | ⬜ Usar trets a les narracions de combat; netejar cosmètics ← ARA |
+| 8. Jugar i avaluar (§1.1) | ⬜ El veritable objectiu: sessions llargues i el criteri d'honestedat |

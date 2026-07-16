@@ -4,6 +4,8 @@
 #include "src/Roster.h"
 #include "src/Generator.h"
 #include "src/Incursion.h"
+#include "src/Utils.h"
+#include "src/GameState.h"
 
 #include <iostream>
 #include <fstream>
@@ -40,18 +42,6 @@ void IncursionMenu()
     std::cout << "-------------------------" << std::endl;
 }
 
-int readChoice()
-{
-    int c;
-    if (!(std::cin >> c))
-    {
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        c = 0;
-    }
-    return c;
-}
-
 int main()
 {
     int choice = 0;
@@ -59,6 +49,7 @@ int main()
     {
         Team team;
         Roster roster;
+        GameState state;
 
         std::mt19937 rng(std::random_device{}());
         Generator gen("resources", rng);
@@ -75,7 +66,7 @@ int main()
             case 1:
             {
                 std::cout << "Invoking..." << std::endl;
-                Unit newUnit = gen.generateUnit(nextId++);
+                Unit newUnit = gen.generateUnit(nextId++, state.necropolis);
                 roster.addUnit(newUnit);
                 std::cout << "Unit Invoked: " << std::endl;
                 newUnit.printUnit();
@@ -149,7 +140,7 @@ int main()
                     case 1:
                     {
                         std::cout << "Starting a new incursion..." << std::endl;
-                        // Add logic for starting a new incursion
+                        runIncursion(team, roster, state, rng);
                         break;
                     }
                     case 3:
@@ -170,7 +161,7 @@ int main()
             case 6:
             {
                 std::cout << "Entering Necropolis..." << std::endl;
-                // Add logic for visiting Necropolis
+                state.necropolis.print();
                 break;
             }
             case 8:

@@ -171,9 +171,9 @@ public:
     // Post: Sets the history of the unit to h.
 
     // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    void addExperience(int exp);
+    int addExperience(int exp);
     // Pre: exp must be a non-negative integer.
-    // Post: Increases the experience points of the unit by exp.
+    // Post: Increases the experience points of the unit by exp and if reach lvl wall, lvl up.
 
     void addSkill(const std::string &skill);
     // Pre: skill must be a valid string.

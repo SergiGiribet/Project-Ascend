@@ -87,7 +87,20 @@ void Unit::setHook(const std::string &h) { hook = h; }
 void Unit::setHistory(const std::string &h) { history = h; }
 
 // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void Unit::addExperience(int exp) { experience += exp; }
+int Unit::addExperience(int exp) { 
+    experience += exp;
+    int levelsGained = 0;
+    while (experience >= level * 100) {
+        experience -= level * 100;
+        level++;
+        levelsGained++;
+        stats.setMaxHealth(stats.getMaxHealth() + 10);
+        stats.setHealth(stats.getHealth() + 10);
+        stats.setStrength(stats.getStrength() + 1);
+        stats.setConstitution(stats.getConstitution() + 1);
+    }
+    return levelsGained;
+}
 
 void Unit::addSkill(const std::string &skill) { skills.push_back(skill); }
 

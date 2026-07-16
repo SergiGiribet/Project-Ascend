@@ -17,3 +17,44 @@
 //   - print(): lists the fallen (for the "Visit Necropolis" menu).
 //
 // Invariant: records are append-only; the Necropolis never shrinks during a session.
+
+#ifndef NECROPOLIS_H
+#define NECROPOLIS_H
+
+#include "Unit.h"
+
+#include <string>
+#include <vector>
+#include <random>
+
+struct DeathRecord {
+    std::string name;
+    int floorDied;
+    std::string cause;
+    int turn;
+    std::vector<std::string> skills;
+};
+
+class Necropolis {
+    public:
+        Necropolis();
+
+        void addDeath(const Unit &unit, int floor, const std::string &cause, int turn);
+        // Pre: unit must still exist (call BEFORE removing it from the roster).
+        // Post: Appends a DeathRecord built from the unit's name and skills.
+
+        bool empty() const;
+
+        const DeathRecord &pickRandom(std::mt19937 &rng) const;
+        // Pre: the necropolis must not be empty (throws std::runtime_error otherwuse).
+        //Post: Returns a random death record (used by the generator for hooks).
+
+        void print() const;
+        // Pre: None
+        // Post Lists the fallen, oldes first; print a message if there are none.
+
+    private:
+        std::vector<DeathRecord> records_;
+};
+
+#endif

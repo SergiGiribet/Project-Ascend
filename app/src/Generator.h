@@ -6,7 +6,7 @@
 #include <random>
 #include <vector>
 #include "Unit.h"
-
+#include "Necropolis.h"
 
 class Generator {
     public:
@@ -19,7 +19,7 @@ class Generator {
 
 
         // Modifiers -------------------------------------------------------------
-        Unit generateUnit(int id);
+        Unit generateUnit(int id, const Necropolis &necropolis);
         // Pre: id must be a unique identifier.
         // Post: Returns a randomly generated unit: name, 1-2 distinct traits, weighted race, stats derived from race, and a filled backstory.
 
