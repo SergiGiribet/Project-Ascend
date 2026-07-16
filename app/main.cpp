@@ -50,6 +50,7 @@ int main()
 
         std::mt19937 rng(std::random_device{}());
         Generator gen("resources", rng);
+        std::vector<Encounter> encounters = loadEncounters("resources/encounters.txt");
         int nextId = 1;
 
         do
@@ -139,7 +140,7 @@ int main()
                     {
                     case 1:
                     {
-                        runIncursion(team, roster, state, rng);
+                        runIncursion(team, roster, state, encounters, rng);
                         break;
                     }
                     case 3:

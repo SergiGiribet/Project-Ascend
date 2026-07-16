@@ -1,9 +1,11 @@
 #include "Incursion.h"
 #include "Utils.h"
 
+#include <fstream>
 #include <iostream>
+#include <stdexcept>
 
-void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rng)
+void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
     {
@@ -42,9 +44,14 @@ void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rn
         int danger = 20 + floor * 15;
         int attack = power + luck(rng);
 
+        std::uniform_int_distribution<size_t> pickEnc(0, encounters.size() - 1);
+        const Encounter &enc = encounters[pickEnc(rng)];
+        std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
+
         if (attack >= danger * 12 / 10)
         {
-            std::cout << "Floor " << floor << ": The team advances with ease." << std::endl;
+            std::cout << "  The team advances with ease." << std::endl;
+
             for (int id : team.getMembersIds())
                 if (roster.findUnitById(id).addExperience(floor * 10) > 0)
                     std::cout << "  " << roster.findUnitById(id).getName() << " reaches level "
@@ -56,7 +63,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rn
         }
         else if (attack >= danger)
         {
-            std::cout << "Floor " << floor << ": The team advances with difficulty." << std::endl;
+            std::cout << "  The team advances with difficulty." << std::endl;
             for (int id : team.getMembersIds())
                 if (roster.findUnitById(id).addExperience(floor * 10) > 0)
                     std::cout << "  " << roster.findUnitById(id).getName() << " reaches level "
@@ -72,8 +79,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rn
 
             std::cout << "  " << victim.getName();
             if (!victim.getSkills().empty())
-                std::cout << ", " << pickRandom(victim.getSkills(), rng) << " as ever,";
-            std::cout << " is wounded holding the line." << std::endl;
+                std::cout << ", " << pickRandom(victim.getSkills(), rng) << " as ever, ";
+            std::cout << "is wounded." << std::endl;
 
             if (!victim.isAlive())
             {
@@ -82,7 +89,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rn
                     std::cout << ", " << pickRandom(victim.getSkills(), rng) << " to the end,";
                 std::cout << " falls on floor " << floor << ". The others mourn and press on." << std::endl;
 
-                state.necropolis.addDeath(victim, floor, "wounded holding the line", state.incursionCount);
+                state.necropolis.addDeath(victim, floor, enc.cause, state.incursionCount);
                 roster.removeUnitById(victimId);
                 team.purgeDeadMembers(roster);
 
@@ -100,7 +107,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rn
         }
         else
         {
-            std::cout << "Floor " << floor << ": The tower overwhelms the team." << std::endl;
+            std::cout << "  The tower overwhelms the team." << std::endl;
 
             const std::vector<int> &ids = team.getMembersIds();
             std::uniform_int_distribution<size_t> pick(0, ids.size() - 1);
@@ -112,7 +119,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rn
                 std::cout << ", " << pickRandom(fallen.getSkills(), rng) << " to the end,";
             std::cout << " falls on floor " << floor << ". The others retreat." << std::endl;
 
-            state.necropolis.addDeath(fallen, floor, "overwhelmed in the retreat", state.incursionCount);
+            state.necropolis.addDeath(fallen, floor, enc.cause, state.incursionCount);
             roster.removeUnitById(victimId);
             team.purgeDeadMembers(roster);
 
@@ -141,4 +148,29 @@ void runIncursion(Team &team, Roster &roster, GameState &state, std::mt19937 &rn
               << "  |  Tower record: " << state.highestFloor << std::endl;
     if (!team.getMembersIds().empty())
         team.printTeam(roster);
+}
+
+std::vector<Encounter> loadEncounters(const std::string &path)
+{
+    std::vector<Encounter> encounters;
+    std::ifstream file(path);
+    std::string line;
+
+    while (std::getline(file, line))
+    {
+        if (line.empty())
+            continue;
+
+        size_t pos = line.find('|');
+        if (pos == std::string::npos)
+            throw std::runtime_error("Malformed line in " + path + ": " + line);
+
+        std::string description = line.substr(0, pos);
+        std::string cause = line.substr(pos + 1);
+
+        encounters.push_back({description, cause});
+    }
+    if (encounters.empty())
+        throw std::runtime_error("Encounter bank is empty or file not found: " + path);
+    return encounters;
 }

@@ -38,20 +38,25 @@ struct DeathRecord {
 class Necropolis {
     public:
         Necropolis();
+        // Pre: None
+        // Post: Creates an empty necropolis.
 
         void addDeath(const Unit &unit, int floor, const std::string &cause, int turn);
         // Pre: unit must still exist (call BEFORE removing it from the roster).
-        // Post: Appends a DeathRecord built from the unit's name and skills.
+        // Post: Appends a DeathRecord (name and traits taken from the unit, plus floor, cause
+        //       and turn) to the registry.
 
         bool empty() const;
+        // Pre: None
+        // Post: Returns true if no death has been recorded yet; false otherwise.
 
         const DeathRecord &pickRandom(std::mt19937 &rng) const;
-        // Pre: the necropolis must not be empty (throws std::runtime_error otherwuse).
-        //Post: Returns a random death record (used by the generator for hooks).
+        // Pre: the necropolis must not be empty (throws std::runtime_error otherwise).
+        // Post: Returns a random death record (used by the generator for hooks).
 
         void print() const;
         // Pre: None
-        // Post Lists the fallen, oldes first; print a message if there are none.
+        // Post: Lists the fallen, oldest first; prints a notice if there are none.
 
     private:
         std::vector<DeathRecord> records_;

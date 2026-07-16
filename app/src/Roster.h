@@ -21,15 +21,20 @@ class Roster {
 public:
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Roster();
+    // Pre: None
+    // Post: Creates an empty roster.
 
     // Consultors --------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Unit &findUnitById(int id);
     // Pre: id must be a valid unit id (throws std::runtime_error otherwise).
-    // Post: Returns a reference to the unit with the specified id; changes made through it affect the roster.
+    // Post: Returns a reference to the unit with the specified id; changes made through it affect
+    //       the roster. The reference is invalidated by addUnit/removeUnitById: use it
+    //       immediately, never store it.
 
     const Unit &findUnitById(int id) const;
     // Pre: id must be a valid unit id (throws std::runtime_error otherwise).
-    // Post: Returns a read-only reference to the unit with the specified id.
+    // Post: Returns a read-only reference to the unit with the specified id. Same lifetime rule
+    //       as the non-const overload: invalidated by addUnit/removeUnitById.
 
     bool contains(int id) const;
     // Pre: None
@@ -47,12 +52,10 @@ public:
     // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void printRoster() const;
     // Pre: None
-    // Post: Prints the full roster.
+    // Post: Prints one line per unit, or a notice if the roster is empty.
 
 private:
     std::vector<Unit> units_;
-    // Pre: None
-    // Post: Stores the collection of living units in the game.
     // Invariant: every unit in this vector is alive; ids are unique within the collection.
 };
 

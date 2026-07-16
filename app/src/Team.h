@@ -21,6 +21,8 @@ class Team {
 public:
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Team();
+    // Pre: None
+    // Post: Creates an empty team.
 
     // Consultors -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
     const std::vector<int> &getMembersIds() const;
@@ -39,14 +41,14 @@ public:
     //      unit has that id.
 
     void purgeDeadMembers(const Roster &roster);
-    // Pre: roster must be a valid Roster object.
-    // Post: Removes from the team any members whose ids are no longer present in the roster
+    // Pre: None
+    // Post: Removes from the team any members whose ids are no longer present in the roster.
 
     // Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void printTeam(const Roster &roster) const;
-    // Pre: roster must be a valid Roster object.
-    // Post: Prints the composition of the team, resolving ids to names/stats through the
-    //       provided roster.
+    // Pre: Every id in the team must be present in roster (the class invariant).
+    // Post: Prints one line per member (resolved through the roster) plus its hook as an
+    //       indented sub-line, or a notice if the team is empty.
 
 private:
     std::vector<int> memberIds_;

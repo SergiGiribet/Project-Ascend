@@ -17,7 +17,7 @@ public:
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Stats();
     // Pre: None
-    // Post: Initializes the Stats object with default values.
+    // Post: Initializes stats to 100/100 health, 10 strength and 10 constitution.
 
     Stats(int health, int maxHealth, int strength, int constitution);
     // Pre: All parameters must be non-negative.
@@ -73,7 +73,7 @@ public:
     // Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void printStats() const;
     // Pre: None
-    // Post: Prints the current stats of the unit to the console.
+    // Post: Prints health, strength and constitution to the console, one per line.
 
 };
 
@@ -98,7 +98,8 @@ public:
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Unit(int id);
     // Pre: id must be a unique identifier for the unit.
-    // Post: Initializes the Unit object with default values for name, race, level, stats, experience.
+    // Post: Initializes the unit at level 1 with 0 experience, default stats and a placeholder
+    //       name; skills, history and hook start empty.
 
     Unit(int id, const std::string &name, int race, int level, int health, int maxHealth, int strength, int constitution);
     // Pre: id must be a unique identifier for the unit. health, maxHealth, strength, and constitution must be non-negative.
@@ -123,7 +124,8 @@ public:
 
     Stats getStats() const;
     // Pre: None
-    // Post: Returns the Stats object associated with the unit.
+    // Post: Returns a COPY of the unit's stats (a read-only snapshot: modifying it does not
+    //       affect the unit; use takeDamage/heal/addExperience to change the real stats).
 
     int getExperience() const;
     // Pre: None
@@ -131,7 +133,7 @@ public:
 
     const std::vector<std::string> &getSkills() const;
     // Pre: None
-    // Post: Returns the list of skills of the unit.
+    // Post: Returns a read-only reference to the unit's traits.
 
     std::string getHistory() const;
     // Pre: None
@@ -143,7 +145,7 @@ public:
 
     // Setters ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void setName(const std::string &n);
-    // Pre: n must be a valid string.
+    // Pre: None
     // Post: Sets the name of the unit to n.
 
     void setRace(int r);
@@ -155,29 +157,31 @@ public:
     // Post: Sets the level of the unit to l.
 
     void setStats(const Stats &s);
-    // Pre : s must be a valid Stats object.
-    // Post: Sets the Stats object of the unit to s.
+    // Pre: None
+    // Post: Replaces the unit's stats with s.
 
     void setExperience(int exp);
     // Pre: exp must be a non-negative integer.
     // Post: Sets the experience points of the unit to exp.
 
     void setHook(const std::string &h);
-    // Pre: h must be a valid string.
+    // Pre: None
     // Post: Sets the hook of the unit to h.
 
     void setHistory(const std::string &h);
-    // Pre: h must be a valid string.
+    // Pre: None
     // Post: Sets the history of the unit to h.
 
     // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     int addExperience(int exp);
     // Pre: exp must be a non-negative integer.
-    // Post: Increases the experience points of the unit by exp and if reach lvl wall, lvl up.
+    // Post: Adds exp to the unit's experience; while experience >= level * 100, consumes that
+    //       amount and levels up (+1 level, +10 max HP and HP, +1 STR, +1 CON).
+    //       Returns the number of levels gained (0 if none).
 
     void addSkill(const std::string &skill);
-    // Pre: skill must be a valid string.
-    // Post: Adds skill to the unit's list of skills.
+    // Pre: None
+    // Post: Appends skill to the unit's list of traits.
 
     void takeDamage(int damage);
     // Pre: damage must be a non-negative integer.
@@ -194,7 +198,8 @@ public:
     // Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void printUnit() const;
     // Pre: None
-    // Post: Prints the details of the unit.
+    // Post: Prints the unit card (name, race, level, XP, stats, traits, story and hook if any)
+    //       framed by dashed lines.
 
 };
 
