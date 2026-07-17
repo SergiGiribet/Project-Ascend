@@ -12,8 +12,13 @@ class TeeBuf : public std::streambuf {
         // Post: every character written through this buffer goes to both.
 
     protected:
-        int overflow(int c) override;   // es crida per cada caracter: sputc als dos buffers
-        int sync() override;            // flush: pubsync als dos
+        int overflow(int c) override;
+        // Pre: None
+        // Post: Writes the character to both buffers (no-op on EOF); returns c.
+
+        int sync() override;
+        // Pre: None
+        // Post: Flushes both buffers; returns 0 if both succeed, -1 otherwise.
 
     private:
         std::streambuf *console_;
