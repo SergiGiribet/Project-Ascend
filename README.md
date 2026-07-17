@@ -1,69 +1,73 @@
-# Project Ascend — Fase 0
+# Project Ascend — Phase 0
 
-Prototip de roguelike de consola en C++ amb un sol objectiu: **validar una hipòtesi de disseny
-abans d'escriure ni una línia del joc gran**.
+A C++ console roguelike prototype with a single purpose: **validate a design hypothesis
+before writing a single line of the full game**.
 
-> **Hipòtesi (GDD §1.1):** quan un personatge generat amb la seva pròpia història mor per sempre,
-> el jugador sent una pèrdua real.
+> **Hypothesis (GDD §1.1):** when a character generated with their own history dies forever,
+> the player feels real loss.
 
-Tota la Fase 0 existeix per respondre aquesta pregunta amb el mínim de joc possible. No hi ha
-gràfics, no hi ha combat detallat, no hi ha inventari: hi ha personatges amb nom, passat i
-personalitat — i una torre que se'ls queda.
+All of Phase 0 exists to answer that question with the minimum possible game. There are no
+graphics, no detailed combat, no inventory: there are characters with a name, a past and a
+personality — and a tower that keeps them.
 
-## Què fa el prototip
+## What the prototype does
 
-- **Invocació generativa**: cada unitat neix amb nom, raça, 1–2 trets de personalitat i una
-  història composta a partir de bancs de dades i plantilles (`app/resources/`).
-- **La torre (push-your-luck)**: incursions pis a pis; a cada pis, un encontre i una decisió —
-  pujar més o tornar amb el que tens. El perill creix; la cobdícia també.
-- **Trets que actuen**: el covard deixa forats a la línia, el valent l'aguanta, el temerari
-  carrega de cap — i s'emporta les ferides (però neix més dur).
-- **Permadeath de veritat**: quan una unitat mor, s'esborra. No hi ha resurrecció ni partida
-  guardada que la retorni.
-- **La Necròpolis**: l'únic que queda dels morts — una làpida amb qui era, on va caure i què
-  el va matar.
-- **Ganxos (la mecànica central)**: les noves invocacions poden arribar marcades pels caiguts
-  ("They are searching for whatever Nicodemus left behind on the walls"). La mort d'avui
-  escriu la història de demà.
+- **Generative summoning**: every unit is born with a name, a race, 1–2 personality traits
+  and a backstory composed from data banks and templates (`app/resources/`).
+- **The tower (push-your-luck)**: floor-by-floor incursions; on every floor, an encounter and
+  a decision — climb higher or return with what you have. Danger grows; so does greed.
+- **Traits that act**: the Cowardly leave gaps in the line, the Brave hold it steady, the
+  Reckless charge in headfirst — and take the wounds (but are born tougher).
+- **Real permadeath**: when a unit dies, it is erased. No resurrection, no save file that
+  brings it back.
+- **The Necropolis**: all that remains of the dead — a tombstone with who they were, where
+  they fell and what killed them.
+- **Hooks (the core mechanic)**: new summons can arrive marked by the fallen
+  ("They are searching for whatever Nicodemus left behind on the walls"). Today's death
+  writes tomorrow's story.
 
-## Compilar i executar
+## Build and run
 
-Requisits: MSVC (Visual Studio 2026 Community o equivalent) a Windows.
+Requirements: MSVC (Visual Studio 2026 Community or equivalent) on Windows.
 
 ```
-:: des d'un Developer Command Prompt (o despres de vcvars64.bat):
+:: from a Developer Command Prompt (or after vcvars64.bat):
 cd app
 cl /W4 /w15038 /EHsc /nologo main.cpp src\*.cpp /Fe:ascend.exe
 ascend.exe
 ```
 
-Important: executa'l **des de la carpeta `app/`** — els bancs de dades es carreguen amb la ruta
-relativa `resources/`.
+Important: run it **from the `app/` folder** — the data banks are loaded through the relative
+path `resources/`.
 
-(Amb VSCode, la task de build del repositori fa el mateix.)
+(With VSCode, the repo's build task does the same.)
 
-## Estructura
+## Structure
 
 ```
 app/
-  main.cpp          bucle principal i menus
-  src/              una classe per fitxer (Unit, Roster, Team, Generator,
-                    Incursion, Necropolis, GameState, Utils)
-  resources/        bancs de dades de generacio (noms, trets, oficis, llocs,
-                    motivacions, plantilles, ganxos, encontres)
-documentacio-tecnica.md   com funciona cada peca i per que
-guia-estil-text.md        normes d'estil de tota la sortida per consola
-backlog-resolucions.md    idees aparcades per a Fase 1+ i material guardat
+  main.cpp          main loop and menus
+  src/              one class per file (Unit, Roster, Team, Generator,
+                    Incursion, Necropolis, GameState, Logger, Utils)
+  resources/        generation data banks (names, traits, jobs, places,
+                    motivations, templates, hooks, encounters)
+  sessions/         one auto-recorded .log per game session
+docs/
+  technical-documentation.md   how every piece works and why
+  style-guide.md               style rules for all console output
+  backlog.md                   parked ideas for Phase 1+ and saved material
 ```
 
-Convencions del codi: contractes Pre/Post als headers, headers autosuficients,
-política de zero warnings amb `/W4`.
+Code conventions: Pre/Post contracts in headers, self-sufficient headers,
+zero-warning policy with `/W4`.
 
-## Estat i com avaluar
+## Status and how to evaluate
 
-Passos 1–7 del pla complets (generació, torre, permadeath, ganxos, estil). El pas 8 és
-l'avaluació: **jugar sessions llargues i respondre honestament** — quan ha mort la unitat que
-portaves des del pis 1, has sentit alguna cosa?
+Steps 1–7 of the plan are complete (generation, tower, permadeath, hooks, style). Step 8 is
+the evaluation: **play long sessions and answer honestly** — when the unit you had carried
+since floor 1 died, did you feel anything?
 
-Si proves el joc: no llegeixis el codi abans de jugar. Invoca, puja, arrisca't un pis més del
-que toca, i mira què et passa quan la torre es cobra el preu. Després explica-ho.
+If you try the game: don't read the code before playing. Summon, climb, risk one floor more
+than you should, and see what happens to you when the tower takes its price. Then tell us.
+Every session is recorded automatically to `app/sessions/` — attach your log when you share
+feedback.

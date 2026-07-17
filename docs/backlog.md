@@ -1,30 +1,36 @@
-# Backlog: idees aparcades i material guardat
+# Backlog: parked ideas and saved material
 
-## Idees de futur (Fase 1+)
+## Future ideas (Phase 1+)
 
-- **Fusio de traits/skills per experiencia**: que els trets i les habilitats es puguin fusionar
-  o transformar segons el que la unitat viu a les incursions (p. ex. un Cowardly que sobreviu
-  prou vegades esdeve una altra cosa). Idea del 2026-07-16; casa amb els trets contradictoris
-  (Cowardly + Brave) que la generacio ja produeix — serien material de partida, no un bug.
-- **Epitets per a noms repetits** (GDD): la solucio real a les colisions de noms; ampliar el banc
-  (fet: 20 -> 60 noms) nomes en redueix la frequencia, no les elimina (paradoxa de l'aniversari).
-- **Curacio via objectes**: descartat per Fase 0 (arrossega inventari/drops). El dial de Fase 0
-  es "descansar entre incursions" si les ferides acumulades ofeguen el joc.
-- **Tercer camp d'Encounter** (`description|cause|resolution`): sabor narratiu en superar un pis
-  amb exit — vegeu el material de sota.
+- **Trait/skill fusion through experience**: traits and skills could merge or transform based
+  on what a unit lives through in the incursions (e.g. a Cowardly unit that survives enough
+  times becomes something else). Idea from 2026-07-16; it pairs well with the contradictory
+  traits the generator already produces (Cowardly + Brave) — they would be starting material,
+  not a bug.
+- **Epithets for repeated names** (GDD): the real fix for name collisions; enlarging the bank
+  (done: 20 -> 60 names) only reduces their frequency, it does not remove them (birthday paradox).
+- **Healing through items**: out of scope for Phase 0 (drags in inventory/drops). The Phase 0
+  dial was "rest between incursions", implemented on 2026-07-17.
+- **Third `Encounter` field** (`description|cause|resolution`): narrative flavor when a floor
+  is cleared successfully — see the material below.
+- **Varied trait-event deeds**: `deed` becomes a `vector<string>` with 2-3 variants per trait,
+  so "Osric, Brave as ever, holds the line steady." doesn't repeat every other floor.
+- **Self-bootstrapping exe**: embed default banks (raw string literals) and create
+  `resources/`/`sessions/` on first run, writing only missing files. Deferred: a GitHub
+  release zip covers distribution without a second source of truth.
 
-## Resolucions d'encontres (material guardat)
+## Saved encounter resolutions
 
-Aquests textos es van escriure originalment com a segon camp d'`encounters.txt`, pero
-descrivien *com es supera l'encontre*, no com hi mor una unitat (el camp es una causa de mort:
-ha de completar `fell on floor N, <causa>.` amb la unitat com a subjecte).
+These texts were originally written as the second field of `encounters.txt`, but they
+described *how the encounter is overcome*, not how a unit dies there (the field is a death
+cause: it must complete `fell on floor N, <cause>.` with the unit as the subject).
 
-Es guarden aqui perque son bon material per a un possible **tercer camp** d'`Encounter`
-(p. ex. `resolution`: sabor narratiu quan el pis se supera amb exit) — increment B / Fase 1.
+They are kept here because they are good material for a possible **third `Encounter` field**
+(e.g. `resolution`: narrative flavor when the floor is cleared) — Phase 1 territory.
 
-Format proposat si s'implementa: `description|cause|resolution` (el loader passaria a fer dos `find('|')`).
+Proposed format if implemented: `description|cause|resolution` (the loader would do two `find('|')`).
 
-| Encontre | Resolucio guardada |
+| Encounter | Saved resolution |
 |---|---|
 | A shattered mirror shows your face twisted in rage | shattered into a thousand regrets |
 | A wailing banshee drifts through the corridor | silenced by a ringing charm |
