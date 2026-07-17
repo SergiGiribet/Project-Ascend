@@ -1,76 +1,72 @@
-# 🗡️ Project Ascend
+# Project Ascend — Phase 0
 
-**Project Ascend** es un roguelike 3D con mecánicas gacha, ambientado en una torre oscura y cambiante. Cada personaje invocado es único, y si muere... desaparece para siempre.
+A C++ console roguelike prototype with a single purpose: **validate a design hypothesis
+before writing a single line of the full game**.
 
----
+> **Hypothesis (GDD §1.1):** when a character generated with their own history dies forever,
+> the player feels real loss.
 
-## 🎮 Concepto General
+All of Phase 0 exists to answer that question with the minimum possible game. There are no
+graphics, no detailed combat, no inventory: there are characters with a name, a past and a
+personality — and a tower that keeps them.
 
-- **Género**: Roguelike táctico con sistema gacha
-- **Mecánicas clave**:
-  - Muerte permanente de personajes
-  - Gestión de tropas con rarezas y niveles
-  - Habilidades que evolucionan según personalidad y experiencia
+## What the prototype does
 
----
+- **Generative summoning**: every unit is born with a name, a race, 1–2 personality traits
+  and a backstory composed from data banks and templates (`app/resources/`).
+- **The tower (push-your-luck)**: floor-by-floor incursions; on every floor, an encounter and
+  a decision — climb higher or return with what you have. Danger grows; so does greed.
+- **Traits that act**: the Cowardly leave gaps in the line, the Brave hold it steady, the
+  Reckless charge in headfirst — and take the wounds (but are born tougher).
+- **Real permadeath**: when a unit dies, it is erased. No resurrection, no save file that
+  brings it back.
+- **The Necropolis**: all that remains of the dead — a tombstone with who they were, where
+  they fell and what killed them.
+- **Hooks (the core mechanic)**: new summons can arrive marked by the fallen
+  ("They are searching for whatever Nicodemus left behind on the walls"). Today's death
+  writes tomorrow's story.
 
-## 🌍 Entorno y Exploración
+## Build and run
 
-- **Ubicación**: Una gran torre con pisos temáticos
-- **Zona de descanso**: Base personalizable entre expediciones
-- **Generación procedural**: Cada piso es único por partida
-- **Biomas variados**: Desde criptas hasta jardines flotantes
+Requirements: MSVC (Visual Studio 2026 Community or equivalent) on Windows.
 
----
+```
+:: from a Developer Command Prompt (or after vcvars64.bat):
+cd app
+cl /W4 /w15038 /EHsc /nologo main.cpp src\*.cpp /Fe:ascend.exe
+ascend.exe
+```
 
-## ⚔️ Estrategia y Economía
+Important: run it **from the `app/` folder** — the data banks are loaded through the relative
+path `resources/`.
 
-- **Sistema de invocaciones**: Personajes con rarezas y habilidades únicas
-- **Progresión**: Experiencia, desbloqueo de habilidades, evolución táctica
-- **Eventos dinámicos**: Emboscadas, comerciantes, decisiones con consecuencias
+(With VSCode, the repo's build task does the same.)
 
----
+## Structure
 
-## 🎨 Estilo Visual
+```
+app/
+  main.cpp          main loop and menus
+  src/              one class per file (Unit, Roster, Team, Generator,
+                    Incursion, Necropolis, GameState, Logger, Utils)
+  resources/        generation data banks (names, traits, jobs, places,
+                    motivations, templates, hooks, encounters)
+  sessions/         one auto-recorded .log per game session
+documentacio-tecnica.md   how every piece works and why
+guia-estil-text.md        style rules for all console output
+backlog-resolucions.md    parked ideas for Phase 1+ and saved material
+```
 
-- Inspirado en **Berserk** y **Dark Souls**
-- Estética anime oscura y semi-realista
-- Paleta apagada, escenarios desgastados, sombras dramáticas
+Code conventions: Pre/Post contracts in headers, self-sufficient headers,
+zero-warning policy with `/W4`.
 
----
+## Status and how to evaluate
 
-## 🧠 IA de NPCs
+Steps 1–7 of the plan are complete (generation, tower, permadeath, hooks, style). Step 8 is
+the evaluation: **play long sessions and answer honestly** — when the unit you had carried
+since floor 1 died, did you feel anything?
 
-- **Arquitectura modular**:
-  - FSM (Finite State Machine)
-  - BT (Behavior Trees)
-  - GOAP (Goal-Oriented Action Planning)
-  - ML (Machine Learning, opcional)
-- **Inputs**: visión, sonido, estado interno, contexto
-- **Reacciones**: evaluación de amenazas, selección de tácticas
-- **Evolución**: memoria, experiencia, aprendizaje automático
-
----
-
-## ⚙️ Desarrollo
-
-- **Motor**: Unity ✅
-- **Equipo**: Individual (posible ampliación a 2-4 personas) ✅
-- **Presupuesto**: Cero, herramientas gratuitas ✅
-- **Lanzamiento**: Early Access cuando sea jugable ✅
-
----
-
-## 🛒 Monetización
-
-- Juego gratuito, sin anuncios obligatorios ❌
-- Compras internas opcionales para invocaciones ✅
-
----
-
-## 📣 Comunidad
-
-- Posible campaña en **Kickstarter**
-- Publicaciones en redes sociales y blog de desarrollo
-
----
+If you try the game: don't read the code before playing. Summon, climb, risk one floor more
+than you should, and see what happens to you when the tower takes its price. Then tell us.
+Every session is recorded automatically to `app/sessions/` — attach your log when you share
+feedback.
