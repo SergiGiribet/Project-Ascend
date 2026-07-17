@@ -18,6 +18,19 @@
 - **Self-bootstrapping exe**: embed default banks (raw string literals) and create
   `resources/`/`sessions/` on first run, writing only missing files. Deferred: a GitHub
   release zip covers distribution without a second source of truth.
+- **Multi-team floors / expeditions** (idea from 2026-07-17): special floors that demand more
+  than one team at once (one holds the gate while another pushes deeper, split wings, etc.).
+  Design value: makes the *whole roster* matter (the bench gets stories too) and creates
+  sacrifice decisions — which team takes the dangerous wing? Code impact is structural:
+  `main` holds a single global `Team`; this needs a `vector<Team>` (or named teams), team
+  management menus, and `runIncursion` accepting several teams. Phase 1+ material; pairs
+  naturally with the team size cap below (several small teams instead of one big one).
+- **Team size cap** (e.g. max 5): pending release feedback. Playtesting showed a 5-unit team
+  steamrolls floors 1-7; a cap bounds trivialization and lets encounters be tuned against a
+  known maximum power. One-line change when wanted: refuse in `Team::addMember` when
+  `memberIds_.size()` hits the cap (plus a menu message). Note: a cap alone does not fix the
+  early-floor flatness — the deeper dial is how `danger = 20 + floor*15` scales against team
+  power; consider scaling danger with team size instead of (or besides) capping.
 
 ## Saved encounter resolutions
 
