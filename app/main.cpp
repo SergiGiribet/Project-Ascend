@@ -6,8 +6,10 @@
 #include "src/Incursion.h"
 #include "src/Utils.h"
 #include "src/GameState.h"
+#include "src/Logger.h"
 
 #include <iostream>
+#include <ctime>
 
 void printIntro()
 {
@@ -65,6 +67,14 @@ int main()
     int choice = 0;
     try
     {
+
+        std::time_t now = std::time(nullptr);
+        std::tm tm;
+        localtime_s(&tm, &now);
+        char name[64];
+        std::strftime(name, sizeof name, "sessions/session_%Y%m%d_%H%M%S.log", &tm);
+        SessionLog log(name);
+
         Team team;
         Roster roster;
         GameState state;
