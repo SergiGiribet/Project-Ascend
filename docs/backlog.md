@@ -1,5 +1,25 @@
 # Backlog: parked ideas and saved material
 
+## Playtest findings — step 8 (2026-07-17)
+
+Findings from the author's own sessions; they define the Phase 0.5 iteration:
+
+1. **Free infinite summons make units fodder.** Even a 6* death doesn't sting because the
+   replacement costs nothing: loss = attachment x irreplaceability, and the second factor is
+   zero. The hypothesis had a hidden precondition: scarcity.
+2. **The heal-retreat-reenter exploit.** Full rest-heal + free re-entry at the record floor
+   means the optimal play is: climb one floor, retreat if wounded, re-enter healed at the same
+   floor. Retreating has no price, so push-your-luck has no teeth.
+3. **Risk is illegible.** The climb decision is a coin flip because the player can't estimate
+   the next floor's danger.
+
+**Planned fix (Phase 0.5)** — one currency closes 1 and 2, one line closes 3:
+- `essence` in GameState: +1 per floor cleared; summoning costs ~5; starting above floor 1
+  costs ~(startFloor - 1); initial stock ~15. All numbers are starting dials.
+- Danger forecast line before the climb prompt, computed from power vs next floor's danger
+  (4 tiers, phrased as forecast because trait events can still shift the roll).
+- Then re-test the hypothesis: does the 6*'s death hurt *now*?
+
 ## Future ideas (Phase 1+)
 
 - **Trait/skill fusion through experience**: traits and skills could merge or transform based

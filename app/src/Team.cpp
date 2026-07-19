@@ -17,6 +17,9 @@ const std::vector<int> &Team::getMembersIds() const
 // Modifiers ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Team::addMember(int id, const Roster &roster)
 {
+    if (memberIds_.size() >= static_cast<size_t>(MAX_MEMBERS))
+        throw std::runtime_error("The team is full (" + std::to_string(MAX_MEMBERS) + " members).");
+
     if (!roster.contains(id))
     {
         throw std::runtime_error("Unit with id " + std::to_string(id) + " is not in the roster.");
@@ -53,7 +56,7 @@ void Team::printTeam(const Roster &roster) const
         return;
     }
 
-    std::cout << "Team (" << memberIds_.size() << " members):" << std::endl;
+    std::cout << "Team (" << memberIds_.size() << "/" << MAX_MEMBERS << "):" << std::endl;
     for (int id : memberIds_)
     {
         const Unit &unit = roster.findUnitById(id);

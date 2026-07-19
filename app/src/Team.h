@@ -17,8 +17,12 @@
 #include "Roster.h"
 #include <vector>
 
-class Team {
+class Team
+{
 public:
+    // Constants ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    static const int MAX_MEMBERS = 5;
+
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Team();
     // Pre: None
@@ -31,8 +35,8 @@ public:
 
     // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void addMember(int id, const Roster &roster);
-    // Pre: id must be a valid unit id present in the roster and not already in
-    //      the team (throws std::runtime_error otherwise).
+    // Pre: id must be a valid unit id present in the roster, not already in the team,
+    //      and the team must not be full (MAX_MEMBERS) (throws std::runtime_error otherwise).
     // Post: Adds the unit with the specified id to the team.
 
     void removeMember(int id);

@@ -31,7 +31,6 @@ void printIntro()
     std::cout << "How high will you climb on their shoulders?" << std::endl;
 }
 
-
 void Menu()
 {
     std::cout << std::endl;
@@ -62,6 +61,12 @@ void IncursionMenu()
     std::cout << "  3. Return to main menu" << std::endl;
 }
 
+void printStatus(const GameState &state)
+{
+    std::cout << "Essence: " << state.essence
+              << "  |  Tower record: floor " << state.highestFloor << std::endl;
+}
+
 int main()
 {
     int choice = 0;
@@ -89,6 +94,7 @@ int main()
         do
         {
             Menu();
+            printStatus(state);
 
             choice = readChoice();
 
@@ -97,10 +103,18 @@ int main()
             case 1:
             {
                 std::cout << std::endl;
-                std::cout << "The summoning circle glows..." << std::endl;
-                Unit newUnit = gen.generateUnit(nextId++, state.necropolis);
-                roster.addUnit(newUnit);
-                newUnit.printUnit();
+                if (state.essence >= state.invokeCost)
+                {
+                    state.essence -= state.invokeCost;
+                    std::cout << "The circle drinks " << state.invokeCost << " essence." << std::endl;
+                    std::cout << "The summoning circle glows..." << std::endl;
+                    Unit newUnit = gen.generateUnit(nextId++, state.necropolis);
+                    roster.addUnit(newUnit);
+                    newUnit.printUnit();
+                }
+                else
+                    std::cout << "Not enough essence to invoke: " << state.essence
+                              << "/" << state.invokeCost << ". The circle stays dark." << std::endl;
                 break;
             }
             case 2:
@@ -166,7 +180,7 @@ int main()
                 {
                     IncursionMenu();
                     team.printTeam(roster);
-                    std::cout << "Tower record: floor " << state.highestFloor << std::endl;
+                    printStatus(state);
                     choice = readChoice();
 
                     switch (choice)
@@ -200,8 +214,8 @@ int main()
             {
                 std::cout << std::endl;
                 roster.printRoster();
-                std::cout << "Tower record: floor " << state.highestFloor
-                          << "  |  Incursions launched: " << state.incursionCount << std::endl;
+                printStatus(state);
+                std::cout << "Incursions launched: " << state.incursionCount << std::endl;
                 break;
             }
             case 9:

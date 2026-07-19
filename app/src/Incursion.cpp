@@ -35,10 +35,25 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     int startFloor = 1;
     if (state.highestFloor > 0)
     {
-        std::cout << "Start from floor? [1-" << state.highestFloor + 1 << "]" << std::endl;
+        std::cout << "Start from floor? [1-" << state.highestFloor + 1
+                  << "] (toll: 1 essence per floor above the first)" << std::endl;
         startFloor = readChoice();
         if (startFloor < 1 || startFloor > state.highestFloor + 1)
             startFloor = 1;
+    }
+
+    int toll = startFloor - 1;
+    if (toll > state.essence)
+    {
+        std::cout << "Not enough essence for floor " << startFloor << " (" << state.essence
+                  << "/" << toll << "). The tower lets you in at floor 1." << std::endl;
+        startFloor = 1;
+        toll = 0;
+    }
+    if (toll > 0)
+    {
+        state.essence -= toll;
+        std::cout << "The tower takes its toll: " << toll << " essence." << std::endl;
     }
 
     std::cout << std::endl;
@@ -94,6 +109,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         if (attack >= danger * 12 / 10)
         {
             std::cout << "  The team advances with ease." << std::endl;
+            state.essence += floor;
+            std::cout << "  The floor yields " << floor << " essence." << std::endl;
 
             for (int id : team.getMembersIds())
                 if (roster.findUnitById(id).addExperience(floor * 10) > 0)
@@ -117,6 +134,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             }
 
             std::cout << "  The team advances with difficulty." << std::endl;
+            state.essence += floor;
+            std::cout << "  The floor yields " << floor << " essence." << std::endl;
             for (int id : team.getMembersIds())
                 if (roster.findUnitById(id).addExperience(floor * 10) > 0)
                     std::cout << "  " << roster.findUnitById(id).getName() << " reaches level "
@@ -200,8 +219,10 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     std::cout << std::endl;
     std::cout << "=== Incursion " << state.incursionCount << " over ===" << std::endl;
     std::cout << "Highest floor this run: " << highestFloorThisRun
-              << "  |  Tower record: " << state.highestFloor << std::endl;
-    if (!team.getMembersIds().empty()) {
+              << "  |  Tower record: " << state.highestFloor
+              << "  |  Essence: " << state.essence << std::endl;
+    if (!team.getMembersIds().empty())
+    {
         std::cout << "The survivors rest and tend their wounds." << std::endl;
         team.printTeam(roster);
     }

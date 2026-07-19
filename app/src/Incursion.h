@@ -24,12 +24,14 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 // Pre: Every id in team refers to a unit present in roster; encounters must not be empty;
 //      rng must be seeded.
 // Post: Runs one incursion floor by floor (the player chooses the start floor and whether to
-//       keep climbing). Each floor presents a random encounter; at most one trait event per
-//       floor (Brave/Cowardly/Reckless) may modify the team's roll, and a Reckless actor
-//       draws the wound if one lands. Increments state.incursionCount; survivors gain XP and
-//       may level up; each casualty is recorded in state.necropolis with the encounter's
-//       cause BEFORE being removed from roster and purged from team; state.highestFloor
-//       grows if a new record floor is cleared. Survivors are fully healed when the
-//       incursion ends (the dead stay dead). Prints a notice and does nothing if team is empty.
+//       keep climbing). Entering above floor 1 charges a toll of (start floor - 1) essence;
+//       an unaffordable start floor falls back to floor 1, which is always free. Each
+//       cleared floor yields its floor number in essence. Each floor presents a random encounter; at most one trait event per floor
+//       (Brave/Cowardly/Reckless) may modify the team's roll, and a Reckless actor draws the
+//       wound if one lands. Increments state.incursionCount; survivors gain XP and may level
+//       up; each casualty is recorded in state.necropolis with the encounter's cause BEFORE
+//       being removed from roster and purged from team; state.highestFloor grows if a new
+//       record floor is cleared. Survivors are fully healed when the incursion ends (the
+//       dead stay dead). Prints a notice and does nothing if team is empty.
 
 #endif
