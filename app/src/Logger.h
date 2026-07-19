@@ -9,12 +9,15 @@ class TeeBuf : public std::streambuf {
     public:
         TeeBuf(std::streambuf *console, std::streambuf *file);
         // Pre: console and file must outlive this TeeBuf.
-        // Post: every character written through this buffer goes to both.
+        // Post: every character written through this buffer goes to the console; the file
+        //       receives everything except ANSI color sequences (logs stay plain text).
 
     protected:
         int overflow(int c) override;
         // Pre: None
-        // Post: Writes the character to both buffers (no-op on EOF); returns c.
+        // Post: Writes the character to the console buffer; writes it to the file buffer
+        //       only if it is not part of an ANSI escape sequence (ESC..'m').
+        //       No-op on EOF; returns c.
 
         int sync() override;
         // Pre: None
@@ -23,6 +26,7 @@ class TeeBuf : public std::streambuf {
     private:
         std::streambuf *console_;
         std::streambuf *file_;
+        bool inEscape_ = false;
 };
 
 class SessionLog {
@@ -38,6 +42,7 @@ class SessionLog {
         std::ofstream file_;
         TeeBuf tee_;
         std::streambuf *original_;
+
 };
 
 #endif

@@ -1,4 +1,5 @@
 #include "Roster.h"
+#include "Utils.h"
 
 #include <algorithm>
 #include <iostream>
@@ -55,13 +56,15 @@ void Roster::addUnit(const Unit &unit)
 void Roster::removeUnitById(int id)
 {
     units_.erase(std::remove_if(units_.begin(), units_.end(),
-                                [id](const Unit &unit) { return unit.getId() == id; }),
+                                [id](const Unit &unit)
+                                { return unit.getId() == id; }),
                  units_.end());
 }
 
 // Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void Roster::printRoster() const
+void Roster::printRoster(const std::vector<int> &teamIds) const
 {
+
     if (units_.empty())
     {
         std::cout << "The roster is empty. Invoke someone." << std::endl;
@@ -71,11 +74,17 @@ void Roster::printRoster() const
     std::cout << "Roster (" << units_.size() << " units):" << std::endl;
     for (const auto &unit : units_)
     {
+        bool inTeam = std::find(teamIds.begin(), teamIds.end(), unit.getId()) != teamIds.end();
+        if (inTeam)
+            std::cout << COLOR_CYAN;
         const Stats s = unit.getStats();
         std::cout << "  [" << unit.getId() << "] " << unit.getName()
                   << " (" << unit.getRace() << "*)"
                   << " - Lv " << unit.getLevel()
                   << " - HP " << s.getHealth() << "/" << s.getMaxHealth()
-                  << " - XP " << unit.getExperience() << std::endl;
+                  << " - XP " << unit.getExperience();
+        if (inTeam)
+            std::cout << " [in team]" << COLOR_RESET;
+        std::cout << std::endl;
     }
 }

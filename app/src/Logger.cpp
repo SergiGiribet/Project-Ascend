@@ -7,7 +7,14 @@ TeeBuf::TeeBuf(std::streambuf *console, std::streambuf *file)
 int TeeBuf::overflow(int c) {
     if (c != traits_type::eof()) {
         console_->sputc(static_cast<char>(c));
-        file_->sputc(static_cast<char>(c));
+
+        if (inEscape_) {
+            if (c == 'm')
+                inEscape_ = false;
+        } else if (c == '\x1b')
+            inEscape_ = true;
+        else 
+            file_->sputc(static_cast<char>(c));
     }
     return c;
 }

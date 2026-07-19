@@ -50,9 +50,10 @@ public:
     // Post: Removes the unit with the specified id from the roster; does nothing if no unit has that id.
 
     // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    void printRoster() const;
+    void printRoster(const std::vector<int> &teamIds) const;
     // Pre: None
-    // Post: Prints one line per unit, or a notice if the roster is empty.
+    // Post: Prints one line per unit, or a notice if the roster is empty. Units whose id
+    //       appears in teamIds are highlighted and tagged "[in team]".
 
 private:
     std::vector<Unit> units_;

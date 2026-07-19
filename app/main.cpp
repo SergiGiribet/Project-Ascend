@@ -63,12 +63,14 @@ void IncursionMenu()
 
 void printStatus(const GameState &state)
 {
-    std::cout << "Essence: " << state.essence
+    std::cout << "Essence: " << COLOR_CYAN << state.essence << COLOR_RESET
               << "  |  Tower record: floor " << state.highestFloor << std::endl;
 }
 
 int main()
 {
+    enableConsoleColors();
+
     int choice = 0;
     try
     {
@@ -130,7 +132,7 @@ int main()
                     {
                         std::cout << std::endl;
                         std::cout << "Who joins the team? (unit id)" << std::endl;
-                        roster.printRoster();
+                        roster.printRoster(team.getMembersIds());
                         team.printTeam(roster);
                         int selectedUnitId = readChoice();
                         try
@@ -213,7 +215,7 @@ int main()
             case 8:
             {
                 std::cout << std::endl;
-                roster.printRoster();
+                roster.printRoster(team.getMembersIds());
                 printStatus(state);
                 std::cout << "Incursions launched: " << state.incursionCount << std::endl;
                 break;

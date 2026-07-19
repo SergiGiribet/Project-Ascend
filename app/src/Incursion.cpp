@@ -210,13 +210,13 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         int currentPower = teamPower(team, roster);
 
         if (currentPower >= nextDanger * 12 / 10)
-            std::cout << "The way up looks clear." << std::endl;
+            std::cout << COLOR_GREEN <<"The way up looks clear." << COLOR_RESET << std::endl;
         else if (currentPower + MAX_LUCK >= nextDanger * 12 / 10)
-            std::cout << "The air grows heavier." << std::endl;
+            std::cout << COLOR_YELLOW << "The air grows heavier." << COLOR_RESET << std::endl;
         else if (currentPower + MAX_LUCK >= nextDanger)
-            std::cout << "Something waits above, and it is not afraid of you." << std::endl;
+            std::cout << COLOR_RED << "Something waits above, and it is not afraid of you." << COLOR_RESET << std::endl;
         else 
-            std::cout << "Climbing further is death." << std::endl;
+            std::cout << COLOR_RED << "Climbing further is death." << COLOR_RESET << std::endl;
 
         std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return" << std::endl;
         if (readChoice() != 1)
