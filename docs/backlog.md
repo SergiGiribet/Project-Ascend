@@ -13,12 +13,15 @@ Findings from the author's own sessions; they define the Phase 0.5 iteration:
 3. **Risk is illegible.** The climb decision is a coin flip because the player can't estimate
    the next floor's danger.
 
-**Planned fix (Phase 0.5)** — one currency closes 1 and 2, one line closes 3:
-- `essence` in GameState: +1 per floor cleared; summoning costs ~5; starting above floor 1
-  costs ~(startFloor - 1); initial stock ~15. All numbers are starting dials.
-- Danger forecast line before the climb prompt, computed from power vs next floor's danger
-  (4 tiers, phrased as forecast because trait events can still shift the roll).
-- Then re-test the hypothesis: does the 6*'s death hurt *now*?
+**Phase 0.5 — IMPLEMENTED (2026-07-17)**: essence economy (+floor per cleared floor, summon
+costs 5, entry toll = startFloor - 1 with floor 1 free, initial stock 25), team cap of 5
+(Team::MAX_MEMBERS), and the 4-tier danger forecast before each climb prompt.
+Pending re-test: does the 6*'s death hurt *now*? Watch during play: "when someone died,
+could I afford the replacement without thinking?" — if yes past incursion 3, the dial is
+invokeCost (one good run floors 1-8 yields ~36 essence, so wealth inflates fast; root cause
+is the flat difficulty curve for 5-unit teams).
+Known minor: at stdin EOF readChoice() returns 0 forever -> infinite menu loop (reachable
+via Ctrl+Z+Enter); fix idea: throw on std::cin.eof() so the outer catch exits cleanly.
 
 ## Future ideas (Phase 1+)
 

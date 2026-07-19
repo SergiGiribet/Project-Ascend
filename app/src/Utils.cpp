@@ -10,6 +10,9 @@ int readChoice()
     int c;
     if (!(std::cin >> c))
     {
+        if (std::cin.eof())
+            throw std::runtime_error("Input stream is closed.");
+            
         std::cin.clear();
         std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         c = 0;

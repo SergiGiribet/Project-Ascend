@@ -18,6 +18,17 @@ static const std::vector<TraitEvent> TRAIT_EVENTS = {
     {"Reckless", 12, "charges headfirst into the danger"},
 };
 
+static const int MAX_LUCK = 30;
+
+static int teamPower(const Team &team, const Roster &roster) {
+    int power = 0;
+    for (int id : team.getMembersIds()) {
+        const Stats s = roster.findUnitById(id).getStats();
+        power += s.getStrength() + s.getConstitution();
+    }
+    return power;
+}
+
 void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
@@ -59,16 +70,11 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     std::cout << std::endl;
 
     int highestFloorThisRun = 0;
-    std::uniform_int_distribution<int> luck(0, 30);
+    std::uniform_int_distribution<int> luck(0, MAX_LUCK);
 
     for (int floor = startFloor;; floor++)
     {
-        int power = 0;
-        for (int id : team.getMembersIds())
-        {
-            const Stats s = roster.findUnitById(id).getStats();
-            power += s.getStrength() + s.getConstitution();
-        }
+        int power = teamPower(team, roster);
         int danger = 20 + floor * 15;
         int attack = power + luck(rng);
 
@@ -199,6 +205,18 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
             break;
         }
+
+        int nextDanger = 20 + (floor + 1) * 15;
+        int currentPower = teamPower(team, roster);
+
+        if (currentPower >= nextDanger * 12 / 10)
+            std::cout << "The way up looks clear." << std::endl;
+        else if (currentPower + MAX_LUCK >= nextDanger * 12 / 10)
+            std::cout << "The air grows heavier." << std::endl;
+        else if (currentPower + MAX_LUCK >= nextDanger)
+            std::cout << "Something waits above, and it is not afraid of you." << std::endl;
+        else 
+            std::cout << "Climbing further is death." << std::endl;
 
         std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return" << std::endl;
         if (readChoice() != 1)

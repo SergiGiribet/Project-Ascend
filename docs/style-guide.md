@@ -60,14 +60,27 @@ canonical formats below.
 ```
 
 **Incursion chronicle** (the `Floor N:` line presents the ENCOUNTER; everything that happens is
-indented below it, in this order: trait event → outcome → level-ups → wound/death):
+indented below it, in this order: trait event → outcome → essence yield → level-ups →
+wound/death; the danger forecast is unindented — it is the narrator speaking about what's
+above, not an event of this floor):
 ```
 Floor 4: A drake coils around the stairwell, breathing fire.
   Osric, Brave as ever, holds the line steady.
   The team advances with difficulty.
+  The floor yields 4 essence.
   Hazel reaches level 2!
   Beatrice, Reckless as ever, is wounded.
+The air grows heavier.
 Climb to floor 5? [1] Yes  [2] Return
+```
+
+**Danger forecast** (exactly these four lines, one per tier — they are computed from real
+odds and must stay truthful; phrased as feelings because trait events can still shift the roll):
+```
+The way up looks clear.                                <- guaranteed success
+The air grows heavier.                                 <- luck decides between ease and wounds
+Something waits above, and it is not afraid of you.    <- only max luck survives
+Climbing further is death.                             <- mathematically guaranteed defeat
 ```
 
 **Incursion closing** (the rest line prints only if someone is left alive):

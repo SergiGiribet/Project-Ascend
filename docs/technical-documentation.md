@@ -86,9 +86,11 @@ The collection of **living** units. Single owner (`std::vector<Unit> units_`).
 ### 3.4 `Team` (`Team.h` / `Team.cpp`)
 
 The selection for the incursion. **Stores ids, never units** (`std::vector<int> memberIds_`).
+Capped at `MAX_MEMBERS` (5) — a class constant: the cap is Team's own invariant, so `main`
+never needs to know it.
 
-- `addMember(int, const Roster&)` — throws if the id is not in the roster or already in the
-  team (menus wrap it in a local try/catch).
+- `addMember(int, const Roster&)` — throws if the id is not in the roster, already in the
+  team, or the team is full (menus wrap it in a local try/catch).
 - `purgeDeadMembers(const Roster&)` — removes every id the roster no longer contains
   (`[&roster]` lambda + erase–remove).
 - `printTeam(const Roster&)` — unit line + hook sub-line (8 spaces) when present.
@@ -121,8 +123,9 @@ The memory of the fallen. Stores `DeathRecord` (name, floorDied, cause, turn, sk
 ### 3.7 `GameState` (`GameState.h`, header-only)
 
 The progress that persists between incursions: `highestFloor` (the record, never decreases),
-`incursionCount`, and the `necropolis`. The roster and the team live in `main` and are passed
-separately.
+`incursionCount`, the `necropolis`, and the **essence economy**: `essence` (starts at 25) and
+`invokeCost` (5). Essence is earned by clearing floors (+floor number), and spent on summoning
+and on the entry toll. The roster and the team live in `main` and are passed separately.
 
 ### 3.8 `Incursion` (`Incursion.h` / `Incursion.cpp`)
 
@@ -145,6 +148,14 @@ attack <  danger     → "overwhelmed"      (one member dies outright; incursion
 ```
 
 - **Start floor choice**: if there is a record, the player picks `[1 .. record+1]` (push-your-luck).
+- **Essence economy**: entering above floor 1 charges a toll of `startFloor - 1` essence
+  (floor 1 is always free — no economic soft-lock); an unaffordable floor falls back to 1.
+  Every cleared floor yields its floor number in essence, narrated in place.
+- **Danger forecast**: before each climb prompt, one of 4 fixed lines computed from the fresh
+  team power (recomputed after level-ups/deaths via the file-local `teamPower` helper) vs the
+  next floor's danger, using the same integer arithmetic as the outcome branch and the shared
+  `MAX_LUCK` constant. Truthful by construction; phrased as a feeling because next floor's
+  trait events can still shift the roll.
 - **One encounter per floor**: chosen at random; its `description` presents the floor and its
   `cause` goes on the tombstone if someone dies there.
 - **Trait events** (max 1 per floor, 50% coin when there are candidates): the `TRAIT_EVENTS`
