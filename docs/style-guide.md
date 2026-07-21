@@ -105,7 +105,7 @@ em dash. Close with a question or a line that lingers.
 - **Woven trait**: `<Name>, <trait> as ever,` for actions/wounds; `<Name>, <trait> to the end,`
   for deaths. The sentence is built piece by piece and the trait piece is only added when the
   unit has one (`if (!skills.empty())`) — never a duplicated sentence in an if/else.
-- **Trait event** (TRAIT_EVENTS in Incursion.cpp): `<Name>, <Trait> as ever, <deed>.` — the
+- **Trait event** (DAMAGE_TRAIT_EVENTS in Incursion.cpp): `<Name>, <Trait> as ever, <deed>.` — the
   deed in lowercase, simple present, no subject (`holds the line steady`). The trait name must
   match the traits.txt entry EXACTLY.
 - **Death causes** (second field of encounters.txt): lowercase, no period (the tombstone adds

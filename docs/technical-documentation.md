@@ -158,7 +158,7 @@ attack <  danger     → "overwhelmed"      (one member dies outright; incursion
   trait events can still shift the roll.
 - **One encounter per floor**: chosen at random; its `description` presents the floor and its
   `cause` goes on the tombstone if someone dies there.
-- **Trait events** (max 1 per floor, 50% coin when there are candidates): the `TRAIT_EVENTS`
+- **Trait events** (max 1 per floor, 50% coin when there are candidates): the `DAMAGE_TRAIT_EVENTS`
   table in Incursion.cpp — `Brave` +8, `Cowardly` −12, `Reckless` +12 **and draws the wound**
   of the floor (`forcedVictimId`). The strings must match `traits.txt` exactly.
 - **XP**: `floor * 10` per living member on every cleared floor; level-ups narrated on the spot.
@@ -204,7 +204,7 @@ One value per line, no empty lines (the loaders skip them).
 | `names.txt` (60) | Proper names | No punctuation |
 | `places.txt` | Place names | No punctuation |
 | `jobs.txt` | Professions | Singular noun; must fit «a {job}» |
-| `traits.txt` (10) | Traits | **Adjective**, capitalized; the mechanical ones (`Brave`, `Cowardly`, `Reckless`) must match `TRAIT_EVENTS` exactly |
+| `traits.txt` (10) | Traits | **Adjective**, capitalized; the mechanical ones (`Brave`, `Cowardly`, `Reckless`) must match `DAMAGE_TRAIT_EVENTS` exactly |
 | `motivations.txt` | Motivations | Full third-person sentence, no trailing period |
 | `templates.txt` | Backstory templates | `{job}` `{place}` `{motivation}` slots; the template owns all punctuation |
 | `hooks.txt` | Hooks | Sentence with the `{fallen}` slot (a fallen unit's name); no trailing period (the Generator adds it) |

@@ -8,3 +8,5 @@ Greedy
 Gentle
 Stubborn
 Superstitious
+Boaster
+Alert

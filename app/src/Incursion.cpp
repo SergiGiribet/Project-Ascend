@@ -12,21 +12,102 @@ struct TraitEvent
     std::string deed;
 };
 
-static const std::vector<TraitEvent> TRAIT_EVENTS = {
+static const std::vector<TraitEvent> DAMAGE_TRAIT_EVENTS = {
     {"Brave", 8, "holds the line steady"},
     {"Cowardly", -12, "hangs back and leaves a gap in the line"},
     {"Reckless", 12, "charges headfirst into the danger"},
 };
 
-static const int MAX_LUCK = 30;
+struct IncidentFlavor
+{
+    std::string cause;     // lowercase, no trailing period (necropolis composes the sentence)
+    std::string woundLine; // full clause printed when the incident is not fatal
+};
 
-static int teamPower(const Team &team, const Roster &roster) {
+static const std::vector<IncidentFlavor> BOASTER_INCIDENTS = {
+    {"impaled by a stray lance mid-boast", "trips over their own war story and catches a lance graze"},
+    {"silenced mid-tale by a blade they never saw", "bites through their tongue mid-brag as a blade nicks past"},
+    {"undone by their own legend, one line before the end", "stumbles mid-boast and takes a nasty spill"},
+    {"buried under the weight of their own tall tale", "trips over their own swagger and goes down hard"},
+};
+
+static const std::vector<IncidentFlavor> NEUTRAL_INCIDENTS = {
+    {"lost to a stray arrow no one saw coming", "is grazed by a stray arrow from nowhere"},
+    {"claimed by a crack in the floor that wasn't there before", "stumbles into a crack that wasn't there a moment ago"},
+    {"taken by an accident too strange to explain", "is caught by something too strange to explain"},
+    {"crushed beneath a stone that had held for a thousand years, until now", "is clipped by a falling stone that had held for a thousand years, until now"},
+};
+
+static const int MAX_LUCK = 30;
+static const int BASE_INCIDENT_CHANCE = 3;
+static const double DEPTH_INCREMENT = 0.3;
+static const int INCIDENT_CAP = 18;
+static const int FATAL_CHANCE = 18;
+static const int VICTIM_WEIGHT_BONUS = 2;
+static const int VICTIM_WEIGHT_PENALTY = 1;
+
+static int teamPower(const Team &team, const Roster &roster)
+{
     int power = 0;
-    for (int id : team.getMembersIds()) {
+    for (int id : team.getMembersIds())
+    {
         const Stats s = roster.findUnitById(id).getStats();
         power += s.getStrength() + s.getConstitution();
     }
     return power;
+}
+
+static int riskDirection(const std::vector<std::string> &skills)
+{
+    if (std::find(skills.begin(), skills.end(), "Reckless") != skills.end() ||
+        std::find(skills.begin(), skills.end(), "Boaster") != skills.end())
+        return 1;
+    if (std::find(skills.begin(), skills.end(), "Alert") != skills.end())
+        return -1;
+    return 0;
+}
+
+static int pickWeightedVictim(const Team &team, const Roster &roster, std::mt19937 &rng)
+{
+    const std::vector<int> &ids = team.getMembersIds();
+    std::vector<int> weights;
+    weights.reserve(ids.size());
+    for (int id : ids)
+    {
+        const std::vector<std::string> &skills = roster.findUnitById(id).getSkills();
+        int weight = 1;
+        int dir = riskDirection(skills);
+        if (dir > 0)
+            weight += VICTIM_WEIGHT_BONUS;
+        else if (dir < 0)
+            weight = std::max(1, weight - VICTIM_WEIGHT_PENALTY);
+        weights.push_back(weight);
+    }
+    std::discrete_distribution<int> dist(weights.begin(), weights.end());
+    return ids[dist(rng)];
+}
+
+static int incidentChance(int floor, const Team &team, const Roster &roster)
+{
+    int chance = BASE_INCIDENT_CHANCE + static_cast<int>(floor * DEPTH_INCREMENT);
+    for (int id : team.getMembersIds())
+    {
+        const std::vector<std::string> &skills = roster.findUnitById(id).getSkills();
+        int dir = riskDirection(skills);
+        if (dir > 0)
+            chance += 5;
+        else if (dir < 0)
+            chance -= 3;
+    }
+    return std::min(chance, INCIDENT_CAP);
+}
+
+static const IncidentFlavor &pickIncidentFlavor(const Unit &victim, std::mt19937 &rng)
+{
+    const std::vector<IncidentFlavor> &pool =
+        (riskDirection(victim.getSkills()) > 0) ? BOASTER_INCIDENTS : NEUTRAL_INCIDENTS;
+    std::uniform_int_distribution<size_t> dist(0, pool.size() - 1);
+    return pool[dist(rng)];
 }
 
 void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, std::mt19937 &rng)
@@ -82,13 +163,11 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         const Encounter &enc = encounters[pickEnc(rng)];
         std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
 
-        int forcedVictimId = -1;
-
         std::vector<std::pair<int, const TraitEvent *>> candidates;
         for (int id : team.getMembersIds())
         {
             const Unit &u = roster.findUnitById(id);
-            for (const TraitEvent &ev : TRAIT_EVENTS)
+            for (const TraitEvent &ev : DAMAGE_TRAIT_EVENTS)
                 if (std::find(u.getSkills().begin(), u.getSkills().end(), ev.trait) != u.getSkills().end())
                     candidates.push_back({id, &ev});
         }
@@ -106,9 +185,6 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                           << event->deed << "." << std::endl;
 
                 attack += event->attackModifier;
-
-                if (event->trait == "Reckless")
-                    forcedVictimId = selected.first;
             }
         }
 
@@ -123,21 +199,42 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                     std::cout << "  " << roster.findUnitById(id).getName() << " reaches level "
                               << roster.findUnitById(id).getLevel() << "!" << std::endl;
 
+            int chance = incidentChance(floor, team, roster);
+            std::uniform_int_distribution<int> incidentRoll(1, 100);
+            if (incidentRoll(rng) <= chance)
+            {
+                int victimId = pickWeightedVictim(team, roster, rng);
+                Unit &victim = roster.findUnitById(victimId);
+
+                std::uniform_int_distribution<int> fatalRoll(1, 100);
+                if (fatalRoll(rng) <= FATAL_CHANCE) {
+                    const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
+                    std::cout << "  " << victim.getName() << " falls on floor " << floor << ", " << flavor.cause << "." << std::endl;
+                    state.necropolis.addDeath(victim, floor, flavor.cause, state.incursionCount);
+                    roster.removeUnitById(victimId);
+                    team.purgeDeadMembers(roster);
+
+                    if (team.getMembersIds().empty()){
+                        std::cout << std::endl;
+                        std::cout << "The tower claims them all. No one returns." << std::endl;
+                        break;
+                    }
+                }
+                else {
+                    const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
+                    std::uniform_int_distribution<int> dmg(15, 40);
+                    victim.takeDamage(dmg(rng));
+                    std::cout << "  " << victim.getName() << " " << flavor.woundLine << "." << std::endl;
+                }
+            }
+
             highestFloorThisRun = floor;
             if (floor > state.highestFloor)
                 state.highestFloor = floor;
         }
         else if (attack >= danger)
         {
-            int victimId;
-            if (forcedVictimId != -1)
-                victimId = forcedVictimId;
-            else
-            {
-                const std::vector<int> &ids = team.getMembersIds();
-                std::uniform_int_distribution<size_t> pick(0, ids.size() - 1);
-                victimId = ids[pick(rng)];
-            }
+            int victimId = pickWeightedVictim(team, roster, rng);
 
             std::cout << "  The team advances with difficulty." << std::endl;
             state.essence += floor;
@@ -210,12 +307,12 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         int currentPower = teamPower(team, roster);
 
         if (currentPower >= nextDanger * 12 / 10)
-            std::cout << COLOR_GREEN <<"The way up looks clear." << COLOR_RESET << std::endl;
+            std::cout << COLOR_GREEN << "The way up looks clear." << COLOR_RESET << std::endl;
         else if (currentPower + MAX_LUCK >= nextDanger * 12 / 10)
             std::cout << COLOR_YELLOW << "The air grows heavier." << COLOR_RESET << std::endl;
         else if (currentPower + MAX_LUCK >= nextDanger)
             std::cout << COLOR_RED << "Something waits above, and it is not afraid of you." << COLOR_RESET << std::endl;
-        else 
+        else
             std::cout << COLOR_RED << "Climbing further is death." << COLOR_RESET << std::endl;
 
         std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return" << std::endl;
