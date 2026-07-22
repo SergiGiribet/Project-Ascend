@@ -73,6 +73,12 @@ testing exposed. Also gives essence a real sink beyond invoking (sessions were e
   residual incident): trait-driven capacity trade-offs (more trainees per trainer for less XP
   each), dedicated training traits (Mentor/Harsh-style), a broader injury-trait swap mapping
   beyond Reckless/Boaster -> Alert, prosthetics/compensating items for injuries.
+- **Wound healing v1 (stopgap)**: for now, ordinary (non-permanent) wounds — tower AND camp —
+  are all healed at incursion end by resting the WHOLE roster (not just the team that
+  climbed), so camp trainees don't accumulate damage across ticks. Permanent injuries never
+  heal. Later this stopgap should be replaced by a real system: a dedicated healing/infirmary
+  room or healing items, so recovery is a resource decision instead of automatic. Class file
+  is `TrainingCamp` (TrainingCamp.h/.cpp).
 
 ## Future ideas (Phase 1+)
 

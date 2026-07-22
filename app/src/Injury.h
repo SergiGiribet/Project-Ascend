@@ -17,7 +17,7 @@ std::vector<Injury> loadInjuries(const std::string &path);
 // Post: Returns every entry in file order; throws std::runtime_error if the file is missing,
 //       empty, or a non-empty line doesn't split into exactly three fields.
 
-void applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt19937 &rng);
+std::string applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt19937 &rng);
 // Pre: bank must not be empty.
 // Post: Picks a random Injury from bank and applies it permanently: STR and CON are reduced
 //       by the injury's penalties (never below 1), and the injury's name is added to the

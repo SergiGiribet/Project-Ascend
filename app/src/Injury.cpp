@@ -33,7 +33,7 @@ std::vector<Injury> loadInjuries(const std::string &path) {
 
 }
 
-void applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt19937 &rng) {
+std::string applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt19937 &rng) {
     std::uniform_int_distribution<size_t> pick(0, bank.size() -1);
     const Injury &injury = bank[pick(rng)];
 
@@ -58,4 +58,5 @@ void applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt19937 &rng)
                 unit.addSkill("Alert");
         }
     }
+    return injury.name;
 }

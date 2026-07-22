@@ -7,6 +7,7 @@
 #include "src/Utils.h"
 #include "src/GameState.h"
 #include "src/Logger.h"
+#include "src/Injury.h"
 
 #include <iostream>
 #include <ctime>
@@ -89,6 +90,7 @@ int main()
         std::mt19937 rng(std::random_device{}());
         Generator gen("resources", rng);
         std::vector<Encounter> encounters = loadEncounters("resources/encounters.txt");
+        std::vector<Injury> injuries = loadInjuries("resources/injuries.txt");
         int nextId = 1;
 
         printIntro();
@@ -189,7 +191,7 @@ int main()
                     {
                     case 1:
                     {
-                        runIncursion(team, roster, state, encounters, rng);
+                        runIncursion(team, roster, state, encounters, injuries, rng);
                         break;
                     }
                     case 3:

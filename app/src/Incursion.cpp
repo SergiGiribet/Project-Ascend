@@ -43,6 +43,7 @@ static const int BASE_INCIDENT_CHANCE = 3;
 static const double DEPTH_INCREMENT = 0.3;
 static const int INCIDENT_CAP = 18;
 static const int FATAL_CHANCE = 18;
+static const int WOUND_INJURY_CHANCE = 8;
 static const int VICTIM_WEIGHT_BONUS = 2;
 static const int VICTIM_WEIGHT_PENALTY = 1;
 
@@ -110,7 +111,7 @@ static const IncidentFlavor &pickIncidentFlavor(const Unit &victim, std::mt19937
     return pool[dist(rng)];
 }
 
-void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, std::mt19937 &rng)
+void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
     {
@@ -207,24 +208,54 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                 Unit &victim = roster.findUnitById(victimId);
 
                 std::uniform_int_distribution<int> fatalRoll(1, 100);
-                if (fatalRoll(rng) <= FATAL_CHANCE) {
+                if (fatalRoll(rng) <= FATAL_CHANCE)
+                {
                     const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
                     std::cout << "  " << victim.getName() << " falls on floor " << floor << ", " << flavor.cause << "." << std::endl;
                     state.necropolis.addDeath(victim, floor, flavor.cause, state.incursionCount);
                     roster.removeUnitById(victimId);
                     team.purgeDeadMembers(roster);
 
-                    if (team.getMembersIds().empty()){
+                    if (team.getMembersIds().empty())
+                    {
                         std::cout << std::endl;
                         std::cout << "The tower claims them all. No one returns." << std::endl;
                         break;
                     }
                 }
-                else {
+                else
+                {
                     const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
                     std::uniform_int_distribution<int> dmg(15, 40);
                     victim.takeDamage(dmg(rng));
-                    std::cout << "  " << victim.getName() << " " << flavor.woundLine << "." << std::endl;
+
+                    if (!victim.isAlive())
+                    {
+                        std::cout << "  " << victim.getName() << " falls on floor " << floor
+                                  << ", " << flavor.cause << "." << std::endl;
+
+                        state.necropolis.addDeath(victim, floor, flavor.cause, state.incursionCount);
+                        roster.removeUnitById(victimId);
+                        team.purgeDeadMembers(roster);
+
+                        if (team.getMembersIds().empty())
+                        {
+                            std::cout << std::endl;
+                            std::cout << "The tower claims them all. No one returns." << std::endl;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        std::cout << "  " << victim.getName() << " " << flavor.woundLine << "." << std::endl;
+
+                        std::uniform_int_distribution<int> injurieRoll(1, 100);
+                        if (injurieRoll(rng) <= WOUND_INJURY_CHANCE)
+                        {
+                            std::string injury = applyInjury(victim, injuries, rng);
+                            std::cout << "  " << victim.getName() << " will never be whole again -- " << injury << "." << std::endl;
+                        }
+                    }
                 }
             }
 
@@ -269,6 +300,15 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                     std::cout << std::endl;
                     std::cout << "The tower claims them all. No one returns." << std::endl;
                     break;
+                }
+            }
+            else
+            {
+                std::uniform_int_distribution<int> injurieRoll(1, 100);
+                if (injurieRoll(rng) <= WOUND_INJURY_CHANCE)
+                {
+                    std::string injury = applyInjury(victim, injuries, rng);
+                    std::cout << "  " << victim.getName() << " carries the tower's mark for good -- " << injury << "." << std::endl;
                 }
             }
 
