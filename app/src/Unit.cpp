@@ -104,6 +104,10 @@ int Unit::addExperience(int exp) {
 
 void Unit::addSkill(const std::string &skill) { skills.push_back(skill); }
 
+void Unit::removeSkill(const std::string &skill) {
+    skills.erase(std::remove(skills.begin(), skills.end(), skill), skills.end());
+}
+
 void Unit::takeDamage(int damage) { stats.decreaseHealth(damage); }
 
 void Unit::heal(int amount) { stats.increaseHealth(amount); }

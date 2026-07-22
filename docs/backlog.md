@@ -23,6 +23,57 @@ is the flat difficulty curve for 5-unit teams).
 Known minor: at stdin EOF readChoice() returns 0 forever -> infinite menu loop (reachable
 via Ctrl+Z+Enter); fix idea: throw on std::cin.eof() so the outer catch exits cleanly.
 
+**Phase 0.5 — residual incident (2026-07-21)**: re-tested the "does death sting now" question
+with real play. Finding: any floor cleared "with ease" still carried zero risk forever once a
+team was strong enough — no jeopardy ever returned to safe floors, which kept farming
+risk-free and undercut the permadeath hypothesis. Fix: a residual incident chance on
+ease-tier clears (`incidentChance`, base + floor depth, capped, modified by Boaster/Alert
+presence), a weighted (never forced) victim lottery shared with the difficulty-tier wound
+(`pickWeightedVictim`, `riskDirection` — Reckless/Boaster more likely, Alert less), a
+fatal-or-wound split (`FATAL_CHANCE`), and two flavor-text banks (`BOASTER_INCIDENTS` ironic,
+`NEUTRAL_INCIDENTS` neutral) so the cause reads as a freak accident, not an encounter death.
+Validated in a real 18-incursion session: fired at the designed rate (~6.7% of ease clears,
+~10% of those fatal) and produced a real, narratively legible death (a repeat-Boaster
+surviving several close calls before finally falling).
+Follow-up finding from automated play-testing (5 sessions, adaptive bot, target floor 25):
+none reached it: all plateaued around floor 14-16 and none escaped a death/dilution loop
+(fresh Lv1 replacements dragging the team below the floor needed to progress, with essence
+piling into the thousands with nothing to spend it on). Root cause isn't that the floors are
+unbeatable — it's that recovering from losses requires manually re-leveling replacements at
+safe floors, which no automated or impatient strategy does. This directly motivates the
+training camp below.
+
+## Phase 1 — in progress: Training Camp (2026-07-21)
+
+Goal: let fresh recruits catch up passively instead of forcing a manual "drag the whole team
+back to floor 1" detour after every death — the real bottleneck the Phase 0.5 follow-up
+testing exposed. Also gives essence a real sink beyond invoking (sessions were ending with
+5-6k essence unspent).
+
+- **Roles**: any roster unit can be assigned as a trainer (pulled out of the active team while
+  training — real trade-off, not a free add-on) or a trainee (lives in a separate camp roster,
+  does NOT count against `Team::MAX_MEMBERS`).
+- **Capacity**: 1 free trainer slot from the start; each trainer handles up to 5 trainees
+  (fixed for v1). Extra slots cost essence, one-time, doubling from 250 (250, 500, 1000, 2000...).
+- **XP per tick** (1 tick = 1 incursion launched): each trainee gets the full formula, not
+  divided among the 5 — `XP = trainerLevel * 15 * raceMultiplier`,
+  `raceMultiplier = 1 + (trainerRace - 1) * 0.15`.
+- **Risk per tick**: 2% incident chance for the trainee, 0.3% for the trainer (asymmetric —
+  the trainer is the experienced one). If it triggers: 85% a normal wound (heals with rest),
+  15% a permanent injury.
+- **Permanent injuries** (new, shared with the tower): a new `injuries.txt` bank, each with a
+  modest real stat penalty (e.g. "One-Handed" -3 STR). Never heal, unlike normal wounds —
+  needs its own mechanism, not `takeDamage`/`heal`. Stored in the same `skills` list as
+  personality traits (no new field on `Unit`; thematically the scar becomes part of who they
+  are). If the unit has Reckless or Boaster, 50% chance the injury swaps it for Alert (the
+  lesson learned the hard way); other traits untouched for now. Also hooks into the tower's
+  existing wound points (difficulty-tier and incident-tier): ~8% chance a wound there becomes
+  permanent instead of healing.
+- **Explicitly deferred to a later pass** (core -> risk -> depth, same discipline as the
+  residual incident): trait-driven capacity trade-offs (more trainees per trainer for less XP
+  each), dedicated training traits (Mentor/Harsh-style), a broader injury-trait swap mapping
+  beyond Reckless/Boaster -> Alert, prosthetics/compensating items for injuries.
+
 ## Future ideas (Phase 1+)
 
 - **Trait/skill fusion through experience**: traits and skills could merge or transform based

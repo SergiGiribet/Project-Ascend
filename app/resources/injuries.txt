@@ -1,0 +1,16 @@
+One-Handed|3|0
+Missing an Eye|2|0
+Shattered Knee|0|3
+Broken Ribs|1|2
+Scarred Lungs|0|2
+Deaf in One Ear|1|1
+Crooked Spine|2|1
+Missing Fingers|2|0
+Chronic Pain|1|1
+Frostbitten Feet|0|2
+Burn-Scarred Skin|1|1
+Punctured Lung|1|2
+Torn Tendon|2|1
+Cracked Skull|1|2
+Nerve-Dead Hand|2|0
+Hollow Cough|0|2

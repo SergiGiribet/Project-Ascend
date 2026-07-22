@@ -183,6 +183,11 @@ public:
     // Pre: None
     // Post: Appends skill to the unit's list of traits.
 
+    void removeSkill(const std::string &skill);
+    // Pre: None
+    // Post: Removes the first occurrence of skill from the unit's list of traits; does nothing
+    //       if the unit doesn't have it.
+
     void takeDamage(int damage);
     // Pre: damage must be a non-negative integer.
     // Post: Decreases the unit's health by damage, ensuring it does not go below zero.
