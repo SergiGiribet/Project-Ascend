@@ -80,6 +80,38 @@ testing exposed. Also gives essence a real sink beyond invoking (sessions were e
   room or healing items, so recovery is a resource decision instead of automatic. Class file
   is `TrainingCamp` (TrainingCamp.h/.cpp).
 
+## Training camp evaluation (2026-07-23, automated bot)
+
+Extended the autoplay bot to use the camp (dedicate/upgrade a trainer, keep a leveling bench,
+promote bench units to replace dead team members) and to gamble ~30% into "Something waits
+above" floors. Ran batches of 4 sessions (151 incursions each, target floor 25). Results:
+
+| Config | Deaths | Wipes | Record floor |
+|---|---|---|---|
+| Old bot, no camp (600 inc) | 500+ | many | 14-16 (constant collapse) |
+| Camp, Lv1 fixed trainer, risky | 65-75 | 0 | 13-14 |
+| Camp, upgrading trainer, risky | 64-71 | 0 | 13-15 |
+| Camp, safe play (no gamble) | 0-1 | 0 | 17-19 |
+
+Findings:
+1. **The camp fixes the collapse.** 0 wipes in every camp run vs. constant wipes without it;
+   every death is instantly backfilled from the bench. The dilution death-spiral is gone. Plus
+   essence finally has a sink. This was its designed job — done.
+2. **Play style sets the ceiling within a band; the risk tension is real.** Aggressive
+   (~1 death/2 incursions) plateaus ~13-15; safe play reaches ~17-19. A ~4-5 floor gap between
+   drama and progress — the "when courage becomes greed" tension now has mechanical teeth.
+3. **Nobody reached 25, not even flawless safe play (~17-19 ceiling in 151 incursions).** So a
+   deeper limit remains: difficulty `20+15*floor` outpaces achievable team power past ~17-19.
+   This is the original exponential wall; the camp doesn't address it (nor was meant to). To
+   make high floors reachable, rebalance the power/difficulty curves or accept a long grind.
+4. **Injuries accumulate regardless of play style** (even safe play: ~8-13 permanent injuries
+   per 151-incursion session across tower+camp), slowly eroding the roster — watch the tuning.
+
+Bot NOTE for idea #2 below (injured veterans as trainers): the bot could not detect injuries —
+the roster/team print shows Lv/HP/XP but not traits or STR/CON, so injuries are invisible to a
+parser. Showing injuries in the roster would enable both players and tooling to repurpose
+injured high-level units as trainers (their level still teaches at full value).
+
 ## Future ideas (Phase 1+)
 
 - **Trait/skill fusion through experience**: traits and skills could merge or transform based
