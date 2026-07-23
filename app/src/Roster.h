@@ -49,11 +49,17 @@ public:
     // Pre: None
     // Post: Removes the unit with the specified id from the roster; does nothing if no unit has that id.
 
-    // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    void printRoster(const std::vector<int> &teamIds) const;
+    void healAll();
     // Pre: None
-    // Post: Prints one line per unit, or a notice if the roster is empty. Units whose id
-    //       appears in teamIds are highlighted and tagged "[in team]".
+    // Post: Restores every unit in the roster to full health.
+
+    // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    void printRoster(const std::vector<int> &teamIds, const std::vector<int> &trainerIds, const std::vector<int> &traineeIds) const;
+    // Pre: None
+    // Post: Prints one line per unit, or a notice if the roster is empty. Each unit is colored
+    //       and tagged by its current role (mutually exclusive, checked in this order): id in
+    //       teamIds -> cyan "[in team]"; else in trainerIds -> magenta "[trainer]"; else in
+    //       traineeIds -> blue "[trainee]"; otherwise printed plain.
 
 private:
     std::vector<Unit> units_;

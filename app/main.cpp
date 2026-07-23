@@ -8,6 +8,7 @@
 #include "src/GameState.h"
 #include "src/Logger.h"
 #include "src/Injury.h"
+#include "src/TrainingCamp.h"
 
 #include <iostream>
 #include <ctime>
@@ -38,7 +39,8 @@ void Menu()
     std::cout << "=== PROJECT ASCEND ===" << std::endl;
     std::cout << "  1. Invoke a new unit" << std::endl;
     std::cout << "  2. Manage the team" << std::endl;
-    std::cout << "  3. Enter the tower" << std::endl;
+    std::cout << "  3. Manage the training camp" << std::endl;
+    std::cout << "  4. Enter the tower" << std::endl;
     std::cout << "  6. Visit the Necropolis" << std::endl;
     std::cout << "  8. View the roster" << std::endl;
     std::cout << "  9. Exit" << std::endl;
@@ -52,6 +54,19 @@ void TeamMenu()
     std::cout << "  2. Remove a unit from the team" << std::endl;
     std::cout << "  3. View team composition" << std::endl;
     std::cout << "  6. Return to main menu" << std::endl;
+}
+
+void TrainingCampMenu()
+{
+    std::cout << std::endl;
+    std::cout << "=== Training Camp ===" << std::endl;
+    std::cout << "  1. Assign a trainer" << std::endl;
+    std::cout << "  2. Assign a trainee to a trainer" << std::endl;
+    std::cout << "  3. Dismiss a trainer" << std::endl;
+    std::cout << "  4. Dismiss a trainee" << std::endl;
+    std::cout << "  5. Buy a trainer slot" << std::endl;
+    std::cout << "  6. View the camp" << std::endl;
+    std::cout << "  7. Return to menu" << std::endl;
 }
 
 void IncursionMenu()
@@ -86,6 +101,7 @@ int main()
         Team team;
         Roster roster;
         GameState state;
+        TrainingCamp tcamp;
 
         std::mt19937 rng(std::random_device{}());
         Generator gen("resources", rng);
@@ -134,7 +150,7 @@ int main()
                     {
                         std::cout << std::endl;
                         std::cout << "Who joins the team? (unit id)" << std::endl;
-                        roster.printRoster(team.getMembersIds());
+                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
                         team.printTeam(roster);
                         int selectedUnitId = readChoice();
                         try
@@ -182,6 +198,108 @@ int main()
             {
                 do
                 {
+                    TrainingCampMenu();
+                    choice = readChoice();
+
+                    switch (choice)
+                    {
+                    case 1:
+                    {
+                        std::cout << std::endl;
+                        std::cout << "Who joins the camp as a trainer? (unit id)" << std::endl;
+                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
+                        tcamp.print(roster);
+                        int selectedUnitId = readChoice();
+                        try
+                        {
+                            tcamp.addTrainer(selectedUnitId, roster);
+                            team.removeMember(selectedUnitId);
+                            std::cout << "Trainer assigned to the camp." << std::endl;
+                        }
+                        catch (const std::runtime_error &e)
+                        {
+                            std::cout << e.what() << std::endl;
+                        }
+                        break;
+                    }
+                    case 2:
+                    {
+                        std::cout << std::endl;
+                        std::cout << "Who becomes a trainee? (unit id)" << std::endl;
+                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
+                        tcamp.print(roster);
+                        int selectedTraineeId = readChoice();
+                        std::cout << "Under which trainer? (trainer id)" << std::endl;
+                        int selectedTrainerId = readChoice();
+                        try
+                        {
+                            tcamp.assignTrainee(selectedTrainerId, selectedTraineeId, roster);
+                            team.removeMember(selectedTraineeId);
+                            std::cout << "Trainee assigned to the camp." << std::endl;
+                        }
+                        catch (const std::runtime_error &e)
+                        {
+                            std::cout << e.what() << std::endl;
+                        }
+                        break;
+                    }
+                    case 3:
+                    {
+                        std::cout << std::endl;
+                        std::cout << "Which trainer do you want to dismiss? (unit id)" << std::endl;
+                        tcamp.print(roster);
+                        int selectedUnitId = readChoice();
+                        tcamp.removeTrainer(selectedUnitId);
+                        break;
+                    }
+                    case 4:
+                    {
+                        std::cout << std::endl;
+                        std::cout << "Which trainee do you want to dismiss? (unit id)" << std::endl;
+                        tcamp.print(roster);
+                        int selectedUnitId = readChoice();
+                        tcamp.removeTrainee(selectedUnitId);
+                        break;
+                    }
+                    case 5:
+                    {
+                        std::cout << std::endl;
+                        std::cout << "Trainer slots owned: " << tcamp.purchasedSlots() << std::endl;
+                        std::cout << "A new slot costs " << tcamp.nextSlotCost() << " essence. Buy it? [1] Yes  [2] No" << std::endl;
+                        int selectedChoice = readChoice();
+                        if (selectedChoice == 1)
+                        {
+                            if (state.essence >= tcamp.nextSlotCost())
+                            {
+                                state.essence -= tcamp.nextSlotCost();
+                                tcamp.buySlot();
+                                std::cout << "New trainer slot bought." << std::endl;
+                            }
+                            else
+                                std::cout << "Not enough essence." << std::endl;
+                        }
+                        else if (selectedChoice != 2)
+                            std::cout << "Invalid choice. Please try again." << std::endl;
+                        break;
+                    }
+                    case 6:
+                    {
+                        std::cout << std::endl;
+                        tcamp.print(roster);
+                        break;
+                    }
+
+                    default:
+                        std::cout << "Invalid choice. Please try again." << std::endl;
+                        break;
+                    }
+                } while (choice != 7);
+                break;
+            }
+            case 4:
+            {
+                do
+                {
                     IncursionMenu();
                     team.printTeam(roster);
                     printStatus(state);
@@ -191,7 +309,15 @@ int main()
                     {
                     case 1:
                     {
-                        runIncursion(team, roster, state, encounters, injuries, rng);
+                        if (!team.getMembersIds().empty())
+                        {
+                            runIncursion(team, roster, state, encounters, injuries, rng);
+                            tcamp.tick(roster, injuries, rng);
+                            roster.healAll();
+                        }
+                        else
+                            runIncursion(team, roster, state, encounters, injuries, rng); // imprimeix l'avís "No units"
+
                         break;
                     }
                     case 3:
@@ -217,7 +343,7 @@ int main()
             case 8:
             {
                 std::cout << std::endl;
-                roster.printRoster(team.getMembersIds());
+                roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
                 printStatus(state);
                 std::cout << "Incursions launched: " << state.incursionCount << std::endl;
                 break;

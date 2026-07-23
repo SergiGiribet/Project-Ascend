@@ -61,10 +61,15 @@ void Roster::removeUnitById(int id)
                  units_.end());
 }
 
-// Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void Roster::printRoster(const std::vector<int> &teamIds) const
-{
+void Roster::healAll() {
+    for (Unit &u : units_) {
+        u.heal(u.getStats().getMaxHealth());
+    }
+}
 
+// Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+void Roster::printRoster(const std::vector<int> &teamIds, const std::vector<int> &trainerIds, const std::vector<int> &traineeIds) const
+{
     if (units_.empty())
     {
         std::cout << "The roster is empty. Invoke someone." << std::endl;
@@ -75,16 +80,34 @@ void Roster::printRoster(const std::vector<int> &teamIds) const
     for (const auto &unit : units_)
     {
         bool inTeam = std::find(teamIds.begin(), teamIds.end(), unit.getId()) != teamIds.end();
+        bool isTrainer = std::find(trainerIds.begin(), trainerIds.end(), unit.getId()) != trainerIds.end();
+        bool isTrainee = std::find(traineeIds.begin(), traineeIds.end(), unit.getId()) != traineeIds.end();
+
+        const char *tag = "";
         if (inTeam)
+        {
             std::cout << COLOR_CYAN;
+            tag = " [in team]";
+        }
+        else if (isTrainer)
+        {
+            std::cout << COLOR_MAGENTA;
+            tag = " [trainer]";
+        }
+        else if (isTrainee)
+        {
+            std::cout << COLOR_BLUE;
+            tag = " [trainee]";
+        }
+
         const Stats s = unit.getStats();
         std::cout << "  [" << unit.getId() << "] " << unit.getName()
                   << " (" << unit.getRace() << "*)"
                   << " - Lv " << unit.getLevel()
                   << " - HP " << s.getHealth() << "/" << s.getMaxHealth()
                   << " - XP " << unit.getExperience();
-        if (inTeam)
-            std::cout << " [in team]" << COLOR_RESET;
+        if (tag[0] != '\0')
+            std::cout << tag << COLOR_RESET;
         std::cout << std::endl;
     }
 }

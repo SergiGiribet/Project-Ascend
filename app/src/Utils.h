@@ -5,11 +5,13 @@
 #include <string>
 #include <vector>
 
-constexpr const char *COLOR_RESET  = "\x1b[0m";
-constexpr const char *COLOR_GREEN  = "\x1b[32m";
-constexpr const char *COLOR_YELLOW = "\x1b[33m";
-constexpr const char *COLOR_RED    = "\x1b[31m";
-constexpr const char *COLOR_CYAN   = "\x1b[36m";
+constexpr const char *COLOR_RESET   = "\x1b[0m";
+constexpr const char *COLOR_GREEN   = "\x1b[32m";
+constexpr const char *COLOR_YELLOW  = "\x1b[33m";
+constexpr const char *COLOR_RED     = "\x1b[31m";
+constexpr const char *COLOR_CYAN    = "\x1b[36m";
+constexpr const char *COLOR_MAGENTA = "\x1b[35m";
+constexpr const char *COLOR_BLUE    = "\x1b[34m";
 
 
 int readChoice();
