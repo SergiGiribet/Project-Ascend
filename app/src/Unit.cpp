@@ -1,4 +1,5 @@
 #include "Unit.h"
+#include "Utils.h"
 
 #include <iostream>
 #include <algorithm>
@@ -108,6 +109,10 @@ void Unit::removeSkill(const std::string &skill) {
     skills.erase(std::remove(skills.begin(), skills.end(), skill), skills.end());
 }
 
+void Unit::addInjury(const std::string &injury) { injuries.push_back(injury); }
+
+const std::vector<std::string> &Unit::getInjuries() const { return injuries; }
+
 void Unit::takeDamage(int damage) { stats.decreaseHealth(damage); }
 
 void Unit::heal(int amount) { stats.increaseHealth(amount); }
@@ -133,6 +138,19 @@ void Unit::printUnit() const
         first = false;
     }
     std::cout << std::endl;
+    if (!injuries.empty())
+    {
+        std::cout << COLOR_RED << "  Injuries: ";
+        bool firstInjury = true;
+        for (const auto &injury : injuries)
+        {
+            if (!firstInjury)
+                std::cout << ", ";
+            std::cout << injury;
+            firstInjury = false;
+        }
+        std::cout << COLOR_RESET << std::endl;
+    }
     std::cout << "  Story:  " << history << std::endl;
     if (!hook.empty())
         std::cout << "  Hook:   " << hook << std::endl;

@@ -4,6 +4,13 @@ State of the code as of 2026-07-17. Complements the GDD and the Phase 0 spec: th
 *what* and the *why*; this holds *how what is already built works*. See also the
 [text style guide](style-guide.md) and the [idea backlog](backlog.md).
 
+> **Status (2026-07-23):** Phase 0 is complete and shipped (GitHub + itch.io); step 8 (play &
+> evaluate) was carried out and validated the permadeath hypothesis. This document is the
+> **Phase 0 baseline** and describes the code as it stood at 2026-07-17 — some class sections
+> below have since been extended. The Phase 1 additions (residual incident, permanent injuries,
+> training camp) are documented separately in
+> [technical-documentation-phase1.md](technical-documentation-phase1.md).
+
 ---
 
 ## 1. Overview
@@ -252,9 +259,13 @@ from the **encounter** on the floor where the unit fell — every death has a cu
 | 5. Permadeath + Necropolis | ✅ (record→erase→purge flow) |
 | 6. Hooks conditioned by the Necropolis | ✅ — THE CORE MECHANIC WORKS |
 | 7. Narrative polish | ✅ (style guide + full text pass) |
-| 8. Play and evaluate (§1.1) | ⬜ ← NOW. Long sessions; after every death: what did I feel, and was it *resource* loss or *person* loss? |
+| 8. Play and evaluate (§1.1) | ✅ Done — long sessions + tester logs. Deaths of generated-history units read as *person* loss, not just resource loss; hypothesis validated. Findings drove Phase 0.5 and Phase 1 (see [backlog](backlog.md)). |
 
 **Out-of-plan additions** (all in service of step 8): encounters with bound death causes,
 trait events in combat (+ the Reckless archetype), rest-healing between incursions, intro
 screen, automatic session recording in `sessions/`, project README,
 [style guide](style-guide.md) and [backlog](backlog.md).
+
+**After Phase 0**: Phase 0.5 (essence economy, team cap, danger forecast, residual incident on
+safe floors) and Phase 1 (permanent injuries, training camp) — see
+[technical-documentation-phase1.md](technical-documentation-phase1.md).

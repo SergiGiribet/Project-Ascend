@@ -131,9 +131,12 @@ at startup). Three rules:
    are colorless (TeeBuf strips ANSI codes from the file) and not every eye tells green from
    red. That's why the in-team highlight also prints a textual `[in team]` tag.
 2. **Semantic palette, used sparingly**:
-   - `COLOR_GREEN` / `COLOR_YELLOW` / `COLOR_RED` — risk and scarcity (danger forecast tiers;
-     could extend to other odds/warnings).
-   - `COLOR_CYAN` — identity/membership (the essence counter, units already in the team).
+   - `COLOR_GREEN` / `COLOR_YELLOW` / `COLOR_RED` — risk and scarcity (danger forecast tiers).
+     `COLOR_RED` also marks **permanent injuries** wherever a unit is listed (a lasting harm,
+     shown as `{…}` on the roster and an `Injuries:` line on the card).
+   - `COLOR_CYAN` — identity/membership (the essence counter, units in the team `[in team]`).
+   - `COLOR_MAGENTA` / `COLOR_BLUE` — training-camp roles on the roster: magenta `[trainer]`,
+     blue `[trainee]` (deliberately off the green/yellow/red risk palette).
    - Nothing else is colored. A new color needs a new *meaning*, not a new decoration.
 3. **Reset discipline**: every color opens right before the text it paints and closes with
    `COLOR_RESET` right after the last painted character, before the `std::endl`. An unclosed

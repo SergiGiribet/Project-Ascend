@@ -90,6 +90,7 @@ private:
     int level;
 
     std::vector<std::string> skills;
+    std::vector<std::string> injuries;
     std::string history;
     std::string hook;
 
@@ -134,6 +135,11 @@ public:
     const std::vector<std::string> &getSkills() const;
     // Pre: None
     // Post: Returns a read-only reference to the unit's traits.
+
+    const std::vector<std::string> &getInjuries() const;
+    // Pre: None
+    // Post: Returns a read-only reference to the unit's permanent injuries (kept apart from
+    //       traits; they carry stat penalties and are never removed).
 
     std::string getHistory() const;
     // Pre: None
@@ -187,6 +193,10 @@ public:
     // Pre: None
     // Post: Removes the first occurrence of skill from the unit's list of traits; does nothing
     //       if the unit doesn't have it.
+
+    void addInjury(const std::string &injury);
+    // Pre: None
+    // Post: Appends injury to the unit's permanent injuries (kept apart from traits).
 
     void takeDamage(int damage);
     // Pre: damage must be a non-negative integer.

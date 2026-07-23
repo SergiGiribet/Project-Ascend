@@ -42,7 +42,7 @@ std::string applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt1993
     s.setConstitution(std::max(1, s.getConstitution() - injury.conPenalty));
     unit.setStats(s);
 
-    unit.addSkill(injury.name);
+    unit.addInjury(injury.name);
 
     const std::vector<std::string> &skills = unit.getSkills();
     bool hasReckless = std::find(skills.begin(), skills.end(), "Reckless") != skills.end();
