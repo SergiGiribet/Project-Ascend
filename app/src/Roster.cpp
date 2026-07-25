@@ -109,16 +109,16 @@ void Roster::printRoster(const std::vector<int> &teamIds, const std::vector<int>
         if (tag[0] != '\0')
             std::cout << tag << COLOR_RESET;
 
-        const std::vector<std::string> &inj = unit.getInjuries();
+        const std::vector<Injury> &inj = unit.getInjuries();
         if (!inj.empty())
         {
             std::cout << " " << COLOR_RED << "{";
             bool firstInjury = true;
-            for (const std::string &injury : inj)
+            for (const Injury &injury : inj)
             {
                 if (!firstInjury)
                     std::cout << ", ";
-                std::cout << injury;
+                std::cout << injuryLabel(injury);
                 firstInjury = false;
             }
             std::cout << "}" << COLOR_RESET;

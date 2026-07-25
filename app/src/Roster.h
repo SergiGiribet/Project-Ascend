@@ -59,7 +59,8 @@ public:
     // Post: Prints one line per unit, or a notice if the roster is empty. Each unit is colored
     //       and tagged by its current role (mutually exclusive, checked in this order): id in
     //       teamIds -> cyan "[in team]"; else in trainerIds -> magenta "[trainer]"; else in
-    //       traineeIds -> blue "[trainee]"; otherwise printed plain.
+    //       traineeIds -> blue "[trainee]"; otherwise printed plain. Any permanent injuries are
+    //       appended in red as "{name (-cost), ...}".
 
 private:
     std::vector<Unit> units_;

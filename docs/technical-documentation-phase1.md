@@ -1,6 +1,6 @@
 # Technical documentation — Project Ascend · Phase 1
 
-State of the code as of 2026-07-23. This documents what Phase 0.5 and Phase 1 **added or
+State of the code as of 2026-07-25. This documents what Phase 0.5 and Phase 1 **added or
 changed** on top of the [Phase 0 baseline](technical-documentation.md); read that first for the
 class map, ownership principle and conventions (all still hold). See also the
 [style guide](style-guide.md) and the [backlog](backlog.md) (which holds the design rationale,
@@ -12,10 +12,10 @@ playtest data and the parked ideas).
 
 | Area | Change |
 |---|---|
-| `Incursion` | Residual **incident** on floors cleared "with ease"; **weighted** victim lottery (`riskDirection`/`pickWeightedVictim`) replacing the old forced-Reckless wound; wounds can leave a **permanent injury**. |
-| New `Injury` | `Injury` struct + `loadInjuries` + `applyInjury`; new `injuries.txt` bank. |
+| `Incursion` | Residual **incident** on floors cleared "with ease"; **weighted** victim lottery (`riskDirection`/`pickWeightedVictim`) replacing the old forced-Reckless wound; wounds can leave a **permanent injury**; trait deeds now vary (`deeds` bank, one picked at random) instead of a single fixed line per trait. |
+| New `Injury` | `Injury` struct + `loadInjuries` + `applyInjury` + `injuryLabel` (shared display format); new `injuries.txt` bank. |
 | New `TrainingCamp` | Trainers/trainees leveling between incursions; essence sink (slots); once-per-incursion `tick`. |
-| `Unit` | New separate `injuries` list (apart from `skills`), with `addInjury`/`getInjuries`; unit card prints injuries in red. |
+| `Unit` | Separate `injuries` list stored as `std::vector<Injury>` (carries each injury's stat cost), apart from `skills`, with `addInjury`/`getInjuries`; roster and card show injuries in red **with their cost**. |
 | `Roster` | `healAll()` (whole-roster rest); role-colored roster (team/trainer/trainee) + injuries shown in red. |
 | `Utils` | `COLOR_MAGENTA`, `COLOR_BLUE` added. |
 | `main` | New "Manage the training camp" menu; camp `tick` + `healAll` wired into the incursion cycle. |
@@ -63,17 +63,27 @@ struct Injury { std::string name; int strPenalty; int conPenalty; };
 - `loadInjuries(path)` — mirrors `loadEncounters` but splits **two** `|` (`name|str|con`);
   throws if a line lacks three fields or the bank is empty.
 - `applyInjury(unit, bank, rng)` → **returns the applied injury's name**. Picks a random injury;
-  subtracts STR/CON (floored at 1); adds the name to the unit's **injuries** list (not skills);
+  subtracts STR/CON (floored at 1); adds the `Injury` to the unit's **injuries** list (not skills);
   and if the unit has `Reckless`/`Boaster`, 50 % chance it swaps that trait for `Alert` (the
   lesson learned the hard way). Permanent: injuries are **never healed** (unlike ordinary wounds).
+- `injuryLabel(injury)` → the shared display format: the name plus its non-zero penalties in
+  parentheses, e.g. `One-Handed (-3 STR)`, `Broken Ribs (-2 STR, -3 CON)` (parenthetical omitted
+  if both penalties are zero). Used by both the roster and the unit card, so an injury's cost is
+  legible wherever a unit is shown — the display never needs the injury bank on hand.
 - `injuries.txt`: `name|strPenalty|conPenalty`, e.g. `One-Handed|3|0`, `Shattered Knee|0|3`.
 
-## 4. `Unit` — injuries kept apart from traits
+## 4. `Unit` — injuries kept apart from traits, and carrying their cost
 
-New private `std::vector<std::string> injuries` (separate from `skills`), with `addInjury` and
-`getInjuries`. Keeping them apart means: `riskDirection` and the incident/death flourish only see
-real personality traits, and the display can show injuries distinctly. `printUnit()` prints an
-`Injuries:` line in **red** (`COLOR_RED`) when the unit carries any.
+Private `std::vector<Injury> injuries` (separate from `skills`), with `addInjury(const Injury&)`
+and `getInjuries()`. Storing the whole `Injury` (not just its name) lets any display show the
+**stat cost** without needing the injury bank on hand. Keeping injuries apart from `skills` means
+`riskDirection` and the incident/death flourish only see real personality traits, and the display
+can treat injuries distinctly. `printUnit()` prints an `Injuries:` line in **red** (`COLOR_RED`)
+when the unit carries any, each formatted by the shared `injuryLabel` helper (§3).
+
+Because `Unit` now holds `Injury` by value, `Unit.h` includes `Injury.h`; to avoid an include
+cycle, `Injury.h` **forward-declares** `class Unit` (its free functions only take a `Unit&`, so a
+declaration suffices) and `Injury.cpp` includes `Unit.h` for the full definition.
 
 ## 5. `TrainingCamp` (`TrainingCamp.h` / `TrainingCamp.cpp`)
 

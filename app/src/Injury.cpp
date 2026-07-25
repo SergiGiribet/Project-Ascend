@@ -3,6 +3,7 @@
 #include <fstream>
 #include <algorithm>
 #include <stdexcept>
+#include "Unit.h"
 
 std::vector<Injury> loadInjuries(const std::string &path) {
     std::vector<Injury> injuries;
@@ -33,6 +34,20 @@ std::vector<Injury> loadInjuries(const std::string &path) {
 
 }
 
+std::string injuryLabel(const Injury &injury) {
+    std::string label = injury.name;
+    std::string cost;
+    if (injury.strPenalty > 0)
+        cost += "-" + std::to_string(injury.strPenalty) + " STR";
+    if (injury.conPenalty > 0) {
+        if (!cost.empty()) cost += ", ";
+        cost += "-" + std::to_string(injury.conPenalty) + " CON";
+    }
+    if (!cost.empty())
+        label += " (" + cost + ")";
+    return label;
+}
+
 std::string applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt19937 &rng) {
     std::uniform_int_distribution<size_t> pick(0, bank.size() -1);
     const Injury &injury = bank[pick(rng)];
@@ -42,7 +57,7 @@ std::string applyInjury(Unit &unit, const std::vector<Injury> &bank, std::mt1993
     s.setConstitution(std::max(1, s.getConstitution() - injury.conPenalty));
     unit.setStats(s);
 
-    unit.addInjury(injury.name);
+    unit.addInjury(injury);
 
     const std::vector<std::string> &skills = unit.getSkills();
     bool hasReckless = std::find(skills.begin(), skills.end(), "Reckless") != skills.end();

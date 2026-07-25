@@ -125,8 +125,9 @@ injured high-level units as trainers (their level still teaches at full value).
   dial was "rest between incursions", implemented on 2026-07-17.
 - **Third `Encounter` field** (`description|cause|resolution`): narrative flavor when a floor
   is cleared successfully — see the material below.
-- **Varied trait-event deeds**: `deed` becomes a `vector<string>` with 2-3 variants per trait,
-  so "Osric, Brave as ever, holds the line steady." doesn't repeat every other floor.
+- **Varied trait-event deeds** — DONE (2026-07-25): `deed` became a `vector<string> deeds`
+  (5 variants per trait), one picked at random via `pickRandom`, so "Osric, Brave as ever, holds
+  the line steady." no longer repeats every other floor.
 - **Self-bootstrapping exe**: embed default banks (raw string literals) and create
   `resources/`/`sessions/` on first run, writing only missing files. Deferred: a GitHub
   release zip covers distribution without a second source of truth.

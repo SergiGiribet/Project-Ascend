@@ -208,6 +208,7 @@ void TrainingCamp::print(const Roster &roster) const
                           << " - XP " << t.getExperience() << std::endl;
             }
         }
-    std::cout << "Free slots: " << (purchasedSlots() - assignedTrainerCount())
+    std::cout << "Free trainer slots: " << (purchasedSlots() - assignedTrainerCount())
+              << " of " << purchasedSlots()
               << "  |  Next slot: " << nextSlotCost() << " essence" << std::endl;
 }

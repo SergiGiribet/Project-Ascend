@@ -133,7 +133,8 @@ at startup). Three rules:
 2. **Semantic palette, used sparingly**:
    - `COLOR_GREEN` / `COLOR_YELLOW` / `COLOR_RED` — risk and scarcity (danger forecast tiers).
      `COLOR_RED` also marks **permanent injuries** wherever a unit is listed (a lasting harm,
-     shown as `{…}` on the roster and an `Injuries:` line on the card).
+     shown with its stat cost as `{name (-cost)}` on the roster and an `Injuries:` line on the
+     card — both formatted by `injuryLabel`).
    - `COLOR_CYAN` — identity/membership (the essence counter, units in the team `[in team]`).
    - `COLOR_MAGENTA` / `COLOR_BLUE` — training-camp roles on the roster: magenta `[trainer]`,
      blue `[trainee]` (deliberately off the green/yellow/red risk palette).

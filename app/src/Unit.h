@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "Injury.h"
 
 class Stats
 {
@@ -13,7 +14,6 @@ private:
     int constitution;
 
 public:
-
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Stats();
     // Pre: None
@@ -74,7 +74,6 @@ public:
     void printStats() const;
     // Pre: None
     // Post: Prints health, strength and constitution to the console, one per line.
-
 };
 
 class Unit
@@ -90,12 +89,11 @@ private:
     int level;
 
     std::vector<std::string> skills;
-    std::vector<std::string> injuries;
+    std::vector<Injury> injuries;
     std::string history;
     std::string hook;
 
 public:
-
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Unit(int id);
     // Pre: id must be a unique identifier for the unit.
@@ -136,10 +134,10 @@ public:
     // Pre: None
     // Post: Returns a read-only reference to the unit's traits.
 
-    const std::vector<std::string> &getInjuries() const;
+    const std::vector<Injury> &getInjuries() const;
     // Pre: None
     // Post: Returns a read-only reference to the unit's permanent injuries (kept apart from
-    //       traits; they carry stat penalties and are never removed).
+    //       traits; each carries its own stat penalties and is never removed).
 
     std::string getHistory() const;
     // Pre: None
@@ -194,9 +192,10 @@ public:
     // Post: Removes the first occurrence of skill from the unit's list of traits; does nothing
     //       if the unit doesn't have it.
 
-    void addInjury(const std::string &injury);
+    void addInjury(const Injury &injury);
     // Pre: None
-    // Post: Appends injury to the unit's permanent injuries (kept apart from traits).
+    // Post: Records injury in the unit's permanent injuries (kept apart from traits). The stat
+    //       penalties are applied by applyInjury, not here -- this only stores the record.
 
     void takeDamage(int damage);
     // Pre: damage must be a non-negative integer.
@@ -214,8 +213,8 @@ public:
     void printUnit() const;
     // Pre: None
     // Post: Prints the unit card (name, race, level, XP, stats, traits, story and hook if any)
-    //       framed by dashed lines.
-
+    //       framed by dashed lines. Permanent injuries, if any, print on a red "Injuries:" line
+    //       with each injury's stat cost.
 };
 
 #endif

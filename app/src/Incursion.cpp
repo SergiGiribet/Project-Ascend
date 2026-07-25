@@ -9,13 +9,31 @@ struct TraitEvent
 {
     std::string trait;
     int attackModifier;
-    std::string deed;
+    std::vector<std::string> deeds;
 };
 
 static const std::vector<TraitEvent> DAMAGE_TRAIT_EVENTS = {
-    {"Brave", 8, "holds the line steady"},
-    {"Cowardly", -12, "hangs back and leaves a gap in the line"},
-    {"Reckless", 12, "charges headfirst into the danger"},
+     {"Brave", 8, {
+        "holds the line steady",
+        "steadies the wavering flank",
+        "meets the charge without flinching",
+        "digs in and holds fast",
+        "rallies the others with a steady shout",
+    }},
+    {"Cowardly", -12, {
+        "hangs back and leaves a gap in the line",
+        "flinches at the first blow and gives ground",
+        "keeps one eye on the stairs down",
+        "lets the formation buckle",
+        "shrinks from the danger and drags the pace",
+    }},
+    {"Reckless", 12, {
+        "charges headfirst into the danger",
+        "throws caution aside and presses the attack",
+        "dives into the thick of it",
+        "breaks ranks to strike the first blow",
+        "swings wild, heedless of the risk",
+    }},
 };
 
 struct IncidentFlavor
@@ -183,7 +201,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
                 const Unit &actor = roster.findUnitById(selected.first);
                 std::cout << "  " << actor.getName() << ", " << event->trait << " as ever, "
-                          << event->deed << "." << std::endl;
+                          << pickRandom(event->deeds, rng) << "." << std::endl;
 
                 attack += event->attackModifier;
             }

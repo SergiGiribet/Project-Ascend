@@ -288,6 +288,10 @@ int main()
                         tcamp.print(roster);
                         break;
                     }
+                    case 7:
+                    {
+                        break;
+                    }
 
                     default:
                         std::cout << "Invalid choice. Please try again." << std::endl;
