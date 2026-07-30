@@ -1,5 +1,6 @@
 #include "Incursion.h"
 #include "Utils.h"
+#include "Objective.h"
 
 #include <fstream>
 #include <iostream>
@@ -175,12 +176,14 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     for (int floor = startFloor;; floor++)
     {
         int power = teamPower(team, roster);
-        int danger = 20 + floor * 15;
+        Objective objective = makeObjective(floor, rng);
+        int danger = objective.difficulty;
         int attack = power + luck(rng);
 
         std::uniform_int_distribution<size_t> pickEnc(0, encounters.size() - 1);
         const Encounter &enc = encounters[pickEnc(rng)];
         std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
+        std::cout << "Objective: " << describeObjective(objective) << std::endl;
 
         std::vector<std::pair<int, const TraitEvent *>> candidates;
         for (int id : team.getMembersIds())
