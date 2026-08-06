@@ -28,7 +28,9 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       keep climbing). Entering above floor 1 charges a toll of (start floor - 1) essence;
 //       an unaffordable start floor falls back to floor 1, which is always free. Each
 //       cleared floor yields its floor number in essence. Each floor presents a random
-//       encounter; at most one trait event per floor (Brave/Cowardly/Reckless) may modify the
+//       encounter and an objective (the floor's mission, whose difficulty is the value the
+//       team's roll is measured against); the objective's briefing is printed under the floor
+//       header. At most one trait event per floor (Brave/Cowardly/Reckless) may modify the
 //       team's roll. A floor cleared with ease can still strike a residual incident (chance
 //       grows with floor depth and with Boaster members, shrinks with Alert members, capped);
 //       when it does, a second roll decides if it is fatal or just a wound, with its own
@@ -39,7 +41,10 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       injury (applyInjury from the injuries bank: a lasting STR/CON penalty added to the
 //       unit's traits, never healed by rest); a wound that instead proves lethal runs the full
 //       death path. Before each climb prompt, prints a danger forecast for the next floor
-//       (4 tiers, computed from current team power vs the next floor's danger). Increments
+//       (4 tiers, computed from current team power vs the next floor's difficulty). At that
+//       prompt the player may also scout ahead once per floor, which charges SCOUT_COST essence
+//       and reveals the next floor's objective -- the very objective that floor will present if
+//       climbed; scouting with too little essence is refused and charges nothing. Increments
 //       state.incursionCount; survivors gain XP and may level up; each casualty is recorded in
 //       state.necropolis BEFORE being removed from roster and purged from team, with the
 //       encounter's cause for difficulty/overwhelm deaths or the incident's own flavor text for

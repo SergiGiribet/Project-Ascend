@@ -12,8 +12,9 @@ struct GameState {
     int incursionCount = 0; // Total incursions launched this session.
     Necropolis necropolis;  // Registry of the fallen; feeds hook generation.
     int essence = 25;       // The tower's currency. Earned by clearing floors (+floor number);
-                            // spent on summoning (invokeCost) and as an entry toll of
-                            // (start floor - 1) when entering an incursion above floor 1.
+                            // spent on summoning (invokeCost), on training-camp trainer slots,
+                            // on scouting the next floor during an incursion, and as an entry
+                            // toll of (start floor - 1) when entering an incursion above floor 1.
     int invokeCost = 5;     // Essence price of summoning a new unit.
 };
 

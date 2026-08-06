@@ -14,27 +14,27 @@ struct TraitEvent
 };
 
 static const std::vector<TraitEvent> DAMAGE_TRAIT_EVENTS = {
-     {"Brave", 8, {
-        "holds the line steady",
-        "steadies the wavering flank",
-        "meets the charge without flinching",
-        "digs in and holds fast",
-        "rallies the others with a steady shout",
-    }},
+    {"Brave", 8, {
+                     "holds the line steady",
+                     "steadies the wavering flank",
+                     "meets the charge without flinching",
+                     "digs in and holds fast",
+                     "rallies the others with a steady shout",
+                 }},
     {"Cowardly", -12, {
-        "hangs back and leaves a gap in the line",
-        "flinches at the first blow and gives ground",
-        "keeps one eye on the stairs down",
-        "lets the formation buckle",
-        "shrinks from the danger and drags the pace",
-    }},
+                          "hangs back and leaves a gap in the line",
+                          "flinches at the first blow and gives ground",
+                          "keeps one eye on the stairs down",
+                          "lets the formation buckle",
+                          "shrinks from the danger and drags the pace",
+                      }},
     {"Reckless", 12, {
-        "charges headfirst into the danger",
-        "throws caution aside and presses the attack",
-        "dives into the thick of it",
-        "breaks ranks to strike the first blow",
-        "swings wild, heedless of the risk",
-    }},
+                         "charges headfirst into the danger",
+                         "throws caution aside and presses the attack",
+                         "dives into the thick of it",
+                         "breaks ranks to strike the first blow",
+                         "swings wild, heedless of the risk",
+                     }},
 };
 
 struct IncidentFlavor
@@ -65,6 +65,7 @@ static const int FATAL_CHANCE = 18;
 static const int WOUND_INJURY_CHANCE = 8;
 static const int VICTIM_WEIGHT_BONUS = 2;
 static const int VICTIM_WEIGHT_PENALTY = 1;
+static const int SCOUT_COST = 3;
 
 static int teamPower(const Team &team, const Roster &roster)
 {
@@ -172,11 +173,11 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
     int highestFloorThisRun = 0;
     std::uniform_int_distribution<int> luck(0, MAX_LUCK);
+    Objective objective = makeObjective(startFloor, rng);
 
     for (int floor = startFloor;; floor++)
     {
         int power = teamPower(team, roster);
-        Objective objective = makeObjective(floor, rng);
         int danger = objective.difficulty;
         int attack = power + luck(rng);
 
@@ -364,7 +365,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             break;
         }
 
-        int nextDanger = 20 + (floor + 1) * 15;
+        Objective nextObjective = makeObjective(floor + 1, rng);
+        int nextDanger = nextObjective.difficulty;
         int currentPower = teamPower(team, roster);
 
         if (currentPower >= nextDanger * 12 / 10)
@@ -376,12 +378,39 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         else
             std::cout << COLOR_RED << "Climbing further is death." << COLOR_RESET << std::endl;
 
-        std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return" << std::endl;
-        if (readChoice() != 1)
+        bool scouted = false;
+        int choice = 0;
+        do
+        {
+
+            std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return";
+            if (!scouted)
+                std::cout << "  [3] Scout ahead (" << SCOUT_COST << " essence)";
+            std::cout << std::endl;
+
+            choice = readChoice();
+            if (choice == 3)
+            {
+                if (scouted)
+                    std::cout << "The scouts have already gone ahead." << std::endl;
+                else if (state.essence >= SCOUT_COST)
+                {
+                    state.essence -= SCOUT_COST;
+                    scouted = true;
+                    std::cout << "The scouts return: " << describeObjective(nextObjective) << std::endl;
+                }
+                else
+                    std::cout << "Not enough essence to scout ahead (" << state.essence
+                              << "/" << SCOUT_COST << ")." << std::endl;
+            }
+        } while (choice == 3);
+
+        if (choice != 1)
         {
             std::cout << "The team descends with their spoils and their lives." << std::endl;
             break;
         }
+        objective = nextObjective;
     }
 
     team.purgeDeadMembers(roster);
