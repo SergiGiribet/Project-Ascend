@@ -78,6 +78,26 @@ static int teamPower(const Team &team, const Roster &roster)
     return power;
 }
 
+static int teamFit(const Team &team, const Roster &roster, ObjectiveType type)
+{
+    int fit = 0;
+    for (int id : team.getMembersIds())
+        fit += traitFit(type, roster.findUnitById(id).getSkills());
+    return fit;
+}
+
+static void printForecast(int power, int danger)
+{
+    if (power >= danger * 12 / 10)
+        std::cout << COLOR_GREEN << "The way up looks clear." << COLOR_RESET << std::endl;
+    else if (power + MAX_LUCK >= danger * 12 / 10)
+        std::cout << COLOR_YELLOW << "The air grows heavier." << COLOR_RESET << std::endl;
+    else if (power + MAX_LUCK >= danger)
+        std::cout << COLOR_RED << "Something waits above, and it is not afraid of you." << COLOR_RESET << std::endl;
+    else
+        std::cout << COLOR_RED << "Climbing further is death." << COLOR_RESET << std::endl;
+}
+
 static int riskDirection(const std::vector<std::string> &skills)
 {
     if (std::find(skills.begin(), skills.end(), "Reckless") != skills.end() ||
@@ -177,7 +197,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
     for (int floor = startFloor;; floor++)
     {
-        int power = teamPower(team, roster);
+        int fit = teamFit(team, roster, objective.type);
+        int power = teamPower(team, roster) + fit;
         int danger = objective.difficulty;
         int attack = power + luck(rng);
 
@@ -185,6 +206,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         const Encounter &enc = encounters[pickEnc(rng)];
         std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
         std::cout << "Objective: " << describeObjective(objective) << std::endl;
+        std::cout << "  " << describeFit(fit) << std::endl;
 
         std::vector<std::pair<int, const TraitEvent *>> candidates;
         for (int id : team.getMembersIds())
@@ -369,14 +391,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         int nextDanger = nextObjective.difficulty;
         int currentPower = teamPower(team, roster);
 
-        if (currentPower >= nextDanger * 12 / 10)
-            std::cout << COLOR_GREEN << "The way up looks clear." << COLOR_RESET << std::endl;
-        else if (currentPower + MAX_LUCK >= nextDanger * 12 / 10)
-            std::cout << COLOR_YELLOW << "The air grows heavier." << COLOR_RESET << std::endl;
-        else if (currentPower + MAX_LUCK >= nextDanger)
-            std::cout << COLOR_RED << "Something waits above, and it is not afraid of you." << COLOR_RESET << std::endl;
-        else
-            std::cout << COLOR_RED << "Climbing further is death." << COLOR_RESET << std::endl;
+        printForecast(currentPower, nextDanger);
 
         bool scouted = false;
         int choice = 0;
@@ -398,6 +413,10 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                     state.essence -= SCOUT_COST;
                     scouted = true;
                     std::cout << "The scouts return: " << describeObjective(nextObjective) << std::endl;
+
+                    int nextFit = teamFit(team, roster, nextObjective.type);
+                    std::cout << "  " << describeFit(nextFit) << std::endl;
+                    printForecast(currentPower + nextFit, nextDanger);
                 }
                 else
                     std::cout << "Not enough essence to scout ahead (" << state.essence

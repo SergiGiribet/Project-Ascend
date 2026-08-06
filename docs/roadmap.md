@@ -2,7 +2,8 @@
 
 A north star for finishing Phase 1 and shaping Phase 2. This is a **living design document**,
 not a contract: it records the direction we agreed on and *why*, so no idea gets lost and each
-build step stays small. Written 2026-07-25, from the data collected so far.
+build step stays small. Written 2026-07-25; §5 rewritten 2026-08-06 after the Phase 2b bot
+measurement sent the plan somewhere it had not expected to go.
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -115,37 +116,176 @@ decisions (how an `Objective` is represented, where floor data lives) everything
 Good C++ learning vehicle: an `enum` of types + a resolution switch now; possibly virtual
 dispatch (an objective class hierarchy) later.
 
-### 2b — Objective-aware resolution
+### 2b — Objective-aware resolution  *(done, 2026-08-06)*
 
-- A resolution function that **knows the objective** and draws on different stats/traits per
-  type. Traits become **situational**: Brave good for Hold, Reckless good for Slay but bad for
-  an escort. This is where composition = strategy.
-- Combat is an **abstracted exchange** (enemy HP/attack) for Slay-type objectives — deliberately
-  **not** a turn-based tactical engine (initiative, positioning, abilities). That is a possible
-  much-later layer, not a requirement for the vision to land.
+The plan was "different stats per objective type". **Measurement killed that before it was
+built:** `Generator` gives every unit `STR == CON` (`8 + race*2` for both) and levelling raises
+both by 1, so `STR*2 + CON` and `CON*2 + STR` are *the same number*. Only Reckless (+5 CON) and
+injuries split them, worth 3-7 points on a team — invisible against a 30-point forecast tier.
 
-### 2c — Consequence: the tower has a memory  *(cross-cutting, starts small)*
+So the differentiation went entirely into **traits**, which is where the roadmap always said the
+strategy lived:
 
-Two scales, very different cost — do not conflate them:
+- `traitFit(type, traits)` — a 12-trait x 4-type table in `Objective.cpp` (+-8 strong fit, +-4
+  mild). Columns are near-zero-sum so no objective type is secretly easier; deliberate
+  difficulty differences belong in `makeObjective`, where they are visible.
+- `teamFit` sums it over the members and it is **added to the team's power for that floor**,
+  with a plain-language disposition line under the briefing (`This team is well suited to it
+  (+16).`). The number is always shown: an invisible modifier reads as RNG, which is the disease
+  we are treating.
+- Combat stays an **abstracted exchange**, deliberately not a turn-based tactical engine.
 
-- **Within-incursion** (floor N affects N+1, resets next run) — cheap, immediate payoff:
-  fled → the floor fortifies; brute-forced a Slay → reinforcements next tram; rescued someone →
-  they climb with you. Needs a small **`RunState`** (a bag of flags the resolution reads/writes).
-  Introduce this seam **during 2a**, even if nearly empty, so later systems write to it naturally.
-- **Persistent / campaign** (an event marks the world across runs) — the narrative payoff, and
-  where *"an important character dies → it has repercussions"* lives. It hangs on systems that
-  already exist: the **Necropolis** and the **generated unit histories**. Phase 0 built
-  characters *with* histories; this makes their *end* leave a mark (other units reference it, the
-  tower reacts). It closes the GDD §1.1 loop. Grows later, on top of the mission framework.
-- Material already parked for this: the third `Encounter` field (`resolution`) and the saved
-  clear-flavor texts in the [backlog](backlog.md).
+Verified in play: a team of Stubborn/Boaster/Reckless/Cowardly/Greedy/Alert scores +8 to Slay
+and -12 to Hold — the same five people, worth twenty points more at killing than at holding
+ground.
 
-### 2d — Unit autonomy  *(deferred, but thematically central)*
+### The 2026-08-06 measurement, and what it changed
 
-The endpoint of the agent-model dial. It **has already begun**: the varied-deeds system is
-literally the first atom of "units react to the situation." It grows from there — units step up
-by trait + mission; player indications become soft nudges over units that otherwise act on their
-own. This is where the "complete autonomy with player hints" vision fully lands.
+A bot A/B ran 8 campaigns per arm (5 incursions each, identical policy but for scouting):
+
+| arm | best floor min/median/max | deaths | scouts | decisions changed |
+|---|---|---|---|---|
+| scout ON | 9 / 10 / 12 | 14 | 60 | 8 |
+| scout OFF | 9 / **11** / 13 | 14 | 0 | — |
+
+**Scouting lost.** Not for the obvious reason: of 60 scouts the sharpened read was *better* than
+the distant one 12 times and worse only 4, so the information encouraged climbing rather than
+retreat. Two real causes:
+
+1. **Wrong currency.** 3 essence x 60 = 180, about 22 per campaign — the same essence that pays
+   entry tolls and replacements. Information priced against bodies always loses, at any price.
+2. **Nowhere to spend it.** 73% of scouts changed nothing, because **the team is locked before
+   the incursion**. The only possible answer to "a Hold you don't fit is next" is to turn back.
+   Information can subtract; it can never add.
+
+Both consequences are now adopted as the rest of Phase 2, and they replace the old 2c/2d (see
+"Beyond Phase 2" below for where those went).
+
+### 2c — Recon by unit  *(current work)*
+
+Scouting stops costing essence and starts costing **people**. You send someone ahead; what comes
+back depends on who they are. The cost is force (they sit out the floor) and risk (they can come
+back hurt, or not at all) — the same currency as everything else in the game, which is the point:
+information now carries the GDD §1.1 stakes.
+
+One report, three things it can carry, each losable or corruptible on its own:
+
+```cpp
+struct Report {
+    std::string scout;    // who went -- every line is attributed to them by name
+    bool sawType;         // did they bring the objective back at all
+    ObjectiveType type;   // what they claim it is (only meaningful if sawType)
+    bool sawDanger;       // did they get close enough to judge the odds
+    int bias;             // added to the power they report: >0 tells it rosier than it is
+};
+```
+
+The design keystone: **one lie, cascading.** If a Superstitious scout claims Rescue when the
+floor holds a Hold, the sharpened forecast is computed with the *Rescue* fit and comes out wrong
+on its own. No second falsehood to author, no second thing to keep consistent.
+
+Lives in a new `Scouting.h/.cpp` — `Objective.h` deliberately does not know `Unit`, and
+`Incursion.cpp` is already 450 lines.
+
+| Step | What | Note |
+|---|---|---|
+| 2c-1 | `Scouting.h/.cpp`, `Report`, `scoutAhead` returning a *perfect* report; wire it in, retire `SCOUT_COST` | behaviour-neutral but for attribution -- prove the seam before adding character |
+| 2c-2 | Voice: reports named and hedged; the hindsight line when a report was wrong | plus the §1.4 rewrite, below |
+| 2c-3 | Fatigue: optional `excludeId` on `teamPower`/`teamFit`; the scout sits out the floor they scouted | the force cost |
+| 2c-4 | Personalities: omission first (Cowardly, Greedy), then distortion (Boaster bias, Superstitious wrong type), then scouting risk | Alert/Curious as the reliable end |
+| 2c-5 | Re-run the A/B | does an informed bot now beat a blind one? |
+
+**A style-guide amendment this needs.** §1.4 ("No lying output") is narrower than it sounds — it
+forbids the game reporting success for an action that failed. A scout's report is not a result,
+it is *a claim by a character*. The rule gets rewritten to separate the two: **the narration
+never lies about what happened; a character's report is only ever a claim, and is always
+attributed by name.** Three things keep an unreliable report readable as personality instead of
+as a bug: attribution (never "the scouts", always "Keira"), honest hedging (the *tone* must not
+fake confidence the scout does not have, even when the content is wrong), and a hindsight line on
+arrival (*"Keira had promised an easy fight."*) so the player blames Keira and not the game.
+Omission is the cleaner half and comes first: a scout who never got close simply brings back less.
+
+### 2d — Somewhere to spend the information
+
+Recon is only half an answer while composition is frozen at the tower door. The fix is
+structural, and most of it already exists: the game *already* lets you clear one floor, retreat,
+and re-enter at `record+1` for a toll. The [backlog](backlog.md) files that under
+"the heal-retreat-reenter exploit". Phase 2 stops treating it as an exploit and makes it the
+intended path.
+
+**The linchpin, and it must land first or alongside:** leaving the tower is currently a *free
+full heal* (`roster.healAll()`), and the toll is trivial once essence piles into the thousands.
+So today going home costs nothing, and greed only survives because retreating is *inconvenient*
+rather than *expensive*. Ship one-floor sorties before fixing that and the only correct play
+becomes "one floor, go home, heal free, return" — and the playtest will read as a bad design when
+only the sequencing was wrong.
+
+| Step | What | Note |
+|---|---|---|
+| 2d-1 | `healRested(climbedIds)` — only those who stayed behind recover; wounds ride home with whoever climbed | one function; makes the bench matter and finally gives surplus essence a use |
+| 2d-2 | Make extract-and-re-enter the supported path: toll tuning, retreat/re-entry framing | not new machinery -- reframing |
+| 2d-3 | Verify recomposition is worth doing: does knowing floor N+1 change *who you send*, not just *whether* | the whole point of 2c |
+| 2d-4 | Closing measurement | see the gate below |
+
+Note the greed tension is **not** lost to one-floor sorties — re-entry is immediate, so "push now
+or regroup" survives, and it gets better: both options become interesting instead of one being
+obvious. It only survives if 2d-1 lands.
+
+### Where Phase 2 ends
+
+Not a feature checklist — a **falsifiable gate**, the same way Phase 1 closed on bot data:
+
+> **An informed bot beats a blind one.** Same policy, same number of incursions; one scouts and
+> recomposes, one does not. Phase 2 closes when the informed arm wins clearly on record floor,
+> on deaths, or on both.
+
+Today that number is 10 vs 11 — pointing the wrong way. That is the honest state of the phase,
+and it is the number to move. Supporting conditions, all of which the gate implies: a floor asks
+something specific (done), composition changes the odds (done), information is obtainable at a
+price that is not self-defeating (2c), and there is a lever to answer it with (2d).
+
+### Explicitly NOT in Phase 2
+
+Named here because the vision is much larger than the phase, and scope creep is the main risk:
+
+- Real-time expeditions (6-12h missions running while the player does other things). Needs a
+  **save system, which the project does not have** — the only `ofstream` in the codebase is the
+  session log. It is also a genre change, from a session game to a management game with offline
+  progression. 2d is its prerequisite; build it after the loop convinces.
+- Persistence / save-load. Same reason. Build it once, knowing what has to be saved.
+- Armory, shop, items, equipment. Phase 3 — but note 2d-1 is the seam they plug into.
+- Real-time visualisation of a floor resolving. Presentation layer, and it wants the abstracted
+  resolution to be settled first.
+- Unit autonomy, and the tower's persistent memory (both below).
+
+### Beyond Phase 2
+
+The two open-ended layers the old plan called 2c and 2d, unchanged in substance, moved out
+because a phase has to end somewhere:
+
+- **The tower has a memory.** Within-run first (floor N affects N+1 via a small `RunState`;
+  fled → the floor fortifies; rescued someone → they climb with you), then persistent, where
+  *"an important character dies and it has repercussions"* lives. It hangs on the Necropolis and
+  the generated histories that Phase 0 already built: Phase 0 gave characters a past, this gives
+  their *end* a mark. Material parked for it: the third `Encounter` field (`resolution`) and the
+  saved clear-flavor texts in the [backlog](backlog.md).
+- **Unit autonomy** — the endpoint of the agent-model dial of §3, and thematically central. It
+  **has already begun**: the varied-deeds system is the first atom of "units react to the
+  situation", and 2c's unreliable reports are the second — a unit that reports what *it* noticed
+  is already deciding something. It grows from there into units stepping up by trait and mission,
+  with player indications as soft nudges.
+
+### Rhythm
+
+The loop that worked all through Phase 1 and 2a-2b, kept deliberately:
+
+1. One numbered step at a time, small enough to hold in your head.
+2. **The user writes the code.** Guidance names the shape, the trade-off, and what will break.
+3. Review, compile, and verify the behaviour *in game* — reading the session log, not assuming.
+4. Pre/Post contracts and player-facing text are maintained alongside, and every change reported.
+5. Commit at each step boundary.
+6. **Bot measurement only at the end of a layer**, never mid-way, where it is noise. A negative
+   result is a result: 2b's A/B is why 2c and 2d exist at all.
 
 ---
 
@@ -166,5 +306,9 @@ From the [backlog](backlog.md), where they fit once the framework exists:
 
 ## 7. Immediate next step
 
-Close Phase 1 (docs + commit), then open Phase 2a by designing the `Objective` representation
-and how a floor carries one. The agent-model fork is already resolved (player-directed first).
+**2c-1**: create `Scouting.h/.cpp` with the `Report` struct and a `scoutAhead` that always
+returns a perfect report (`sawType`, `sawDanger`, `bias = 0`, no traits consulted yet). Wire it
+into the climb prompt in place of the essence-priced scout and retire `SCOUT_COST`. Behaviour
+stays as it is today apart from the report being attributed to a named unit — the seam gets
+proven before any character is poured into it, exactly as `Objective` was introduced
+behaviour-neutral in 2a.
