@@ -3,6 +3,7 @@
 Report scoutAhead(const Unit &scout, const Objective &objective, std::mt19937 &rng) {
     Report report;
     report.scout = scout.getName();
+    report.scoutId = scout.getId();
     report.sawObjective = true;
     report.claimed = objective;
     report.sawDanger = true;

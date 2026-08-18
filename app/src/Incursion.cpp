@@ -67,22 +67,28 @@ static const int WOUND_INJURY_CHANCE = 8;
 static const int VICTIM_WEIGHT_BONUS = 2;
 static const int VICTIM_WEIGHT_PENALTY = 1;
 
-static int teamPower(const Team &team, const Roster &roster)
+static int teamPower(const Team &team, const Roster &roster, int excludeId = -1)
 {
     int power = 0;
     for (int id : team.getMembersIds())
     {
+        if (id == excludeId)
+            continue;
         const Stats s = roster.findUnitById(id).getStats();
         power += s.getStrength() + s.getConstitution();
     }
     return power;
 }
 
-static int teamFit(const Team &team, const Roster &roster, ObjectiveType type)
+static int teamFit(const Team &team, const Roster &roster, ObjectiveType type, int excludeId = -1)
 {
     int fit = 0;
     for (int id : team.getMembersIds())
+    {
+        if (id == excludeId)
+            continue;
         fit += traitFit(type, roster.findUnitById(id).getSkills());
+    }
     return fit;
 }
 
@@ -195,12 +201,11 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     std::uniform_int_distribution<int> luck(0, MAX_LUCK);
     Objective objective = makeObjective(startFloor, rng);
     Report claim;
-    bool floorScouted = false;
 
     for (int floor = startFloor;; floor++)
     {
-        int fit = teamFit(team, roster, objective.type);
-        int power = teamPower(team, roster) + fit;
+        int fit = teamFit(team, roster, objective.type, claim.scoutId);
+        int power = teamPower(team, roster, claim.scoutId) + fit;
         int danger = objective.difficulty;
         int attack = power + luck(rng);
 
@@ -210,8 +215,12 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         std::cout << "Objective: " << describeObjective(objective) << std::endl;
         std::cout << "  " << describeFit(fit) << std::endl;
 
-        if (floorScouted && claim.sawObjective && claim.claimed.type != objective.type)
-                std::cout << "  " << describeMisreport(claim) << std::endl;
+        if (claim.scoutId != -1)
+            std::cout << "  " << claim.scout
+                      << " is still winded from slipping ahead, and sits this one out." << std::endl;
+
+        if (claim.scoutId != -1 && claim.sawObjective && claim.claimed.type != objective.type)
+            std::cout << "  " << describeMisreport(claim) << std::endl;
 
         std::vector<std::pair<int, const TraitEvent *>> candidates;
         for (int id : team.getMembersIds())
@@ -431,10 +440,12 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
                         if (scoutedReport.sawObjective)
                         {
-                            int nextFit = teamFit(team, roster, scoutedReport.claimed.type);
+                            int nextFit = teamFit(team, roster, scoutedReport.claimed.type,
+                                                  scoutedReport.scoutId);
                             std::cout << "  " << describeFit(nextFit) << std::endl;
                             if (scoutedReport.sawDanger)
-                                printForecast(currentPower + nextFit + scoutedReport.bias, nextDanger);
+                                printForecast(teamPower(team, roster, scoutedReport.scoutId)
+                                                  + nextFit + scoutedReport.bias, nextDanger);
                         }
                     }
                 }
@@ -448,7 +459,6 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         }
         objective = nextObjective;
         claim = scoutedReport;
-        floorScouted = scouted;
     }
 
     team.purgeDeadMembers(roster);

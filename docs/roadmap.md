@@ -4,7 +4,8 @@ A north star for finishing Phase 1 and shaping Phase 2. This is a **living desig
 not a contract: it records the direction we agreed on and *why*, so no idea gets lost and each
 build step stays small. Written 2026-07-25; §5 rewritten 2026-08-06 after the Phase 2b bot
 measurement sent the plan somewhere it had not expected to go; §7 (the technical trajectory
-to ImGui, persistence and Godot) added 2026-08-18.
+to ImGui, persistence and Godot) added 2026-08-18, and §5 reordered the same day when the 2c-3
+upper-bound measurement showed the structure had to come before the mechanism.
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -200,11 +201,12 @@ where a scouting party is paid for with expedition slots.
 
 | Step | What | Note |
 |---|---|---|
-| 2c-1 | `Scouting.h/.cpp`, `Report`, `scoutAhead` returning a *perfect* report; wire it in, retire `SCOUT_COST` | behaviour-neutral but for attribution -- prove the seam before adding character |
-| 2c-2 | Voice: reports named and hedged; the hindsight line when a report was wrong | plus the §1.4 rewrite, below |
-| 2c-3 | Fatigue: optional `excludeId` on `teamPower`/`teamFit`; the scout sits out the floor they scouted | the force cost |
-| 2c-4 | Personalities: omission first (Cowardly, Greedy), then distortion (Boaster bias, Superstitious wrong type), then scouting risk | Alert/Curious as the reliable end |
-| 2c-5 | Re-run the A/B | does an informed bot now beat a blind one? |
+| 2c-1 | `Scouting.h/.cpp`, `Report`, `scoutAhead` returning a *perfect* report; wire it in, retire `SCOUT_COST` | **done** -- behaviour-neutral but for the attribution |
+| 2c-2 | Voice: reports attributed and framed as claims; the hindsight line when a report was wrong | **done** -- plus the §1.4/§1.5 rewrite, below |
+| 2c-3 | Fatigue: optional `excludeId` on `teamPower`/`teamFit`; the scout sits out the floor they scouted | **done, then measured** -- see below |
+
+Personalities and the closing measurement were 2c-4 and 2c-5. They now live in **2e**, behind the
+structural work, for the reason the next section records.
 
 **A style-guide amendment this needs.** §1.4 ("No lying output") is narrower than it sounds — it
 forbids the game reporting success for an action that failed. A scout's report is not a result,
@@ -216,31 +218,112 @@ fake confidence the scout does not have, even when the content is wrong), and a 
 arrival (*"Keira had promised an easy fight."*) so the player blames Keira and not the game.
 Omission is the cleaner half and comes first: a scout who never got close simply brings back less.
 
-### 2d — Somewhere to spend the information
+### The 2c-3 upper-bound measurement, and the reorder it forced  *(2026-08-18)*
 
-Recon is only half an answer while composition is frozen at the tower door. The fix is
-structural, and most of it already exists: the game *already* lets you clear one floor, retreat,
-and re-enter at `record+1` for a toll. The [backlog](backlog.md) files that under
+Before pouring character into `scoutAhead`, the mechanism was measured **at its ceiling**:
+*perfect* information, priced at one unit-floor. Reports can only get worse from there (2e adds
+ways to misreport), so a loss here could never be rescued by flavour. 20 campaigns per arm, 5
+incursions each, policies identical but for scouting:
+
+| arm | mean best floor | deaths per campaign |
+|---|---:|---:|
+| scouting ON, perfect information | 9.50 | 1.50 |
+| blind (control) | 10.40 | 1.85 |
+| | *p = 0.043* | *p = 0.254* |
+
+(permutation test on the difference of means, 200k resamples — no library needed)
+
+**Scouting costs a floor of record and buys no significant safety.** All 88 scouts were then
+dissected:
+
+| | count |
+|---|---:|
+| sharpened read *better* than the distant one | **1** |
+| sharpened read *worse* | 58 |
+| unchanged | 29 |
+| flipped climb → retreat | 30 |
+| flipped retreat → climb | **0** |
+
+Two causes, one local and one structural.
+
+**Local: the fatigue cost is triple the signal it buys.** A level-2 unit is ~28 points of team
+power, a forecast tier is 30 wide, and `traitFit` swings ±8 to ±20. So excluding the scout from
+the sharpened forecast costs a whole tier while the information is worth half of one — the number
+the player reads after paying goes *down* almost always, and not because the floor is worse but
+because they just weakened the party. **Information arrives permanently disguised as bad news.**
+The fix, if it is still needed later: the scout contributes their **stats but not their traits**
+(body present, judgement absent), which costs exactly their `traitFit` — the same order as the
+signal, and one line: pass `claim.scoutId` to `teamFit` only, never to `teamPower`.
+
+**Structural, and this is the one that matters: 0 of 88.** Not once did information send the team
+*up* a floor it would otherwise have refused. With go/no-go as the only decision on the table,
+better information can only ever make you more cautious — and caution is precisely what lowers
+the record being measured. Three measurements have now said the same sentence three different
+ways: **there is nowhere to spend what you learn.**
+
+**Decision (2026-08-18): structure before mechanism.** Personalities and the closing measurement
+move out to 2e, behind 2d. Flavour cannot rescue a mechanism whose prerequisite does not exist,
+and measuring it again first would only have been a fourth reading of the same wall.
+
+**A methodological correction comes with it.** The bot climbs on green or yellow and retreats on
+red — a strategy with no composition in it whatsoever. Such an agent can only ever be *hurt* by
+information, because retreating is the only thing it knows how to do with it. We have been
+measuring a game about composition with a player that has none, and that cannot be fixed until
+composition is a decision made **between** sorties, which is 2d. Until then the validation is
+playing it and reading whether the choices feel like choices — see the amended Rhythm.
+
+### 2d — One floor per sortie: the structure that gives information a use
+
+Adopted 2026-08-18 on the user's proposal, and it is the fix all three measurements have been
+pointing at. An incursion stops being a thirty-floor climb and becomes **one floor**: the party
+enters, resolves it, and comes out. Progress happens by re-entering at `record+1` — which the
+game already supports, and which the [backlog](backlog.md) currently files under
 "the heal-retreat-reenter exploit". Phase 2 stops treating it as an exploit and makes it the
 intended path.
 
-**The linchpin, and it must land first or alongside:** leaving the tower is currently a *free
-full heal* (`roster.healAll()`), and the toll is trivial once essence piles into the thousands.
-So today going home costs nothing, and greed only survives because retreating is *inconvenient*
-rather than *expensive*. Ship one-floor sorties before fixing that and the only correct play
-becomes "one floor, go home, heal free, return" — and the playtest will read as a bad design when
-only the sequencing was wrong.
+What it unlocks, in order of weight:
+
+- **Composition becomes answerable.** You learn what the floor holds, and *then* you choose who
+  goes. That is the lever `traitFit` has been waiting for since 2b, and the missing half of every
+  measurement so far.
+- **The expedition is picked from the whole roster**, with the number of places as the real cost.
+  This retires 2c's team-only rule, which existed solely because composition was frozen mid-climb:
+  the roster still decides who enters the tower, it is only that now every floor is an entry.
+  **A scouting party becomes a sortie of its own** — pay the toll, risk the people, and what you
+  buy is knowledge. Including, explicitly, sending someone cheap to die for it: a life with a name
+  spent on information, which is GDD §1.1 aimed straight at a mechanic.
+- **The greed tension survives and improves.** Re-entry is immediate, so "push on now or regroup"
+  is still there at every floor; what changes is that regrouping becomes *interesting* instead of
+  a formality.
+
+**The linchpin: leaving the tower must stop being a free full heal.** Today it is one
+(`roster.healAll()`), and the toll is trivial once essence piles into the thousands. Ship
+one-floor sorties before fixing that and the only correct play becomes "one floor, go home, heal
+free, return" — the loop will feel hollow, and it will read as the *design* failing when only the
+sequencing did.
 
 | Step | What | Note |
 |---|---|---|
-| 2d-1 | `healRested(climbedIds)` — only those who stayed behind recover; wounds ride home with whoever climbed | one function; makes the bench matter and finally gives surplus essence a use |
-| 2d-2 | Make extract-and-re-enter the supported path: toll tuning, retreat/re-entry framing | not new machinery -- reframing |
-| 2d-3 | Verify recomposition is worth doing: does knowing floor N+1 change *who you send*, not just *whether* | the whole point of 2c |
-| 2d-4 | Closing measurement | see the gate below |
+| 2d-1 | Healing stops being automatic and total: only those who did not climb recover (`healRested`), and later rest becomes a lobby resource decision | the linchpin; makes the bench matter and gives surplus essence a use |
+| 2d-2 | One floor per sortie: the run ends after a floor, re-entry at `record+1` is the supported path, tolls and framing tuned for it | mostly reframing what already exists |
+| 2d-3 | The expedition is chosen from the roster, places as the cost; scouting parties become sorties of their own | retires the team-only rule, which the structure makes obsolete |
+| 2d-4 | The cheap-fatigue fix, if it is still needed by then | may well be moot once scouting is its own sortie |
 
-Note the greed tension is **not** lost to one-floor sorties — re-entry is immediate, so "push now
-or regroup" survives, and it gets better: both options become interesting instead of one being
-obvious. It only survives if 2d-1 lands.
+### 2e — Personalities, and the closing measurement
+
+Only once there is somewhere to spend information does it matter *how good* the information is.
+
+| Step | What | Note |
+|---|---|---|
+| 2e-1 | Omission: Cowardly and Greedy come back without the danger read | the honest half -- a scout who never got close simply brings back less |
+| 2e-2 | Distortion: the Boaster's `bias`, the Superstitious scout's wrong `type` | the consequence is already built and verified |
+| 2e-3 | Scouting risk: wounds and deaths for whoever goes ahead | Alert and Curious as the reliable end of the scale |
+| 2e-4 | The closing measurement | needs a bot that can recompose -- see the gate |
+
+Everything 2e needs is already standing, and was verified on 2026-08-18 with a three-line
+temporary lie in `scoutAhead`: a wrong claim cascades correctly through the fit into the forecast,
+and the hindsight line names the scout to the player's face. **The punishment was built before the
+crime.**
 
 ### Where Phase 2 ends
 
@@ -250,10 +333,17 @@ Not a feature checklist — a **falsifiable gate**, the same way Phase 1 closed 
 > recomposes, one does not. Phase 2 closes when the informed arm wins clearly on record floor,
 > on deaths, or on both.
 
-Today that number is 10 vs 11 — pointing the wrong way. That is the honest state of the phase,
-and it is the number to move. Supporting conditions, all of which the gate implies: a floor asks
-something specific (done), composition changes the odds (done), information is obtainable at a
-price that is not self-defeating (2c), and there is a lever to answer it with (2d).
+As of 2026-08-18 that number is **9.50 against 10.40 mean record floor, p = 0.043 — pointing the
+wrong way**, and that is with *perfect* information. It is the honest state of the phase and it is
+the number to move. Supporting conditions, all of which the gate implies: a floor asks something
+specific (done), composition changes the odds (done), information is obtainable at a price that is
+not self-defeating (2c: measured, and found wanting), and there is a lever to answer it with (2d).
+
+**The gate also needs a fairer bot.** The present one climbs on green or yellow and retreats on
+red — no composition anywhere in its strategy, so information can only cost it. The closing
+measurement needs an agent that chooses *who goes* from the roster in answer to what it learned.
+Until that exists the gate cannot be honestly tested, and a failing number says as much about the
+bot as about the game.
 
 ### Explicitly NOT in Phase 2
 
@@ -295,8 +385,13 @@ The loop that worked all through Phase 1 and 2a-2b, kept deliberately:
 3. Review, compile, and verify the behaviour *in game* — reading the session log, not assuming.
 4. Pre/Post contracts and player-facing text are maintained alongside, and every change reported.
 5. Commit at each step boundary.
-6. **Bot measurement only at the end of a layer**, never mid-way, where it is noise. A negative
-   result is a result: 2b's A/B is why 2c and 2d exist at all.
+6. **Bot measurement only when a whole loop exists** — amended 2026-08-18, and the amendment
+   matters. Three mechanisms were each measured against a metric the structure could not yet
+   serve, and each came back "no": demoralising, and only the third reading told us anything the
+   second had not. Between measurements the validation is **playing it and reading whether the
+   choices feel like choices**. A negative result is still a result — 2b's A/B is why 2c exists,
+   and 2c-3's is why 2d now comes before 2e — but three in a row means the question was wrong,
+   not the answer.
 
 ---
 
@@ -402,9 +497,9 @@ design work *faster* rather than prettier.
 
 ## 8. Immediate next step
 
-**2c-1**: create `Scouting.h/.cpp` with the `Report` struct and a `scoutAhead` that always
-returns a perfect report (`sawType`, `sawDanger`, `bias = 0`, no traits consulted yet). Wire it
-into the climb prompt in place of the essence-priced scout and retire `SCOUT_COST`. Behaviour
-stays as it is today apart from the report being attributed to a named unit — the seam gets
-proven before any character is poured into it, exactly as `Objective` was introduced
-behaviour-neutral in 2a.
+**2d-1**: stop healing being automatic and total. `Roster::healAll()` becomes
+`healRested(climbedIds)` — only the units that did not climb recover, wounds ride home with
+whoever did, and permanent injuries stay permanent as they always have. It is the linchpin of the
+whole structural change: until leaving the tower costs something, one-floor sorties collapse into
+"one floor, go home, heal free, return". Small, self-contained, and the first step in weeks that
+is not waiting on anything else.

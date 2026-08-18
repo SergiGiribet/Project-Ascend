@@ -14,6 +14,7 @@
 
 struct Report {
     std::string scout;   // who went; every player-facing line is attributed to them by name
+    int scoutId = -1;   // who made this report; -1 when nobody scouted this floor
     bool sawObjective = false;   // did they identify the mission at all
     Objective claimed{};   // what they say it is; only meaningful when sawObjective
     bool sawDanger = false;      // did they get close enough to judge the odds
