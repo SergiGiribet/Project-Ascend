@@ -1,0 +1,34 @@
+#ifndef SCOUTING_H
+#define SCOUTING_H
+
+#include <random>
+#include <string>
+
+#include "Objective.h"
+#include "Unit.h"
+
+// What ONE unit brings back after slipping ahead to the next floor. Deliberately not a fact but
+// a CLAIM: who goes decides what comes back, and an unreliable scout may omit or mistake things
+// (2c-4). Everything the player then sees is derived from this claim, so a single wrong `type`
+// is enough to make the whole forecast wrong on its own -- one lie, cascading.
+
+struct Report {
+    std::string scout;   // who went; every player-facing line is attributed to them by name
+    bool sawObjective = false;   // did they identify the mission at all
+    Objective claimed;   // what they say it is; only meaningful when sawObjective
+    bool sawDanger = false;      // did they get close enough to judge the odds
+    int bias = 0;            // added to the power they report: >0 tells it rosier than it is
+};
+
+Report scoutAhead(const Unit &scout, const Objective &objective, std::mt19937 &rng);
+// Pre: rng must be seeded.
+// Post: Returns what the scout claims about the objective. Every report is currently complete and
+//       accurate (sawObjective and sawDanger true, claimed == objective, bias 0); trait-driven
+//       omission, distortion and risk arrive in 2c-4.
+
+std::string describeReport(const Report &report);
+// Pre: None.
+// Post: Returns the player-facing line for what the scout brought back, attributed to them by
+//       name, with full punctuation. Reports what the scout CLAIMS, never what is true.
+
+#endif

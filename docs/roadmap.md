@@ -3,7 +3,8 @@
 A north star for finishing Phase 1 and shaping Phase 2. This is a **living design document**,
 not a contract: it records the direction we agreed on and *why*, so no idea gets lost and each
 build step stays small. Written 2026-07-25; §5 rewritten 2026-08-06 after the Phase 2b bot
-measurement sent the plan somewhere it had not expected to go.
+measurement sent the plan somewhere it had not expected to go; §7 (the technical trajectory
+to ImGui, persistence and Godot) added 2026-08-18.
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -304,7 +305,92 @@ From the [backlog](backlog.md), where they fit once the framework exists:
 
 ---
 
-## 7. Immediate next step
+## 7. Technical trajectory: presentation, persistence, engine  *(decided 2026-08-18)*
+
+The design keeps being built where iterating is cheapest — **the console** — and the presentation
+layer arrives once the Phase 2 gate flips, not before. A new engine does not move that gate: it
+would freeze the design in a state the data says is unproven, and spend weeks rebuilding what
+already works to learn nothing about whether the loop is good. **The order below is deliberate.**
+
+### The real blocker (measured 2026-08-18)
+
+| File | Lines | `std::cout` |
+|---|---:|---:|
+| `main.cpp` | 375 | 85 |
+| `Incursion.cpp` | 478 | 56 |
+| `Objective.cpp` | 81 | 0 |
+| `Generator.cpp` | 84 | 0 |
+| `Injury.cpp` | 76 | 0 |
+
+`Objective`, `Generator` and `Injury` port to anything as they stand. `Incursion.cpp` does not,
+because there the resolution **is** the printing — one body of code does both. That fusion, not
+the absence of an engine, is what blocks every step below.
+
+### T1 — Separate simulation from presentation  *(begins inside 2c)*
+
+Resolution stops printing and starts **returning data**: an ordered list of events that a caller
+renders. The console becomes one renderer among later others, and nothing in the rules cares
+which one is attached.
+
+It pays off before any engine exists: **the bot could call the simulation directly** instead of
+scraping stdout. Most of the 2026-08-06 measurement's cost went into the stdout protocol (the
+`"> "` prompt marker; the roster screen printing the team underneath it, whose `[id]` lines carry
+no marker and read as free units). With T1 done, running the phase gate drops from an afternoon
+to instant and repeatable.
+
+**2c-1 is already the first brick.** `struct Report` is logic that returns data and lets the
+caller print it. Build it, watch it work, then decide whether to generalise the pattern across
+`Incursion.cpp` — incrementally, one screen at a time, never as one big rewrite.
+
+### T2 — A Dear ImGui front-end
+
+Not an engine — a **window plus widgets** bolted onto the existing C++:
+
+- **raylib** (or SDL2) opens the window, owns the frame loop, reads the mouse and keyboard.
+- **Dear ImGui** draws the panels: roster tables, unit cards, the tower view, tooltips, timers.
+
+Why it fits this project specifically: ImGui is **immediate mode** — every frame you rebuild the
+whole interface from current state, top to bottom. That is *already* what this game does each time
+it reprints the roster on opening a menu. The mental model transfers with no translation, so it is
+a **change of façade, not a rewrite**, and 100% of the C++ (and of the C++ being learned) survives.
+
+Sequence: T1 must be far enough along that at least one screen is fed by data instead of `cout`.
+Start with the roster (pure display, no input), then the team screen, then the incursion view.
+The console front-end keeps working the whole time — two renderers over one simulation is the
+point of T1, and the console one is what the bot and the session logs use.
+
+### T3 — Save system
+
+Independent of any engine, and a hard prerequisite for the long-form expeditions in the vision.
+The project has **no persistence today**: the only `ofstream` in the codebase is the session log,
+and Roster, Team, GameState, Necropolis and the camp all live in `main()` and die with it.
+
+Build it **once**, and only when it is known what has to be saved — which is why it comes after
+Phase 2 settles the shape of a run. It must cover the roster and its histories, the Necropolis
+(the whole point of the game remembering), essence and the tower record, the camp with its
+in-flight training, and eventually expeditions in progress with their clocks.
+
+### T4 — Godot 4  *(the chosen destination)*
+
+**Decided 2026-08-18**, and not a fresh evaluation: it is the engine already intended, already
+worked with, and open source — which matters to this project on principle.
+
+It arrives last because by then everything it needs exists: a simulation that speaks in data (T1),
+a UI whose shape has been proven in ImGui (T2), and state that can be written to disk (T3). The
+simulation stays C++ through **GDExtension**, so Godot owns presentation, input, scenes and
+export, and the rules stay in the code they were learned in.
+
+Ruled out on the way: **Unreal** (C++ native but wildly oversized for a management game — you
+fight the engine) and **Unity** (C#, which would mean abandoning both the codebase and the
+language being learned).
+
+### Ordering rule
+
+None of T2, T3 or T4 begins before **the Phase 2 gate flips** (an informed bot beating a blind
+one, §5). T1 is the exception and starts now, because it is the only one that makes the current
+design work *faster* rather than prettier.
+
+## 8. Immediate next step
 
 **2c-1**: create `Scouting.h/.cpp` with the `Report` struct and a `scoutAhead` that always
 returns a perfect report (`sawType`, `sawDanger`, `bias = 0`, no traits consulted yet). Wire it

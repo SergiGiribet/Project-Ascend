@@ -1,6 +1,7 @@
 #include "Incursion.h"
 #include "Utils.h"
 #include "Objective.h"
+#include "Scouting.h"
 
 #include <fstream>
 #include <iostream>
@@ -65,7 +66,6 @@ static const int FATAL_CHANCE = 18;
 static const int WOUND_INJURY_CHANCE = 8;
 static const int VICTIM_WEIGHT_BONUS = 2;
 static const int VICTIM_WEIGHT_PENALTY = 1;
-static const int SCOUT_COST = 3;
 
 static int teamPower(const Team &team, const Roster &roster)
 {
@@ -400,27 +400,38 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
             std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return";
             if (!scouted)
-                std::cout << "  [3] Scout ahead (" << SCOUT_COST << " essence)";
+                std::cout << "  [3] Send someone ahead";
             std::cout << std::endl;
 
             choice = readChoice();
             if (choice == 3)
             {
                 if (scouted)
-                    std::cout << "The scouts have already gone ahead." << std::endl;
-                else if (state.essence >= SCOUT_COST)
-                {
-                    state.essence -= SCOUT_COST;
-                    scouted = true;
-                    std::cout << "The scouts return: " << describeObjective(nextObjective) << std::endl;
-
-                    int nextFit = teamFit(team, roster, nextObjective.type);
-                    std::cout << "  " << describeFit(nextFit) << std::endl;
-                    printForecast(currentPower + nextFit, nextDanger);
-                }
+                    std::cout << "Someone has already gone ahead." << std::endl;
                 else
-                    std::cout << "Not enough essence to scout ahead (" << state.essence
-                              << "/" << SCOUT_COST << ")." << std::endl;
+                {
+                    std::cout << "Who slips ahead? (unit id)" << std::endl;
+                    team.printTeam(roster);
+                    int scoutId = readChoice();
+
+                    const std::vector<int> &ids = team.getMembersIds();
+                    if (std::find(ids.begin(), ids.end(), scoutId) == ids.end())
+                        std::cout << "No one by that id is in the team." << std::endl;
+                    else
+                    {
+                        Report report = scoutAhead(roster.findUnitById(scoutId), nextObjective, rng);
+                        scouted = true;
+                        std::cout << describeReport(report) << std::endl;
+
+                        if (report.sawObjective)
+                        {
+                            int nextFit = teamFit(team, roster, report.claimed.type);
+                            std::cout << "  " << describeFit(nextFit) << std::endl;
+                            if (report.sawDanger)
+                                printForecast(currentPower + nextFit + report.bias, nextDanger);
+                        }
+                    }
+                }
             }
         } while (choice == 3);
 
