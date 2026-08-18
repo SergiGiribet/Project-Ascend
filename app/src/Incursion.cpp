@@ -463,12 +463,6 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
     team.purgeDeadMembers(roster);
 
-    for (int id : team.getMembersIds())
-    {
-        Unit &u = roster.findUnitById(id);
-        u.heal(u.getStats().getMaxHealth());
-    }
-
     std::cout << std::endl;
     std::cout << "=== Incursion " << state.incursionCount << " over ===" << std::endl;
     std::cout << "Highest floor this run: " << highestFloorThisRun
@@ -476,7 +470,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
               << "  |  Essence: " << state.essence << std::endl;
     if (!team.getMembersIds().empty())
     {
-        std::cout << "The survivors rest and tend their wounds." << std::endl;
+        std::cout << "They come back down still carrying their wounds. Only rest away from"
+                  << " the tower will mend them." << std::endl;
         team.printTeam(roster);
     }
 }

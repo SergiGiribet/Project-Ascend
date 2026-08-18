@@ -61,9 +61,12 @@ void Roster::removeUnitById(int id)
                  units_.end());
 }
 
-void Roster::healAll() {
+
+void Roster::healRested(const std::vector<int> &climbedIds) {
     for (Unit &u : units_) {
-        u.heal(u.getStats().getMaxHealth());
+        if (std::find(climbedIds.begin(), climbedIds.end(), u.getId()) == climbedIds.end()) {
+            u.heal(u.getStats().getMaxHealth());
+        }
     }
 }
 

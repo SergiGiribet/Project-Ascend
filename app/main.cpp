@@ -317,7 +317,7 @@ int main()
                         {
                             runIncursion(team, roster, state, encounters, injuries, rng);
                             tcamp.tick(roster, injuries, rng);
-                            roster.healAll();
+                            roster.healRested(team.getMembersIds());
                         }
                         else
                             runIncursion(team, roster, state, encounters, injuries, rng); // imprimeix l'avís "No units"

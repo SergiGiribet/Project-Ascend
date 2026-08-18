@@ -45,16 +45,21 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       death path. Before each climb prompt, prints a danger forecast for the next floor
 //       (4 tiers, computed from the team's base power -- deliberately WITHOUT the trait fit,
 //       since the objective is still unknown -- vs the next floor's difficulty). At that prompt
-//       the player may also scout ahead once per floor, which charges SCOUT_COST essence and
-//       reveals the next floor's objective -- the very objective that floor will present if
-//       climbed -- together with the team's disposition towards it and a second forecast that
-//       does include the fit, and so may land in a different tier than the first; scouting with
-//       too little essence is refused and charges nothing. Increments
+//       the player may also send ONE team member ahead, once per floor, at no essence cost: the
+//       chosen unit reports (scoutAhead) the next floor's objective -- the very objective that
+//       floor will present if climbed -- attributed to them by name and framed as their claim,
+//       plus the disposition towards what they claim and a second forecast that includes that
+//       fit, so it may land in a different tier than the first. Both are computed WITHOUT the
+//       scout, who is winded and sits out the floor they scouted (the cost is force, not
+//       currency). An id outside the team is refused and spends nothing. If the floor then turns
+//       out to be something other than what was claimed, a line says so and names the scout.
+//       Increments
 //       state.incursionCount; survivors gain XP and may level up; each casualty is recorded in
 //       state.necropolis BEFORE being removed from roster and purged from team, with the
 //       encounter's cause for difficulty/overwhelm deaths or the incident's own flavor text for
 //       residual incidents; state.highestFloor grows if a new record floor is cleared.
-//       Survivors' ordinary wounds are fully healed when the incursion ends, but permanent
-//       injuries and the dead both stay. Prints a notice and does nothing if team is empty.
+//       Wounds are NOT healed here: whoever climbed carries them home, and only units that
+//       stayed behind recover (Roster::healRested, called by main). Permanent injuries and the
+//       dead both stay, as always. Prints a notice and does nothing if team is empty.
 
 #endif

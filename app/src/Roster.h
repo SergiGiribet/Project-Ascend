@@ -17,7 +17,8 @@
 #include <vector>
 #include <iostream>
 
-class Roster {
+class Roster
+{
 public:
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
     Roster();
@@ -49,9 +50,11 @@ public:
     // Pre: None
     // Post: Removes the unit with the specified id from the roster; does nothing if no unit has that id.
 
-    void healAll();
-    // Pre: None
-    // Post: Restores every unit in the roster to full health.
+    void healRested(const std::vector<int> &climbedIds);
+    // Pre: None.
+    // Post: Restores to full health every unit that did NOT climb this incursion -- the bench and
+    //       the camp. Units in climbedIds keep their wounds and carry them into the next sortie.
+    //       Permanent injuries are never healed, by either path.
 
     // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void printRoster(const std::vector<int> &teamIds, const std::vector<int> &trainerIds, const std::vector<int> &traineeIds) const;

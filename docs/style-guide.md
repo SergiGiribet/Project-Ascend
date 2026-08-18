@@ -128,7 +128,10 @@ em dash. Close with a question or a line that lingers.
 - **The game's signature phrases** (don't change them lightly — they are identity):
   - `The tower claims them all. No one returns.` (wipe)
   - `The team descends with their spoils and their lives.` (voluntary retreat)
-  - `The survivors rest and tend their wounds.` (post-incursion rest; only if anyone remains)
+  - `They come back down still carrying their wounds. Only rest away from the tower will mend them.`
+    (end of an incursion, only if anyone remains. Replaced `The survivors rest and tend their
+    wounds.` on 2026-08-18, when healing stopped being free: the climbers keep their wounds and
+    only the bench and the camp recover -- the old line had become a lie under §1.4)
   - `The summoning circle glows...` (summoning)
   - `The tower will be waiting. Goodbye!` (exit)
 - **Trait list separator**: `, ` in cards and lists; ` and ` on tombstones (reads more solemn).
