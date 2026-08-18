@@ -188,6 +188,16 @@ on its own. No second falsehood to author, no second thing to keep consistent.
 Lives in a new `Scouting.h/.cpp` — `Objective.h` deliberately does not know `Unit`, and
 `Incursion.cpp` is already 450 lines.
 
+**Decided 2026-08-18: the scout is picked from the TEAM, never from the roster.** Three reasons,
+ascending in weight: the bench is back at base and cannot slip ahead to a floor it never climbed;
+a roster-wide pick would mean never packing an Alert at all (leave them home, send them to look),
+undoing the very work that makes composition matter; and it would **kill the fatigue cost before
+it exists** — a scout who was never going to fight costs nothing, so information would be free
+again, which is precisely the failure the 2026-08-06 measurement recorded, just in another
+currency. The rule: **the roster decides who enters the tower; once inside, you may only spend
+what you brought.** The roster-wide instinct is sound but belongs at the door — in 2d's sorties,
+where a scouting party is paid for with expedition slots.
+
 | Step | What | Note |
 |---|---|---|
 | 2c-1 | `Scouting.h/.cpp`, `Report`, `scoutAhead` returning a *perfect* report; wire it in, retire `SCOUT_COST` | behaviour-neutral but for attribution -- prove the seam before adding character |

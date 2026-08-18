@@ -15,7 +15,7 @@
 struct Report {
     std::string scout;   // who went; every player-facing line is attributed to them by name
     bool sawObjective = false;   // did they identify the mission at all
-    Objective claimed;   // what they say it is; only meaningful when sawObjective
+    Objective claimed{};   // what they say it is; only meaningful when sawObjective
     bool sawDanger = false;      // did they get close enough to judge the odds
     int bias = 0;            // added to the power they report: >0 tells it rosier than it is
 };
@@ -29,6 +29,13 @@ Report scoutAhead(const Unit &scout, const Objective &objective, std::mt19937 &r
 std::string describeReport(const Report &report);
 // Pre: None.
 // Post: Returns the player-facing line for what the scout brought back, attributed to them by
-//       name, with full punctuation. Reports what the scout CLAIMS, never what is true.
+//       name and framed as their claim rather than as fact (style guide 1.5), with full
+//       punctuation; notes it when they never got close enough to judge the odds. Reports what
+//       the scout CLAIMS, never what is true.
+
+std::string describeMisreport(const Report &report);
+// Pre: report.sawObjective must be true (there is no claim to contradict otherwise).
+// Post: Returns the line printed when the floor turns out not to be what the scout claimed,
+//       naming them so the mistake lands on the character and not on the game.
 
 #endif

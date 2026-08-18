@@ -16,8 +16,20 @@ canonical formats below.
 3. **Punctuation belongs to whoever composes the sentence**, never to the data. Bank entries
    carry no trailing period; templates and narrating code own all punctuation (see §5 of the
    technical documentation).
-4. **No lying output.** If an action does nothing (nonexistent id, empty bank), the text says
-   so; never a success message for an action that failed.
+4. **No lying output — about what the game did.** If an action does nothing (nonexistent id,
+   empty bank), the text says so; never a success message for an action that failed. Numbers
+   shown to the player are the numbers the simulation actually used.
+5. **Characters may be wrong; the narration may not.** A scouting report is not a result, it is
+   a **claim by a named unit**, and it is allowed to be incomplete or mistaken — that is the
+   whole point of *who you send* mattering. Three rules keep an unreliable report readable as
+   personality instead of as a bug:
+   - **Always attributed.** Never "the scouts"; always "Yorick". The player has to be able to
+     blame a person.
+   - **A claim is framed as a claim.** `Their read: Hold the line for 3 rounds.` — never
+     `Floor 4 holds ...`. The narration faithfully reports that the unit said it; it never
+     asserts it as fact on its own authority.
+   - **The truth arrives, and it names them.** When the floor turns out otherwise, a line says
+     so with the scout's name, so the mistake lands on the character and not on the game.
 
 ## 2. Visual elements
 

@@ -194,6 +194,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     int highestFloorThisRun = 0;
     std::uniform_int_distribution<int> luck(0, MAX_LUCK);
     Objective objective = makeObjective(startFloor, rng);
+    Report claim;
+    bool floorScouted = false;
 
     for (int floor = startFloor;; floor++)
     {
@@ -207,6 +209,9 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
         std::cout << "Objective: " << describeObjective(objective) << std::endl;
         std::cout << "  " << describeFit(fit) << std::endl;
+
+        if (floorScouted && claim.sawObjective && claim.claimed.type != objective.type)
+                std::cout << "  " << describeMisreport(claim) << std::endl;
 
         std::vector<std::pair<int, const TraitEvent *>> candidates;
         for (int id : team.getMembersIds())
@@ -394,6 +399,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         printForecast(currentPower, nextDanger);
 
         bool scouted = false;
+        Report scoutedReport;
         int choice = 0;
         do
         {
@@ -419,16 +425,16 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                         std::cout << "No one by that id is in the team." << std::endl;
                     else
                     {
-                        Report report = scoutAhead(roster.findUnitById(scoutId), nextObjective, rng);
+                        scoutedReport = scoutAhead(roster.findUnitById(scoutId), nextObjective, rng);
                         scouted = true;
-                        std::cout << describeReport(report) << std::endl;
+                        std::cout << describeReport(scoutedReport) << std::endl;
 
-                        if (report.sawObjective)
+                        if (scoutedReport.sawObjective)
                         {
-                            int nextFit = teamFit(team, roster, report.claimed.type);
+                            int nextFit = teamFit(team, roster, scoutedReport.claimed.type);
                             std::cout << "  " << describeFit(nextFit) << std::endl;
-                            if (report.sawDanger)
-                                printForecast(currentPower + nextFit + report.bias, nextDanger);
+                            if (scoutedReport.sawDanger)
+                                printForecast(currentPower + nextFit + scoutedReport.bias, nextDanger);
                         }
                     }
                 }
@@ -441,6 +447,8 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             break;
         }
         objective = nextObjective;
+        claim = scoutedReport;
+        floorScouted = scouted;
     }
 
     team.purgeDeadMembers(roster);
