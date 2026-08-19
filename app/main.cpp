@@ -74,8 +74,16 @@ void IncursionMenu()
     std::cout << std::endl;
     std::cout << "=== The Tower ===" << std::endl;
     std::cout << "  1. Start the incursion" << std::endl;
-    std::cout << "  2. Scout the next floor (costs a unit)" << std::endl;
+    std::cout << "  2. Send a scout to the next floor" << std::endl;
     std::cout << "  3. Return to main menu" << std::endl;
+}
+
+void ViewMenu()
+{
+    std::cout << std::endl;
+    std::cout << "=== View Roster ===" << std::endl;
+    std::cout << "  1. View Unit Details" << std::endl;
+    std::cout << "  8. Return to main menu" << std::endl;
 }
 
 void printStatus(const GameState &state)
@@ -124,18 +132,34 @@ int main()
             case 1:
             {
                 std::cout << std::endl;
-                if (state.essence >= state.invokeCost)
+                int affordable = state.essence / state.invokeCost;
+                if (affordable == 0)
                 {
-                    state.essence -= state.invokeCost;
-                    std::cout << "The circle drinks " << state.invokeCost << " essence." << std::endl;
-                    std::cout << "The summoning circle glows..." << std::endl;
+                    std::cout << "Not enough essence to invoke: " << state.essence
+                              << "/" << state.invokeCost << ". The circle stays dark." << std::endl;
+                    break;
+                }
+
+                std::cout << "How many? (up to " << affordable << ", 0 to cancel)" << std::endl;
+                int count = readChoice();
+                if (count <= 0)
+                    break;
+                if (count > affordable)
+                {
+                    std::cout << "There is only essence enough for " << affordable << "." << std::endl;
+                    count = affordable;
+                }
+
+                state.essence -= count * state.invokeCost;
+                std::cout << "The circle drinks " << count * state.invokeCost << " essence." << std::endl;
+                std::cout << "The summoning circle glows..." << std::endl;
+
+                for (int i = 0; i < count; ++i)
+                {
                     Unit newUnit = gen.generateUnit(nextId++, state.necropolis);
                     roster.addUnit(newUnit);
                     newUnit.printUnit();
                 }
-                else
-                    std::cout << "Not enough essence to invoke: " << state.essence
-                              << "/" << state.invokeCost << ". The circle stays dark." << std::endl;
                 break;
             }
             case 2:
@@ -226,22 +250,28 @@ int main()
                     case 2:
                     {
                         std::cout << std::endl;
-                        std::cout << "Who becomes a trainee? (unit id)" << std::endl;
                         roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
                         tcamp.print(roster);
-                        int selectedTraineeId = readChoice();
                         std::cout << "Under which trainer? (trainer id)" << std::endl;
-                        int selectedTrainerId = readChoice();
-                        try
-                        {
-                            tcamp.assignTrainee(selectedTrainerId, selectedTraineeId, roster);
-                            team.removeMember(selectedTraineeId);
-                            std::cout << "Trainee assigned to the camp." << std::endl;
-                        }
-                        catch (const std::runtime_error &e)
-                        {
-                            std::cout << e.what() << std::endl;
-                        }
+                        int trainerId = readChoice();
+
+                        int traineeId = 0;
+                        do {
+                            std::cout << "Who becomes a trainee? (unit id, 0 to stop)" << std::endl;
+                            traineeId = readChoice();
+                            if (traineeId == 0)
+                                break; 
+                            try
+                            {
+                                tcamp.assignTrainee(trainerId, traineeId, roster);
+                                team.removeMember(traineeId);
+                                std::cout << "Trainee assigned to the camp." << std::endl;
+                            }
+                            catch (const std::runtime_error &e)
+                            {
+                                std::cout << e.what() << std::endl;
+                            }
+                        } while (true);
                         break;
                     }
                     case 3:
@@ -325,7 +355,7 @@ int main()
 
                         break;
                     }
-                    case 2: 
+                    case 2:
                     {
                         std::cout << std::endl;
                         std::cout << "Who goes up to look? (unit id)" << std::endl;
@@ -358,8 +388,30 @@ int main()
             {
                 std::cout << std::endl;
                 roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
-                printStatus(state);
-                std::cout << "Incursions launched: " << state.incursionCount << std::endl;
+                ViewMenu();
+                choice = readChoice();
+                switch (choice)
+                {
+                case 1:
+                {
+                    int inspectedId = 0;
+                    do {
+                        std::cout << "Inspect a unit? (unit id, or 0 to return)" << std::endl;
+                        inspectedId = readChoice();
+                        if (inspectedId == 0)
+                            break;
+                        if (roster.contains(inspectedId))
+                            roster.findUnitById(inspectedId).printUnit();
+                        else
+                            std::cout << "No one by that id is on the roster." << std::endl;
+                    } while (true);
+                    break;
+                }
+                case 8:
+                {
+                    break;
+                }
+                }
                 break;
             }
             case 9:
@@ -374,12 +426,12 @@ int main()
             }
             }
         } while (choice != 9);
-    }
-    catch (const std::exception &e)
-    {
-        std::cout << "Fatal error: " << e.what() << std::endl;
-        return 1;
-    }
+        }
+        catch (const std::exception &e)
+        {
+            std::cout << "Fatal error: " << e.what() << std::endl;
+            return 1;
+        }
 
-    return 0;
-}
+        return 0;
+    }

@@ -1,6 +1,7 @@
 #include "Scouting.h"
 
-Report scoutAhead(const Unit &scout, const Objective &objective, std::mt19937 &rng) {
+Report scoutAhead(const Unit &scout, const Objective &objective,
+                  [[maybe_unused]] std::mt19937 &rng) {   // rng: unused until 2e gives scouts personality
     Report report;
     report.scout = scout.getName();
     report.scoutId = scout.getId();

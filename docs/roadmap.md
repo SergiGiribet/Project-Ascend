@@ -272,6 +272,42 @@ measuring a game about composition with a player that has none, and that cannot 
 composition is a decision made **between** sorties, which is 2d. Until then the validation is
 playing it and reading whether the choices feel like choices — see the amended Rhythm.
 
+### What the first human session changed  *(2026-08-19)*
+
+Nine incursions with recon-by-unit in place (full record in the [backlog](backlog.md)). Six scouts
+sent, **zero team changes in response**. The reasons reorder the rest of the phase, and two of them
+were invisible from the code:
+
+- **The player cannot see traits.** `printUnit` is called from one place in the entire game, right
+  after summoning. Nothing else ever shows a unit's STR, CON, traits, history or hook —
+  `printRoster` shows none of them. Phase 2b's whole trait-fit system therefore rests on an input
+  the player has no way to read. **Nothing else in this phase can be judged until this is fixed**,
+  because every measurement so far has asked the player to compose a team blind.
+- **The missions are text, not mechanism.** `rounds` is generated, printed and never read; a Hold
+  does not produce rounds to hold. The four types differ only in which traits they favour. Knowing
+  the type cannot matter much while the type barely does anything.
+- **One floor of intel is worthless across an eight-floor climb** — you meet every type on the way
+  up regardless, so only the team's average matters. Confirmed in play: the player scouted floor 14
+  and entered at floor 5.
+- **The fit's bad news is too small.** +24 best case against -8 worst, on a 30-point tier. The
+  near-zero-sum columns that keep any objective type from being secretly easier also make a
+  5-unit team mediocre-at-everything: 8-10 traits drawn from a balanced table sum to the middle.
+  **Column balance kills variance.** The answer is smaller expeditions (2d-3), not bigger numbers.
+
+**Revised order for the rest of Phase 2:**
+
+| | What | Why here |
+|---|---|---|
+| **2d-0** | A unit can be inspected at any time; traits visible in the roster; bulk summoning and less tedious camp/team assignment | tiny, and it unblocks every decision the phase is about |
+| **2d-2c** | One floor per sortie | makes the scouted floor decisive instead of one of eight |
+| **2d-3** | Expedition chosen from the roster, places as the cost | small squads give the fit real variance |
+| **2b'** | Missions generate actions: a Hold resolves in rounds, and each type does something a number cannot | the largest piece, and what makes the types real |
+| **2e** | Personalities, then the closing measurement | unchanged |
+
+2b' is the one the player has been asking for since the first day of Phase 2 ("the floors are
+flat"), and it is where the play-by-play resolution of §7's T1 starts to pay off: a floor that
+resolves in steps has something to narrate, and a sortie that is one floor can afford to narrate it.
+
 ### 2d — One floor per sortie: the structure that gives information a use
 
 Adopted 2026-08-18 on the user's proposal, and it is the fix all three measurements have been

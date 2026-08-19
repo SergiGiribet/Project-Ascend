@@ -74,26 +74,22 @@ static const int SCOUT_RISK_MAX = 60;
 static const int SCOUT_WOUND_MIN = 10;
 static const int SCOUT_WOUND_MAX = 25;
 
-static int teamPower(const Team &team, const Roster &roster, int excludeId = -1)
+static int teamPower(const Team &team, const Roster &roster)
 {
     int power = 0;
     for (int id : team.getMembersIds())
     {
-        if (id == excludeId)
-            continue;
         const Stats s = roster.findUnitById(id).getStats();
         power += s.getStrength() + s.getConstitution();
     }
     return power;
 }
 
-static int teamFit(const Team &team, const Roster &roster, ObjectiveType type, int excludeId = -1)
+static int teamFit(const Team &team, const Roster &roster, ObjectiveType type)
 {
     int fit = 0;
     for (int id : team.getMembersIds())
     {
-        if (id == excludeId)
-            continue;
         fit += traitFit(type, roster.findUnitById(id).getSkills());
     }
     return fit;
@@ -192,7 +188,7 @@ void runScoutMission(int scoutId, Team &team, Roster &roster, GameState &state, 
     int risk = scoutRisk(scout, objective);
 
     std::cout << describeOdds(scout.getName(), risk) << std::endl;
-    std::cout << "Send them up to floor " << floor << "?  [1] Yes  [2] No" << std::endl;
+    std::cout << "Send them up to floor " << floor << "? [1] Yes  [2] No" << std::endl;
 
     if (readChoice() != 1) {
         std::cout << "They stay where they are." << std::endl;
@@ -266,12 +262,11 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     int highestFloorThisRun = 0;
     std::uniform_int_distribution<int> luck(0, MAX_LUCK);
     Objective objective = objectiveFor(startFloor, state, rng);
-    Report claim;
 
     for (int floor = startFloor;; floor++)
     {
-        int fit = teamFit(team, roster, objective.type, claim.scoutId);
-        int power = teamPower(team, roster, claim.scoutId) + fit;
+        int fit = teamFit(team, roster, objective.type);
+        int power = teamPower(team, roster) + fit;
         int danger = objective.difficulty;
         int attack = power + luck(rng);
 
@@ -281,13 +276,12 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         std::cout << "Objective: " << describeObjective(objective) << std::endl;
         std::cout << "  " << describeFit(fit) << std::endl;
 
-        if (claim.scoutId != -1)
-            std::cout << "  " << claim.scout
-                      << " is still winded from slipping ahead, and sits this one out." << std::endl;
+        auto rep = state.floorReports.find(floor);
+        if (rep != state.floorReports.end() && rep->second.sawObjective
+                && rep->second.claimed.type != objective.type)
+            std::cout << "  " << describeMisreport(rep->second) << std::endl;
 
-        if (claim.scoutId != -1 && claim.sawObjective && claim.claimed.type != objective.type)
-            std::cout << "  " << describeMisreport(claim) << std::endl;
-
+    
         std::vector<std::pair<int, const TraitEvent *>> candidates;
         for (int id : team.getMembersIds())
         {
@@ -473,58 +467,14 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
         printForecast(currentPower, nextDanger);
 
-        bool scouted = false;
-        Report scoutedReport;
-        int choice = 0;
-        do
-        {
-
-            std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return";
-            if (!scouted)
-                std::cout << "  [3] Send someone ahead";
-            std::cout << std::endl;
-
-            choice = readChoice();
-            if (choice == 3)
-            {
-                if (scouted)
-                    std::cout << "Someone has already gone ahead." << std::endl;
-                else
-                {
-                    std::cout << "Who slips ahead? (unit id)" << std::endl;
-                    team.printTeam(roster);
-                    int scoutId = readChoice();
-
-                    const std::vector<int> &ids = team.getMembersIds();
-                    if (std::find(ids.begin(), ids.end(), scoutId) == ids.end())
-                        std::cout << "No one by that id is in the team." << std::endl;
-                    else
-                    {
-                        scoutedReport = scoutAhead(roster.findUnitById(scoutId), nextObjective, rng);
-                        scouted = true;
-                        std::cout << describeReport(scoutedReport) << std::endl;
-
-                        if (scoutedReport.sawObjective)
-                        {
-                            int nextFit = teamFit(team, roster, scoutedReport.claimed.type,
-                                                  scoutedReport.scoutId);
-                            std::cout << "  " << describeFit(nextFit) << std::endl;
-                            if (scoutedReport.sawDanger)
-                                printForecast(teamPower(team, roster, scoutedReport.scoutId)
-                                                  + nextFit + scoutedReport.bias, nextDanger);
-                        }
-                    }
-                }
-            }
-        } while (choice == 3);
-
-        if (choice != 1)
+        std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return" << std::endl;
+        if (readChoice() != 1)
         {
             std::cout << "The team descends with their spoils and their lives." << std::endl;
             break;
         }
         objective = nextObjective;
-        claim = scoutedReport;
+
     }
 
     team.purgeDeadMembers(roster);

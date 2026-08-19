@@ -145,6 +145,61 @@ injured high-level units as trainers (their level still teaches at full value).
   early-floor flatness — the deeper dial is how `danger = 20 + floor*15` scales against team
   power; consider scaling danger with team size instead of (or besides) capping.
 
+## First human session with recon-by-unit (2026-08-19)
+
+Nine incursions, record floor 14, one death, no wipes. Roster ended at 18 units and **197 unspent
+essence**. Six scouting missions, all six accepted, none fatal.
+
+**Read this with the caveat the player gave afterwards:** the scouting choices were *instrumented,
+not played*. The first mission was to see what happened, the second to see whether the scout would
+die, and the last four were deliberate attempts to get him killed to check the death path. So this
+session says **nothing** about whether the cost of scouting feels like a decision — a developer
+testing a mechanic is not a player using it. (Lesson recorded: ask what someone was trying to do
+before reading their behaviour as preference.)
+
+What the six reports were, against the team's fit profile of Hold +24, Rescue +20, Retrieve -4,
+Slay -8:
+
+| # | floor | the scout's read | the team's fit |
+|---|---:|---|---:|
+| 1 | 9 | Cut down what holds the floor | **-8** |
+| 2 | 11 | Free the captive | +20 |
+| 3 | 12 | Hold the line for 5 rounds | +24 |
+| 4 | 13 | Hold the line for 5 rounds | +24 |
+| 5 | 14 | Hold the line for 5 rounds | +24 |
+| 6 | 14 | Hold the line for 5 rounds | +24 |
+
+**Not one report was followed by a change of team.** Both recompositions in the session happened
+before any scouting, not in response to it. Four things explain it, and only the last is about the
+player:
+
+1. **The traits the decision depends on are invisible.** `printUnit` — the only thing that shows
+   STR, CON, traits, history and hook — is called from exactly one place in the whole game
+   (`main.cpp`, immediately after summoning). After that moment a unit can never be looked at
+   again. `printRoster` shows id, name, stars, level, HP, XP and injuries; **no traits**. So the
+   entire Phase 2b trait-fit system rests on an input the player cannot see. This is the broken
+   first link, and it is cheap to fix.
+2. **The missions do not do anything.** A floor is still one roll and one line of prose. `Hold the
+   line for 5 rounds` does not produce five rounds to survive; `rounds` is generated, printed and
+   never read. The four objective types differ only in which traits they favour — the type is
+   flavour plus a scalar. So knowing the type cannot change much, because the type barely does
+   anything.
+3. **Scouting one floor is worthless when you climb eight.** In incursion 8 the player scouted
+   floor 14 and then entered at floor 5, meeting all four objective types on the way up. With
+   multi-floor climbs, what matters is a team's *average* across types, never one floor's type.
+   This is arithmetic, not calibration.
+4. **The fit's bad news is too small to act on.** Best case +24 (most of a 30-point forecast
+   tier), worst case only -8 (a quarter of one). Good news never changes a decision because you
+   were going anyway; bad news never changes one because it does not hurt enough. Cause: the trait
+   table's columns were deliberately balanced near zero-sum so no objective type would be secretly
+   easier — and a 5-unit team draws 8-10 traits from that table, so the sum concentrates in the
+   middle. **Column balance kills variance.** Fewer units per expedition, or larger weights, or
+   columns that are allowed to be genuinely punishing.
+
+And the friction the player named, which is its own finding: assigning trainees and reassigning
+units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
+essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
+
 ## Saved encounter resolutions
 
 These texts were originally written as the second field of `encounters.txt`, but they
