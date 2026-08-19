@@ -30,6 +30,14 @@ canonical formats below.
      asserts it as fact on its own authority.
    - **The truth arrives, and it names them.** When the floor turns out otherwise, a line says
      so with the scout's name, so the mistake lands on the character and not on the game.
+6. **Numbers about yourself, prose about the unknown.** The game may show the player a figure
+   for something they could legitimately know -- their own team's disposition (`+16`), a unit's
+   stats, an essence price. It must NOT put a figure on what nobody has seen: the next floor's
+   danger is four tiers of prose, and a scout's chance of coming back is their own qualitative
+   read, never a percentage. Two reasons. Nobody in the fiction could compute it, so asserting it
+   breaks 5. And a stated probability destroys the information an outcome would otherwise carry:
+   if the player is told 13%, a scout coming back teaches them nothing they did not already have,
+   whereas an unquantified survival tells them what a body of that strength can survive up there.
 
 ## 2. Visual elements
 

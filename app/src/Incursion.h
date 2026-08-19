@@ -21,6 +21,17 @@ std::vector<Encounter> loadEncounters(const std::string &path);
 // Post: Returns every entry in file order; throws std::runtime_error if the file is missing,
 //       empty, or a non-empty line contains no '|'.
 
+void runScoutMission(int scoutId, Team &team, Roster &roster, GameState &state, std::mt19937 &rng);
+// Pre: rng must be seeded.
+// Post: Sends the unit with scoutId up ALONE to look at floor (state.highestFloor + 1), after
+//       printing their own read of the odds and asking for confirmation; an id not on the roster
+//       is refused and costs nothing, and so is declining. The mission comes from
+//       state.floorObjectives, so it is the one that floor will really present. A survivor comes
+//       back wounded (SCOUT_WOUND_MIN..MAX) and their claim is stored in state.floorReports for
+//       that floor. If the risk roll or the wound kills them they bring nothing back -- the death
+//       IS the report -- and they are recorded in state.necropolis, removed from the roster and
+//       purged from team.
+
 void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng);
 // Pre: Every id in team refers to a unit present in roster; encounters and injuries must not
 //      be empty; rng must be seeded.

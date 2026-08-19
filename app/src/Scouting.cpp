@@ -24,6 +24,13 @@ std::string describeReport(const Report &report) {
     return line;
 }
 
+std::string describeOdds(const std::string &scout, int risk) {
+    if (risk <= 10) return scout + " looks up the stairwell and reckons they can manage it.";
+    if (risk <= 25) return scout + " looks up the stairwell and says nothing for a moment.";
+    if (risk <= 40) return scout + " looks up the stairwell and does not like their odds.";
+    return scout + " looks up the stairwell and does not expect to come back.";
+}
+
 std::string describeMisreport(const Report &report) {
     return report.scout + " had described something else entirely.";
 }

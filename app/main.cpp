@@ -74,6 +74,7 @@ void IncursionMenu()
     std::cout << std::endl;
     std::cout << "=== The Tower ===" << std::endl;
     std::cout << "  1. Start the incursion" << std::endl;
+    std::cout << "  2. Scout the next floor (costs a unit)" << std::endl;
     std::cout << "  3. Return to main menu" << std::endl;
 }
 
@@ -322,6 +323,15 @@ int main()
                         else
                             runIncursion(team, roster, state, encounters, injuries, rng); // imprimeix l'avís "No units"
 
+                        break;
+                    }
+                    case 2: 
+                    {
+                        std::cout << std::endl;
+                        std::cout << "Who goes up to look? (unit id)" << std::endl;
+                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
+                        int scoutId = readChoice();
+                        runScoutMission(scoutId, team, roster, state, rng);
                         break;
                     }
                     case 3:

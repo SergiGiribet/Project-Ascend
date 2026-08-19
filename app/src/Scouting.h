@@ -34,6 +34,12 @@ std::string describeReport(const Report &report);
 //       punctuation; notes it when they never got close enough to judge the odds. Reports what
 //       the scout CLAIMS, never what is true.
 
+std::string describeOdds(const std::string &scout, int risk);
+// Pre: None.
+// Post: Returns the scout's own read of their chances before setting off -- their judgement, not
+//       the game's verdict (style guide 1.5) -- with full punctuation. Four tiers, grimmer as the
+//       risk rises.
+
 std::string describeMisreport(const Report &report);
 // Pre: report.sawObjective must be true (there is no claim to contradict otherwise).
 // Post: Returns the line printed when the floor turns out not to be what the scout claimed,

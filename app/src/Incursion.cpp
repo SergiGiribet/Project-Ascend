@@ -66,6 +66,13 @@ static const int FATAL_CHANCE = 18;
 static const int WOUND_INJURY_CHANCE = 8;
 static const int VICTIM_WEIGHT_BONUS = 2;
 static const int VICTIM_WEIGHT_PENALTY = 1;
+static const int SCOUT_RISK_BASE = 5;
+static const int SCOUT_RISK_DIVISOR = 6;
+static const int SCOUT_RISK_TRAIT = 10;
+static const int SCOUT_RISK_MIN = 5;
+static const int SCOUT_RISK_MAX = 60;
+static const int SCOUT_WOUND_MIN = 10;
+static const int SCOUT_WOUND_MAX = 25;
 
 static int teamPower(const Team &team, const Roster &roster, int excludeId = -1)
 {
@@ -92,6 +99,13 @@ static int teamFit(const Team &team, const Roster &roster, ObjectiveType type, i
     return fit;
 }
 
+static Objective objectiveFor(int floor, GameState &state, std::mt19937 &rng) {
+    auto it = state.floorObjectives.find(floor);
+    if (it == state.floorObjectives.end())
+        it = state.floorObjectives.emplace(floor, makeObjective(floor, rng)).first;
+    return it->second;
+}
+
 static void printForecast(int power, int danger)
 {
     if (power >= danger * 12 / 10)
@@ -112,6 +126,15 @@ static int riskDirection(const std::vector<std::string> &skills)
     if (std::find(skills.begin(), skills.end(), "Alert") != skills.end())
         return -1;
     return 0;
+}
+
+static int scoutRisk(const Unit &scout, const Objective &objective) {
+    const Stats s = scout.getStats();
+    int power = s.getStrength() + s.getConstitution();
+    int risk = SCOUT_RISK_BASE
+        + (objective.difficulty - power * 2) / SCOUT_RISK_DIVISOR
+        + SCOUT_RISK_TRAIT * riskDirection(scout.getSkills());
+    return std::max(SCOUT_RISK_MIN, std::min(SCOUT_RISK_MAX, risk));
 }
 
 static int pickWeightedVictim(const Team &team, const Roster &roster, std::mt19937 &rng)
@@ -157,6 +180,49 @@ static const IncidentFlavor &pickIncidentFlavor(const Unit &victim, std::mt19937
     return pool[dist(rng)];
 }
 
+void runScoutMission(int scoutId, Team &team, Roster &roster, GameState &state, std::mt19937 &rng) {
+    if (!roster.contains(scoutId)) {
+        std::cout << "No one by that id is on the roster." << std::endl;
+        return;
+    }
+
+    int floor = state.highestFloor + 1;
+    Objective objective = objectiveFor(floor, state, rng);
+    Unit &scout = roster.findUnitById(scoutId);
+    int risk = scoutRisk(scout, objective);
+
+    std::cout << describeOdds(scout.getName(), risk) << std::endl;
+    std::cout << "Send them up to floor " << floor << "?  [1] Yes  [2] No" << std::endl;
+
+    if (readChoice() != 1) {
+        std::cout << "They stay where they are." << std::endl;
+        return;
+    }
+
+    std::uniform_int_distribution<int> roll(1, 100);
+    std::uniform_int_distribution<int> dmg(SCOUT_WOUND_MIN, SCOUT_WOUND_MAX);
+
+    bool lost = roll(rng) <= risk;
+    if (!lost) {
+        scout.takeDamage(dmg(rng));
+        lost = !scout.isAlive();
+    }
+
+    if (lost) {
+        std::cout << scout.getName() << " goes up to floor " << floor
+        << " and does not come back." << std::endl;
+        state.necropolis.addDeath(scout, floor, "lost scouting the floor alone",
+                                  state.incursionCount);
+        roster.removeUnitById(scoutId);
+        team.purgeDeadMembers(roster);
+        return;
+    }
+
+    Report report = scoutAhead(scout, objective, rng);
+    state.floorReports[floor] = report;
+    std::cout << describeReport(report) << std::endl;
+}
+
 void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
@@ -199,7 +265,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
     int highestFloorThisRun = 0;
     std::uniform_int_distribution<int> luck(0, MAX_LUCK);
-    Objective objective = makeObjective(startFloor, rng);
+    Objective objective = objectiveFor(startFloor, state, rng);
     Report claim;
 
     for (int floor = startFloor;; floor++)
@@ -401,7 +467,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             break;
         }
 
-        Objective nextObjective = makeObjective(floor + 1, rng);
+        Objective nextObjective = objectiveFor(floor + 1, state, rng);
         int nextDanger = nextObjective.difficulty;
         int currentPower = teamPower(team, roster);
 
