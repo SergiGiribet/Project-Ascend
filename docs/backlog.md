@@ -200,6 +200,43 @@ And the friction the player named, which is its own finding: assigning trainees 
 units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
 essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
 
+## Session with Hold and Slay resolving as mechanics (2026-08-20)
+
+Eight incursions, record floor 11, one death, no wipes. 38 floors resolved. **Not one of them cost
+anything.**
+
+| outcome | times |
+|---|---:|
+| Hold -- the line never broke | **12** |
+| Hold -- held, and it cost them | 0 |
+| Hold -- pushed off the floor | 0 |
+| Slay -- falls without landing a blow | **5** |
+| Slay -- falls, and they have paid for it | 0 |
+| Slay -- driven off (any of the three "how close" lines) | 0 |
+| Retrieve/Rescue -- advances with ease | **19** of 21 |
+| Retrieve/Rescue -- with difficulty | 1 |
+| Retrieve/Rescue -- overwhelmed | 1 |
+
+Twelve flawless Holds, five one-blow Slays, nineteen of twenty-one single-roll floors walked. The
+gradients built that day -- wounds while you hold, a win that costs, "one more blow might have done
+it" -- are machinery the game never reaches.
+
+**It is not luck. It is the curve, measured from a second angle.** `danger` climbs 15 a floor while
+`luck` spans only 30, so the band where a team can *sometimes* miss the threshold is about two
+floors wide. Below it nothing can go wrong; above it nothing lands at all. Confirmed independently
+the same day: 16 of 16 lost Slay fights ended with the enemy completely untouched, because a team
+that cannot reach the threshold cannot reach it *at all*.
+
+**The floor has two states, trivial and fatal, and nothing in between.** We have been fitting a
+dimmer switch to a light that only has on and off.
+
+Text execution was otherwise clean -- two-space indents, correct punctuation, no duplicated lines,
+round numbering correlative. Two defects found and one fixed: the Slay banks read as sentences with
+no prefix, so they needed capitals (fixed; the Hold banks stay lowercase because they follow
+"Round N: "), and `pickRandom` repeats itself inside a single Hold about half the time (5 variants,
+3 rounds: P(no repeat) = 0.48). The fix is the one `Generator` already uses for traits -- remember
+the previous line and re-pick.
+
 ## Saved encounter resolutions
 
 These texts were originally written as the second field of `encounters.txt`, but they

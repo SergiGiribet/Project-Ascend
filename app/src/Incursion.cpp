@@ -58,35 +58,35 @@ static const std::vector<std::string> HOLD_GAVE_GROUND = {
 // The exchange with whatever holds the floor, chosen by how far the roll beat or missed the
 // floor's difficulty. No trailing period: the line composes it.
 static const std::vector<std::string> SLAY_CRUSHED = {
-    "the blow goes in to the hilt",
-    "they break something that will not mend",
-    "it reels, and they do not let it recover",
-    "the whole line lands at once",
-    "it did not see that coming",
+    "The blow goes in to the hilt",
+    "They break something that will not mend",
+    "It reels, and they do not let it recover",
+    "The whole line lands at once",
+    "It did not see that coming",
 };
 
 static const std::vector<std::string> SLAY_LANDED = {
-    "they find the smallest opening",
-    "a blow lands true",
-    "it staggers",
-    "the line presses in and something gives",
-    "they open a wound that will not close",
+    "They find the smallest opening",
+    "A blow lands true",
+    "It staggers",
+    "The line presses in and something gives",
+    "They open a wound that will not close",
 };
 
 static const std::vector<std::string> SLAY_BLOCKED = {
-    "it turns the blow aside at the last moment",
-    "the strike lands on nothing that matters",
-    "it takes the hit on its guard and gives ground",
-    "they almost had it",
-    "the opening closes before they reach it",
+    "It turns the blow aside at the last moment",
+    "The strike lands on nothing that matters",
+    "It takes the hit on its guard and gives ground",
+    "They almost had it",
+    "The opening closes before they reach it",
 };
 
 static const std::vector<std::string> SLAY_MISSED = {
-    "the strike never had a chance",
-    "it is not where they swing",
-    "they hit air, and it makes them pay",
-    "the blow is nowhere near",
-    "it lets them tire themselves out",
+    "The strike never had a chance",
+    "It is not where they swing",
+    "They hit air, and it makes them pay",
+    "The blow is nowhere near",
+    "It lets them tire themselves out",
 };
 
 struct IncidentFlavor

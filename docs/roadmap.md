@@ -5,7 +5,9 @@ not a contract: it records the direction we agreed on and *why*, so no idea gets
 build step stays small. Written 2026-07-25; §5 rewritten 2026-08-06 after the Phase 2b bot
 measurement sent the plan somewhere it had not expected to go; §7 (the technical trajectory
 to ImGui, persistence and Godot) added 2026-08-18, and §5 reordered the same day when the 2c-3
-upper-bound measurement showed the structure had to come before the mechanism.
+upper-bound measurement showed the structure had to come before the mechanism; the curve
+rebalance was promoted out of §6 and into the phase on 2026-08-20, when Hold and Slay turned out
+to have gradients the difficulty curve never lets fire.
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -344,6 +346,32 @@ sequencing did.
 | 2d-2 | One floor per sortie: the run ends after a floor, re-entry at `record+1` is the supported path, tolls and framing tuned for it | mostly reframing what already exists |
 | 2d-3 | The expedition is chosen from the roster, places as the cost; scouting parties become sorties of their own | retires the team-only rule, which the structure makes obsolete |
 | 2d-4 | The cheap-fatigue fix, if it is still needed by then | may well be moot once scouting is its own sortie |
+
+### The curve stops being last  *(2026-08-20)*
+
+Phase 2b' gave Hold and Slay real mechanics, each with a gradient of cost. A session immediately
+afterwards produced **zero** costly outcomes in 38 floors: twelve flawless Holds, five one-blow
+Slays, nineteen of twenty-one single-roll floors walked (full table in the [backlog](backlog.md)).
+
+The cause is the difficulty curve, and it is arithmetic rather than tuning. `danger` climbs 15 a
+floor; `luck` spans 30. So the band in which a team can *sometimes* fail is about **two floors
+wide**: below it nothing can go wrong, above it nothing lands at all. Two independent measurements
+the same day agree -- 16 of 16 lost Slay fights ended with the enemy untouched, because a team that
+cannot reach the threshold cannot reach it at all.
+
+**Section 6 parked "curve rebalance" as *last*, and softer, so that decisions would have room to
+breathe. That reasoning was right and its conclusion is now inverted: the decisions exist and
+cannot be seen, because no floor is ever close.** Widening the band from two floors to six or eight
+is not raising the ceiling -- it is **giving the wall a slope**, and it is what would make
+everything built this week visible at all.
+
+It is therefore promoted out of §6 and into the phase, ahead of Retrieve and Rescue. Getting it
+wrong is cheap to undo (it is one formula) and the whole point is to be able to *watch* the
+mechanics that already exist, so it comes before adding more of them.
+
+Still true, and still the reason not to simply raise team power instead: raising the ceiling only
+moves "say yes until red" higher. The target is the width of the uncertain band, not the height of
+the wall.
 
 ### 2e — Personalities, and the closing measurement
 
