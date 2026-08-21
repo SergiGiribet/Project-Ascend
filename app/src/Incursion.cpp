@@ -186,7 +186,7 @@ static void printForecast(int power, int danger)
 
 static std::string describeSurvivor(int enemyHp, int enemyHpStart)
 {
-    if (enemyHp * 3 > enemyHp * 2)
+    if (enemyHp * 3 > enemyHpStart * 2)
         return "It is barely marked.";
     if (enemyHp * 3 > enemyHpStart)
         return "It bleeds, but it is still standing.";
