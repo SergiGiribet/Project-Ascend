@@ -9,6 +9,7 @@
 #include "src/Logger.h"
 #include "src/Injury.h"
 #include "src/TrainingCamp.h"
+#include "src/Barracks.h"
 
 #include <iostream>
 #include <ctime>
@@ -38,7 +39,7 @@ void Menu()
     std::cout << std::endl;
     std::cout << "=== PROJECT ASCEND ===" << std::endl;
     std::cout << "  1. Invoke a new unit" << std::endl;
-    std::cout << "  2. Manage the team" << std::endl;
+    std::cout << "  2. Manage the parties" << std::endl;
     std::cout << "  3. Manage the training camp" << std::endl;
     std::cout << "  4. Enter the tower" << std::endl;
     std::cout << "  6. Visit the Necropolis" << std::endl;
@@ -49,10 +50,12 @@ void Menu()
 void TeamMenu()
 {
     std::cout << std::endl;
-    std::cout << "=== Team Management ===" << std::endl;
-    std::cout << "  1. Add a unit to the team" << std::endl;
-    std::cout << "  2. Remove a unit from the team" << std::endl;
-    std::cout << "  3. View team composition" << std::endl;
+    std::cout << "=== The Parties ===" << std::endl;
+    std::cout << "  1. Assign a unit to a party" << std::endl;
+    std::cout << "  2. Remove a unit from a party" << std::endl;
+    std::cout << "  3. View the parties" << std::endl;
+    std::cout << "  4. Form a new party" << std::endl;
+    std::cout << "  5. Disband a party" << std::endl;
     std::cout << "  6. Return to main menu" << std::endl;
 }
 
@@ -86,6 +89,23 @@ void ViewMenu()
     std::cout << "  8. Return to main menu" << std::endl;
 }
 
+// Asks which party to act on. Returns its index, or -1 if the player backs out or names
+// one that does not exist -- callers print nothing extra and simply do nothing.
+int pickParty(Barracks &barracks, const Roster &roster)
+{
+    if (barracks.count() == 0)
+    {
+        std::cout << "No parties formed yet." << std::endl;
+        return -1;
+    }
+    barracks.printAll(roster);
+    std::cout << "Which party? (number, 0 to cancel)" << std::endl;
+    int number = readChoice();
+    if (number < 1 || number > barracks.count())
+        return -1;
+    return number - 1; // the player counts from one, the vector from zero
+}
+
 void printStatus(const GameState &state)
 {
     std::cout << "Essence: " << COLOR_CYAN << state.essence << COLOR_RESET
@@ -107,10 +127,12 @@ int main()
         std::strftime(name, sizeof name, "sessions/session_%Y%m%d_%H%M%S.log", &tm);
         SessionLog log(name);
 
-        Team team;
+        Barracks barracks;
         Roster roster;
         GameState state;
         TrainingCamp tcamp;
+
+        barracks.create("Party 1");
 
         std::mt19937 rng(std::random_device{}());
         Generator gen("resources", rng);
@@ -174,14 +196,19 @@ int main()
                     case 1:
                     {
                         std::cout << std::endl;
-                        std::cout << "Who joins the team? (unit id)" << std::endl;
-                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
-                        team.printTeam(roster);
+                        int partyIndex = pickParty(barracks, roster);
+                        if (partyIndex < 0)
+                            break;
+                        std::cout << "Who joins " << barracks.at(partyIndex).getName() << "? (unit id)" << std::endl;
+                        roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         int selectedUnitId = readChoice();
                         try
                         {
-                            team.addMember(selectedUnitId, roster);
-                            std::cout << "Unit added to the team." << std::endl;
+                            bool already = barracks.teamOfUnit(selectedUnitId) == partyIndex;
+                            barracks.assign(selectedUnitId, partyIndex, roster);
+                            std::cout << roster.findUnitById(selectedUnitId).getName()
+                                      << (already ? " already answers to " : " joins ")
+                                      << barracks.at(partyIndex).getName() << "." << std::endl;
                         }
                         catch (const std::runtime_error &e)
                         {
@@ -192,17 +219,43 @@ int main()
                     case 2:
                     {
                         std::cout << std::endl;
-                        std::cout << "Who leaves the team? (unit id)" << std::endl;
-                        team.printTeam(roster);
+                        int partyIndex = pickParty(barracks, roster);
+                        if (partyIndex < 0)
+                            break;
+                        std::cout << "Who leaves " << barracks.at(partyIndex).getName() << "? (unit id)" << std::endl;
+                        barracks.at(partyIndex).printTeam(roster);
                         int selectedUnitId = readChoice();
-                        team.removeMember(selectedUnitId);
-                        team.printTeam(roster);
+                        barracks.at(partyIndex).removeMember(selectedUnitId);
+                        barracks.at(partyIndex).printTeam(roster);
                         break;
                     }
                     case 3:
                     {
                         std::cout << std::endl;
-                        team.printTeam(roster);
+                        barracks.printAll(roster);
+                        break;
+                    }
+                    case 4:
+                    {
+                        std::cout << std::endl;
+                        std::string partyName = "Party " + std::to_string(barracks.count() + 1);
+                        barracks.create(partyName);
+                        std::cout << partyName << " forms up, empty and waiting." << std::endl;
+                        break;
+                    }
+                    case 5:
+                    {
+                        std::cout << std::endl;
+                        if (barracks.count() <= 1)
+                        {
+                            std::cout << "The last party cannot be disbanded." << std::endl;
+                            break;
+                        }
+                        int partyIndex = pickParty(barracks, roster);
+                        if (partyIndex < 0)
+                            break;
+                        std::cout << barracks.at(partyIndex).getName() << " is no more; its members answer to no one." << std::endl;
+                        barracks.disband(partyIndex);
                         break;
                     }
                     case 6:
@@ -232,13 +285,13 @@ int main()
                     {
                         std::cout << std::endl;
                         std::cout << "Who joins the camp as a trainer? (unit id)" << std::endl;
-                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
+                        roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         tcamp.print(roster);
                         int selectedUnitId = readChoice();
                         try
                         {
                             tcamp.addTrainer(selectedUnitId, roster);
-                            team.removeMember(selectedUnitId);
+                            barracks.release(selectedUnitId);
                             std::cout << "Trainer assigned to the camp." << std::endl;
                         }
                         catch (const std::runtime_error &e)
@@ -250,7 +303,7 @@ int main()
                     case 2:
                     {
                         std::cout << std::endl;
-                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
+                        roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         tcamp.print(roster);
                         std::cout << "Under which trainer? (trainer id)" << std::endl;
                         int trainerId = readChoice();
@@ -264,7 +317,7 @@ int main()
                             try
                             {
                                 tcamp.assignTrainee(trainerId, traineeId, roster);
-                                team.removeMember(traineeId);
+                                barracks.release(traineeId);
                                 std::cout << "Trainee assigned to the camp." << std::endl;
                             }
                             catch (const std::runtime_error &e)
@@ -336,7 +389,6 @@ int main()
                 do
                 {
                     IncursionMenu();
-                    team.printTeam(roster);
                     printStatus(state);
                     choice = readChoice();
 
@@ -344,24 +396,29 @@ int main()
                     {
                     case 1:
                     {
-                        if (!team.getMembersIds().empty())
+                        int partyIndex = pickParty(barracks, roster);
+                        if (partyIndex < 0)
+                            break;
+                        // The ids are copied out BEFORE the incursion: the party loses its dead
+                        // during it, and whoever climbed must not rest even if they fell.
+                        std::vector<int> climbed = barracks.at(partyIndex).getMembersIds();
+                        runIncursion(barracks.at(partyIndex), roster, state, encounters, injuries, rng);
+                        if (!climbed.empty())
                         {
-                            runIncursion(team, roster, state, encounters, injuries, rng);
                             tcamp.tick(roster, injuries, rng);
-                            roster.healRested(team.getMembersIds());
+                            roster.healRested(climbed);
                         }
-                        else
-                            runIncursion(team, roster, state, encounters, injuries, rng); // imprimeix l'avís "No units"
-
                         break;
                     }
                     case 2:
                     {
                         std::cout << std::endl;
                         std::cout << "Who goes up to look? (unit id)" << std::endl;
-                        roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
+                        roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         int scoutId = readChoice();
-                        runScoutMission(scoutId, team, roster, state, rng);
+                        int owner = barracks.teamOfUnit(scoutId);
+                        runScoutMission(scoutId, barracks.at(owner >= 0 ? owner : 0), roster, state, rng);
+                        barracks.purgeDead(roster); // the scout may belong to any party, or to none
                         break;
                     }
                     case 3:
@@ -387,7 +444,7 @@ int main()
             case 8:
             {
                 std::cout << std::endl;
-                roster.printRoster(team.getMembersIds(), tcamp.trainerIds(), tcamp.traineeIds());
+                roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                 ViewMenu();
                 choice = readChoice();
                 switch (choice)

@@ -71,7 +71,7 @@ void Roster::healRested(const std::vector<int> &climbedIds) {
 }
 
 // Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-void Roster::printRoster(const std::vector<int> &teamIds, const std::vector<int> &trainerIds, const std::vector<int> &traineeIds) const
+void Roster::printRoster(const std::map<int, std::string> &partyTags, const std::vector<int> &trainerIds, const std::vector<int> &traineeIds) const
 {
     if (units_.empty())
     {
@@ -82,15 +82,15 @@ void Roster::printRoster(const std::vector<int> &teamIds, const std::vector<int>
     std::cout << "Roster (" << units_.size() << " units):" << std::endl;
     for (const auto &unit : units_)
     {
-        bool inTeam = std::find(teamIds.begin(), teamIds.end(), unit.getId()) != teamIds.end();
+        std::map<int, std::string>::const_iterator party = partyTags.find(unit.getId());
         bool isTrainer = std::find(trainerIds.begin(), trainerIds.end(), unit.getId()) != trainerIds.end();
         bool isTrainee = std::find(traineeIds.begin(), traineeIds.end(), unit.getId()) != traineeIds.end();
 
-        const char *tag = "";
-        if (inTeam)
+        std::string tag;
+        if (party != partyTags.end())
         {
             std::cout << COLOR_CYAN;
-            tag = " [in team]";
+            tag = " [" + party->second + "]";
         }
         else if (isTrainer)
         {
@@ -109,7 +109,7 @@ void Roster::printRoster(const std::vector<int> &teamIds, const std::vector<int>
                   << " - Lv " << unit.getLevel()
                   << " - HP " << s.getHealth() << "/" << s.getMaxHealth()
                   << " - XP " << unit.getExperience();
-        if (tag[0] != '\0')
+        if (!tag.empty())
             std::cout << tag << COLOR_RESET;
 
         const std::vector<Injury> &inj = unit.getInjuries();

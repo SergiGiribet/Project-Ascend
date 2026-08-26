@@ -7,7 +7,9 @@ measurement sent the plan somewhere it had not expected to go; §7 (the technica
 to ImGui, persistence and Godot) added 2026-08-18, and §5 reordered the same day when the 2c-3
 upper-bound measurement showed the structure had to come before the mechanism; the curve
 rebalance was promoted out of §6 and into the phase on 2026-08-20, when Hold and Slay turned out
-to have gradients the difficulty curve never lets fire.
+to have gradients the difficulty curve never lets fire; 2d was restructured on 2026-08-21 around
+several teams and sorties that take time, which moved the save system forward and sent the curve
+back to last on purpose.
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -347,6 +349,9 @@ sequencing did.
 | 2d-3 | The expedition is chosen from the roster, places as the cost; scouting parties become sorties of their own | retires the team-only rule, which the structure makes obsolete |
 | 2d-4 | The cheap-fatigue fix, if it is still needed by then | may well be moot once scouting is its own sortie |
 
+2d-1 shipped 2026-08-19. **Steps 2d-2 onward were replaced on 2026-08-21** -- see *Several teams,
+and time as the budget* below for the table that is actually being built.
+
 ### The curve stops being last  *(2026-08-20)*
 
 Phase 2b' gave Hold and Slay real mechanics, each with a gradient of cost. A session immediately
@@ -372,6 +377,75 @@ mechanics that already exist, so it comes before adding more of them.
 Still true, and still the reason not to simply raise team power instead: raising the ceiling only
 moves "say yes until red" higher. The target is the width of the uncertain band, not the height of
 the wall.
+
+### Several teams, and time as the budget  *(decided 2026-08-21)*
+
+The conversation the curve finding sent us to was "how wide should the uncertain band be". It
+produced a different and better answer: **change the structure and the band changes shape.**
+
+Under a climb, the band is a distance you travel, and the arithmetic is
+`width = luck span / (wall step - team step)`. Measured over twelve simulated incursions the team
+gains ~10 power per incursion but only **~0.8 per floor cleared**, against a wall that climbs 15,
+so the team term all but vanishes and the band is `30 / 14.2` -- about **two floors**, exactly what
+the session showed.
+
+Under one-floor sorties the team does not grow mid-run, so the team term drops out entirely and the
+band is `30 / 15` -- still two floors. **But the decision changes kind.** It stops being "can I do
+one more floor with a tired party", taken inside, and becomes **"which five do I send to this
+floor"**, taken outside with the roster in front of you. And composition moves the roll further
+than luck does: `traitFit` over five units spans roughly +/-40 against luck's 30. So the dominant
+source of spread stops being noise and becomes something the player chooses. That is widening the
+band in the direction we actually wanted.
+
+**Hence the curve waits.** Retuning 15 now would be tuning a number that is about to mean something
+else. After the structure lands, the expectation is a modest 15 -> 10, measured rather than assumed.
+
+#### Time is what keeps the band from closing again
+
+With sorties, lower floors become a training ground -- and that is the trap. A player who can farm
+floor 5 at no risk will always farm until comfortably above the wall, and the wall is a wall again.
+The band only exists if training costs something.
+
+**A sortie taking real time is that cost.** It puts a ceiling on experience per hour, so there
+comes a point where climbing before you are comfortable is the correct play. Time here is not
+flavour; it is the load-bearing piece that stops the curve from closing behind us.
+
+And **approximate time rather than a fixed timer** is the same trick as the margin-selected
+narration: signal extracted from a number we already had. A party back early, or back at twice its
+estimate, has already told you something before you read a line of it.
+
+#### Two conditions that ride along
+
+1. **Training must be slower than climbing, not merely safer.** Experience is `floor * 10`, so a
+   risk-free floor 5 run by three parties in parallel out-earns a dangerous floor 12. Not
+   pre-empting this -- the measurement should say -- but if farming dominates, the lever is
+   returns decaying for floors well below your record.
+2. **Recovery must be slower than a sortie.** If a sortie is ~6h and a full heal is ~6h, nobody
+   ever climbs hurt and `healRested` means nothing. Wounds only weigh if healing is clearly the
+   longer of the two. This is the knob that keeps the roster scarce.
+
+#### Ordering, which the dependencies decide by themselves
+
+Timed sorties need persistence -- closing the app cannot erase a party in the tower -- so **T3
+(save) is pulled forward out of §7's ordering rule**, as the prerequisite of 2d-5 rather than as
+polish. And waiting is only tolerable if there is something else to do while you wait, which is
+several teams. So:
+
+| Step | What | Note |
+|---|---|---|
+| 2d-2 | **Several teams**: the roster holds parties, a unit belongs to at most one, the tower takes one party at a time | pure refactor, no new mechanic; the existing loop still runs, so it is measurable on its own |
+| 2d-3 | **One sortie = one floor**: the run ends when the floor does, re-entry at `record+1` is the supported path, lower floors are re-enterable as training | mostly deletion in `runIncursion`; **this is where the loop changes shape, so this is where we measure** |
+| 2d-4 | Save system (was T3) | prerequisite of the next step, not polish |
+| 2d-5 | **Sorties take time**, announced as an estimate rather than a timer; recovery slower than a sortie | the piece that keeps training honest |
+| 2d-6 | Curve, re-measured under the new structure | expected 15 -> 10, and only then |
+
+2d-3 replaces the old 2d-2 and, together with 2d-2 above, subsumes the old 2d-3: an expedition
+chosen from the roster is what a party *is* once parties are first-class. The old 2d-4
+(cheap-fatigue) stays retired.
+
+Worth naming, because it is the point of the whole project: several teams is also what finally
+gives GDD 1.1 its stage. Losing your best party hurts because you built it, and the three parties
+standing next to it are what make "built" legible.
 
 ### 2e — Personalities, and the closing measurement
 
@@ -561,9 +635,12 @@ design work *faster* rather than prettier.
 
 ## 8. Immediate next step
 
-**2d-1**: stop healing being automatic and total. `Roster::healAll()` becomes
-`healRested(climbedIds)` — only the units that did not climb recover, wounds ride home with
-whoever did, and permanent injuries stay permanent as they always have. It is the linchpin of the
-whole structural change: until leaving the tower costs something, one-floor sorties collapse into
-"one floor, go home, heal free, return". Small, self-contained, and the first step in weeks that
-is not waiting on anything else.
+**2d-2**: make parties first-class. The roster holds several teams, a unit belongs to at most one,
+and the tower takes one party at a time. It is a refactor and not a mechanic -- `Team` stops being
+the single object threaded through `main` and `runIncursion` and becomes one of a collection -- so
+the loop we already measure keeps running while it lands. It comes first because every later step
+depends on it: one-floor sorties need somewhere for the other people to be, and timed sorties need
+something to do while you wait.
+
+Deliberately *not* first: the difficulty curve. Retuning 15 before the structure changes would be
+tuning a number that is about to mean something else.

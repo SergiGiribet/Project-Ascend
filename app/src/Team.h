@@ -1,4 +1,5 @@
-// Team is the set of units chosen to enter the next incursion.
+// Team is one party: the set of units chosen to enter a floor together. The player may keep
+// several, so a Team carries a name; Barracks owns them all.
 // IMPORTANT: it does NOT store Unit objects. Storing Units would store COPIES, and damage/XP dealt during
 // an incursion would be applied to the copies while the roster stayed untouched. Instead, Team stores the
 // ids of its members (std::vector<int>) and resolves them through the Roster when needed.
@@ -10,12 +11,15 @@
 //   - Purge ids of units that died in the incursion (kept consistent with the roster after each incursion).
 //
 // Invariant: every id stored here refers to a living unit present in the roster; no duplicates.
+// A second rule -- that no unit belongs to two parties -- cannot be checked from here, because it
+// is about the space between parties. Barracks owns it.
 
 #ifndef TEAM_H
 #define TEAM_H
 
 #include "Roster.h"
 #include <vector>
+#include <string>
 
 class Team
 {
@@ -24,14 +28,20 @@ public:
     static const int MAX_MEMBERS = 5;
 
     // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    Team();
+    Team(const std::string &name);
     // Pre: None
-    // Post: Creates an empty team.
+    // Post: Creates an empty party under that name. There is deliberately no default constructor:
+    //       a party with no name is of no use to anyone once Barracks exists, and leaving one
+    //       available would only leave a way to build a broken one.
 
     // Consultors -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
     const std::vector<int> &getMembersIds() const;
     // Pre: None
     // Post: Returns the ids of the team members.
+
+    const std::string &getName() const;
+    // Pre: None
+    // Post: Returns the name of the team.
 
     // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void addMember(int id, const Roster &roster);
@@ -51,11 +61,13 @@ public:
     // Display ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void printTeam(const Roster &roster) const;
     // Pre: Every id in the team must be present in roster (the class invariant).
-    // Post: Prints one line per member (resolved through the roster) plus its hook as an
-    //       indented sub-line, or a notice if the team is empty.
+    // Post: Prints a header with the party name and its size, then one line per member
+    //       (resolved through the roster) plus its hook as an indented sub-line. An empty party
+    //       still prints its name: with several parties, WHICH one is empty is the information.
 
 private:
     std::vector<int> memberIds_;
+    std::string name_;
 };
 
 #endif // TEAM_H

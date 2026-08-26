@@ -14,6 +14,7 @@
 #define ROSTER_H
 
 #include "Unit.h"
+#include <map>
 #include <vector>
 #include <iostream>
 
@@ -57,13 +58,14 @@ public:
     //       Permanent injuries are never healed, by either path.
 
     // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    void printRoster(const std::vector<int> &teamIds, const std::vector<int> &trainerIds, const std::vector<int> &traineeIds) const;
+    void printRoster(const std::map<int, std::string> &partyTags, const std::vector<int> &trainerIds, const std::vector<int> &traineeIds) const;
     // Pre: None
     // Post: Prints one line per unit, or a notice if the roster is empty. Each unit is colored
-    //       and tagged by its current role (mutually exclusive, checked in this order): id in
-    //       teamIds -> cyan "[in team]"; else in trainerIds -> magenta "[trainer]"; else in
-    //       traineeIds -> blue "[trainee]"; otherwise printed plain. Any permanent injuries are
-    //       appended in red as "{name (-cost), ...}".
+    //       and tagged by its current role (mutually exclusive, checked in this order): id
+    //       present in partyTags -> cyan, tagged with THAT party's name, so the screen says which
+    //       party a unit belongs to and not merely that it belongs to one; else in trainerIds ->
+    //       magenta "[trainer]"; else in traineeIds -> blue "[trainee]"; otherwise printed plain.
+    //       Any permanent injuries are appended in red as "{name (-cost), ...}".
 
 private:
     std::vector<Unit> units_;

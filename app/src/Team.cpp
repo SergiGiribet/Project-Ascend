@@ -6,12 +6,17 @@
 #include <string>
 
 // Constructor -------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Team::Team() : memberIds_() {}
+Team::Team(const std::string &name) : memberIds_(), name_(name) {}
 
 // Consultors --------------------------------------------------------------------------------------------------------------------------------------------------------------------
 const std::vector<int> &Team::getMembersIds() const
 {
     return memberIds_;
+}
+
+const std::string &Team::getName() const
+{
+    return name_;
 }
 
 // Modifiers ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -52,11 +57,11 @@ void Team::printTeam(const Roster &roster) const
 {
     if (memberIds_.empty())
     {
-        std::cout << "The team is empty." << std::endl;
+        std::cout << name_ << " (0/" << MAX_MEMBERS << "): no one assigned." << std::endl;
         return;
     }
 
-    std::cout << "Team (" << memberIds_.size() << "/" << MAX_MEMBERS << "):" << std::endl;
+    std::cout << name_ << " (" << memberIds_.size() << "/" << MAX_MEMBERS << "):" << std::endl;
     for (int id : memberIds_)
     {
         const Unit &unit = roster.findUnitById(id);
