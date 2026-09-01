@@ -676,5 +676,22 @@ sortie.
 It comes before save (2d-5) and time (2d-6) because it is cheap, and because it distorts every
 measurement taken while it stands.
 
+**On the table, not yet decided (2026-08-26):**
+
+1. **Drop the toll entirely**, not reduce it. It existed to stop you skipping floors you had already
+   climbed, and there is no climb to skip any more -- it now taxes the only action the game offers,
+   and it is what flattens income to +1 a sortie at every depth. Without it, clearing floor N pays
+   N net and there is finally an economic reason to go deeper. The anti-farming job it seems to be
+   doing belongs to **time** (2d-6), not to a tax: floor 1 pays 1, which was never worth farming.
+2. **Scale the summoning price with the size of the living roster** rather than with depth --
+   something like `5 + 3 * units`. It lets a wiped run recover (bodies are cheap when you have
+   none), puts a price on hoarding a bench, and creates the bench tension that 2d-6 wants: a large
+   bench is safe and lets people heal, a small one is cheap and everyone climbs wounded.
+   The alternative, scaling with `highestFloor`, keeps a death equally painful at any depth but
+   makes a late wipe a soft lock. Undecided; the argument for roster size is that a soft lock is
+   the worse failure.
+3. **Leave the 250-and-doubling trainer slot alone until there are new numbers** -- it was priced
+   against +1 a sortie and changes meaning on its own.
+
 Deliberately *not* next: the difficulty curve slope. The per-floor swing already widened the band
 from 0% middle outcomes to 22%; what the slope is worth cannot be read until sorties cost time.
