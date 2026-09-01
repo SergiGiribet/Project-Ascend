@@ -6,8 +6,10 @@
 #include <vector>
 
 // A floor's MISSION; what the team must accomplish to clear the floor. It replaces Phase 1's
-// single scalar danger. The type decides which team attributes will matter (resolution is
-// Phase 2b); difficulty is the floor-scaled magnitude that used to be `danger`.
+// single scalar danger. The type decides which team attributes will matter; difficulty is the
+// magnitude that used to be `danger`. Neither is derivable from the floor number: the type is
+// random and the difficulty swings around its floor, which is what makes a floor worth scouting
+// instead of merely counting.
 
 enum class ObjectiveType {
     Slay,               // defeat what holds the floor
@@ -24,8 +26,12 @@ struct Objective {
 
 Objective makeObjective(int floor, std::mt19937 &rng);
 // Pre: floor >= 1.
-// Post: Returns a random Objective for the floor: type chosen uniformly, difficulty scaled from
-//       the floor, and any type-specific field set (rounds for Hold, 0 otherwise).
+// Post: Returns a random Objective for the floor: type chosen uniformly, and any type-specific
+//       field set (rounds for Hold, 0 otherwise). Difficulty is the floor's own: it scales with
+//       the floor AND carries a swing of up to FLOOR_SWING floors either way, so a floor may sit
+//       harder or softer than its number says. Caller is expected to roll this ONCE per floor and
+//       remember it (Incursion's objectiveFor caches into state.floorObjectives) -- the swing is
+//       the floor's identity, not a per-visit surprise, and it is what a scout is sent to learn.
 
 std::string describeObjective(const Objective &objective);
 // Pre: None.

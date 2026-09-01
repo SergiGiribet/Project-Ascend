@@ -23,9 +23,13 @@ struct Report {
 
 Report scoutAhead(const Unit &scout, const Objective &objective, std::mt19937 &rng);
 // Pre: rng must be seeded.
-// Post: Returns what the scout claims about the objective. Every report is currently complete and
-//       accurate (sawObjective and sawDanger true, claimed == objective, bias 0); trait-driven
-//       omission, distortion and risk arrive in 2c-4.
+// Post: Returns what the scout claims about the objective. The mission is always identified and
+//       always identified correctly for now (sawObjective and sawDanger true, claimed ==
+//       objective); what varies is the DANGER they report. Every scout is off by up to
+//       SCOUT_SPREAD either way, so who goes changes what comes back; Alert halves that. Boaster
+//       and Cowardly each add SCOUT_SKEW in their own direction -- not more error but error with
+//       a direction, which is worse, because the player cannot see which way it leans. Failing to
+//       identify the mission at all (sawObjective false) arrives with 2e.
 
 std::string describeReport(const Report &report);
 // Pre: None.

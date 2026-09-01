@@ -323,7 +323,7 @@ static void loseFloor(int floor, Team &team, Roster &roster, GameState &state,
     }
 }
 
-void runScoutMission(int scoutId, Team &team, Roster &roster, GameState &state, std::mt19937 &rng)
+void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState &state, std::mt19937 &rng)
 {
     if (!roster.contains(scoutId))
     {
@@ -362,7 +362,7 @@ void runScoutMission(int scoutId, Team &team, Roster &roster, GameState &state, 
         state.necropolis.addDeath(scout, floor, "lost scouting the floor alone",
                                   state.incursionCount);
         roster.removeUnitById(scoutId);
-        team.purgeDeadMembers(roster);
+        barracks.purgeDead(roster);
         return;
     }
 
@@ -371,18 +371,15 @@ void runScoutMission(int scoutId, Team &team, Roster &roster, GameState &state, 
     std::cout << describeReport(report) << std::endl;
 }
 
-void runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
+bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
     {
         std::cout << "No units in the team. Assemble a team first." << std::endl;
-        return;
+        return false;
     }
 
-    state.incursionCount++;
-
     std::cout << std::endl;
-    std::cout << "=== Incursion " << state.incursionCount << " ===" << std::endl;
     team.printTeam(roster);
 
     int startFloor = 1;
@@ -394,6 +391,38 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         if (startFloor < 1 || startFloor > state.highestFloor + 1)
             startFloor = 1;
     }
+
+    Objective objective = objectiveFor(startFloor, state, rng);
+
+    auto scouted = state.floorReports.find(startFloor);
+    if (startFloor <= state.highestFloor)
+    {
+        printForecast(teamPower(team, roster), objective.difficulty);
+    }
+    else if (scouted != state.floorReports.end() && scouted->second.sawDanger)
+    {
+        std::cout << scouted->second.scout << " went up and came back. By their account:" << std::endl;
+        if (scouted->second.sawObjective)
+            std::cout << "  " << describeObjective(scouted->second.claimed) << std::endl;
+        printForecast(teamPower(team, roster) + scouted->second.bias, objective.difficulty);
+    }
+    else
+    {
+        std::cout << "No one has stood on floor " << startFloor
+                  << ". What waits there is a guess." << std::endl;
+    }
+
+    std::cout << "Send them in? [1] Yes  [2] Hold back" << std::endl;
+    if (readChoice() != 1)
+    {
+        std::cout << "They stay in the doorway. Nothing is spent." << std::endl;
+        return false;
+    }
+
+    state.incursionCount++;
+    std::cout << std::endl;
+    std::cout << "=== Sortie " << state.incursionCount << ": floor " << startFloor
+              << " ===" << std::endl;
 
     int toll = startFloor - 1;
     if (toll > state.essence)
@@ -413,9 +442,9 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
     int highestFloorThisRun = 0;
     std::uniform_int_distribution<int> luck(0, MAX_LUCK);
-    Objective objective = objectiveFor(startFloor, state, rng);
 
-    for (int floor = startFloor;; floor++)
+    int floor = startFloor;
+    do // one floor, one sortie: a break anywhere below simply ends it early
     {
         int fit = teamFit(team, roster, objective.type);
         int power = teamPower(team, roster) + fit;
@@ -504,7 +533,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             if (floor > state.highestFloor)
                 state.highestFloor = floor;
         }
-        else if (objective.type == ObjectiveType::Slay) 
+        else if (objective.type == ObjectiveType::Slay)
         {
             int enemyHpStart = danger * 3 / 2;
             int enemyHp = enemyHpStart;
@@ -513,21 +542,20 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
             while (enemyHp > 0 && failures < SLAY_COUNTERS_ENDURED)
             {
-                int roll = teamPower(team, roster) + teamFit(team, roster, objective.type)
-                            + traitMod + luck(rng);
+                int roll = teamPower(team, roster) + teamFit(team, roster, objective.type) + traitMod + luck(rng);
                 int margin = roll - danger;
 
                 if (margin >= 0)
                 {
                     std::uniform_int_distribution<int> critRoll(1, 100);
                     bool crit = critRoll(rng) <= SLAY_CRIT_CHANCE;
-                    
+
                     int hit = danger / 2 + margin;
                     if (crit)
                         hit += enemyHpStart / 2;
                     enemyHp -= hit;
 
-                    const std::vector<std::string> &bank = 
+                    const std::vector<std::string> &bank =
                         (crit || margin >= MAX_LUCK) ? SLAY_CRUSHED : SLAY_LANDED;
                     std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
                 }
@@ -539,17 +567,17 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                     std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
 
                     if (!woundOne(team, roster, state, injuries, floor, enc.cause,
-                                    SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
+                                  SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
                     {
                         wiped = true;
                         break;
                     }
                 }
             }
-            
+
             if (wiped)
                 break;
-            
+
             if (enemyHp > 0)
             {
                 std::cout << "  " << describeSurvivor(enemyHp, enemyHpStart) << std::endl;
@@ -558,9 +586,10 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             }
 
             std::cout << (failures == 0 ? "  It falls without landing a blow."
-                                        : "  It falls, and they have paid for it.") << std::endl;
+                                        : "  It falls, and they have paid for it.")
+                      << std::endl;
             awardFloor(floor, team, roster, state);
-            
+
             highestFloorThisRun = floor;
             if (floor > state.highestFloor)
                 state.highestFloor = floor;
@@ -654,28 +683,14 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
             break;
         }
-
-        Objective nextObjective = objectiveFor(floor + 1, state, rng);
-        int nextDanger = nextObjective.difficulty;
-        int currentPower = teamPower(team, roster);
-
-        printForecast(currentPower, nextDanger);
-
-        std::cout << "Climb to floor " << floor + 1 << "? [1] Yes  [2] Return" << std::endl;
-        if (readChoice() != 1)
-        {
-            std::cout << "The team descends with their spoils and their lives." << std::endl;
-            break;
-        }
-        objective = nextObjective;
-    }
+    } while (false);
 
     team.purgeDeadMembers(roster);
 
     std::cout << std::endl;
-    std::cout << "=== Incursion " << state.incursionCount << " over ===" << std::endl;
-    std::cout << "Highest floor this run: " << highestFloorThisRun
-              << "  |  Tower record: " << state.highestFloor
+    std::cout << (highestFloorThisRun > 0 ? "=== Floor taken ===" : "=== Floor held them ===")
+              << std::endl;
+    std::cout << "Tower record: floor " << state.highestFloor
               << "  |  Essence: " << state.essence << std::endl;
     if (!team.getMembersIds().empty())
     {
@@ -683,6 +698,7 @@ void runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                   << " the tower will mend them." << std::endl;
         team.printTeam(roster);
     }
+    return true;
 }
 
 std::vector<Encounter> loadEncounters(const std::string &path)

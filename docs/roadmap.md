@@ -9,7 +9,8 @@ upper-bound measurement showed the structure had to come before the mechanism; t
 rebalance was promoted out of §6 and into the phase on 2026-08-20, when Hold and Slay turned out
 to have gradients the difficulty curve never lets fire; 2d was restructured on 2026-08-21 around
 several teams and sorties that take time, which moved the save system forward and sent the curve
-back to last on purpose.
+back to last on purpose; 2d-3 shipped on 2026-08-26 and its measurement put an economy pass ahead
+of both save and time.
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -435,9 +436,10 @@ several teams. So:
 |---|---|---|
 | 2d-2 | **Several teams**: the roster holds parties, a unit belongs to at most one, the tower takes one party at a time | pure refactor, no new mechanic; the existing loop still runs, so it is measurable on its own |
 | 2d-3 | **One sortie = one floor**: the run ends when the floor does, re-entry at `record+1` is the supported path, lower floors are re-enterable as training | mostly deletion in `runIncursion`; **this is where the loop changes shape, so this is where we measure** |
-| 2d-4 | Save system (was T3) | prerequisite of the next step, not polish |
-| 2d-5 | **Sorties take time**, announced as an estimate rather than a timer; recovery slower than a sortie | the piece that keeps training honest |
-| 2d-6 | Curve, re-measured under the new structure | expected 15 -> 10, and only then |
+| 2d-4 | **Economy for sorties**: what a floor pays and what a body costs, rescaled now that entering is the loop | added 2026-08-26; it distorts every measurement while it stands |
+| 2d-5 | Save system (was T3) | prerequisite of the next step, not polish |
+| 2d-6 | **Sorties take time**, announced as an estimate rather than a timer; recovery slower than a sortie | the piece that keeps training honest |
+| 2d-7 | Curve, re-measured under the new structure | the swing already widened the band; what is left is the slope |
 
 2d-3 replaces the old 2d-2 and, together with 2d-2 above, subsumes the old 2d-3: an expedition
 chosen from the roster is what a party *is* once parties are first-class. The old 2d-4
@@ -446,6 +448,35 @@ chosen from the roster is what a party *is* once parties are first-class. The ol
 Worth naming, because it is the point of the whole project: several teams is also what finally
 gives GDD 1.1 its stage. Losing your best party hurts because you built it, and the three parties
 standing next to it are what make "built" legible.
+
+### 2d-3 shipped, and what the measurement changed  *(2026-08-26)*
+
+Sorties are in. A run is one floor: pick where to go, see the forecast only for floors you have
+already stood on, confirm before anything is spent, resolve, come out. Each floor now carries its
+own difficulty -- the floor-scaled magnitude plus a swing of up to `FLOOR_SWING` floors either way,
+rolled once and remembered in `state.floorObjectives`, so a floor has an identity worth learning.
+A scout's report is recalled at the entry screen (mission claimed and danger read), and the danger
+they report is off by up to `SCOUT_SPREAD`, halved by Alert and skewed a further `SCOUT_SKEW` by
+Boaster or Cowardly -- error with a direction, which the player cannot see.
+
+The measurement (full tables in the [backlog](backlog.md)) says three things:
+
+- **The band opened.** Middle outcomes went from **0 of 38** on 2026-08-20 to **34 of 153**, 22%.
+  Hold and Slay's gradients fire. Nothing about them changed; the curve stopped hiding them.
+- **Knowledge buys survival, not height.** Ten times fewer deaths, but a lower record, because
+  scouting costs actions. And the informed bot uses what it learns to *avoid* the band -- 5% middle
+  outcomes against 22%. The Phase 2 gate reads ambiguous on purpose: what would let knowledge buy
+  height as well is **time**, which makes a wasted action hurt and gives holding back a price.
+- **A run ends of poverty, not of the tower.** A floor yields `N` and costs `N - 1` to enter: +1 a
+  sortie at any depth, against 5 to summon. Losses become unrecoverable, and the last third of a
+  bad run is a bot with no party and no essence, doing nothing.
+
+**The third one is new work, and it goes before save and time.** The toll and the summoning price
+were set for a game entered once every thirty floors. Under sorties, entering is the whole loop,
+so what a floor pays and what a body costs have to be scaled for it. It is the same shape of hole
+as the free heal 2d-1 closed, and it will distort every later measurement while it stands.
+
+Revised order for the rest of 2d: **economy -> save -> timed sorties -> curve**.
 
 ### 2e — Personalities, and the closing measurement
 
@@ -635,12 +666,15 @@ design work *faster* rather than prettier.
 
 ## 8. Immediate next step
 
-**2d-2**: make parties first-class. The roster holds several teams, a unit belongs to at most one,
-and the tower takes one party at a time. It is a refactor and not a mechanic -- `Team` stops being
-the single object threaded through `main` and `runIncursion` and becomes one of a collection -- so
-the loop we already measure keeps running while it lands. It comes first because every later step
-depends on it: one-floor sorties need somewhere for the other people to be, and timed sorties need
-something to do while you wait.
+**2d-4: an economy that fits sorties.** A floor yields `N` essence and entering it costs `N - 1`,
+so a sortie nets +1 whatever its depth, while a body costs 5. Measured on 2026-08-26: a run that
+loses people cannot replace them, and ends with an empty roster and no essence rather than with
+the tower winning. Two numbers to reconsider -- what a floor pays, and what the toll is -- plus
+whether the toll should exist at all now that leaving is not a retreat but the normal end of a
+sortie.
 
-Deliberately *not* first: the difficulty curve. Retuning 15 before the structure changes would be
-tuning a number that is about to mean something else.
+It comes before save (2d-5) and time (2d-6) because it is cheap, and because it distorts every
+measurement taken while it stands.
+
+Deliberately *not* next: the difficulty curve slope. The per-floor swing already widened the band
+from 0% middle outcomes to 22%; what the slope is worth cannot be read until sorties cost time.

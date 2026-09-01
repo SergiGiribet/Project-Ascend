@@ -200,6 +200,75 @@ And the friction the player named, which is its own finding: assigning trainees 
 units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
 essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
 
+## The sortie loop, measured (2026-08-26, automated bot)
+
+First measurement of the whole 2d loop: several parties, one floor per sortie, floors with their
+own difficulty, and a scout whose report can be wrong. Two bots, **8 runs each, 30 tower actions
+apiece** (an action is a sortie OR a scouting run, the only fair currency until time exists).
+Neither may farm: both always attempt record+1.
+
+| | blind | informed |
+|---|---:|---:|
+| record reached, average | **8.9** | 5.4 |
+| deaths, average | 6.0 | **0.6** |
+| sorties refused after a bad report | -- | 4 |
+
+The blind bot picks its five by health alone and always enters. The informed one scouts first,
+picks for `traitFit` against the objective the scout claims, and holds back on either red tier.
+
+### 1. The band opened -- 0% to 22%
+
+Every floor the blind bot resolved, 153 of them:
+
+| outcome | times |
+|---|---:|
+| won at no cost (flawless Hold, untouched Slay, with ease) | 95 |
+| **won and paid for it** (with difficulty, Slay with counters) | **14** |
+| **lost having marked it** (barely marked, one blow short, pushed off) | **20** |
+| lost flat (overwhelmed) | 24 |
+
+**34 of 153 land in the middle: 22%.** On 2026-08-20 the same count was **0 of 38**. Lines written
+a fortnight ago and never once seen -- *"It is barely marked"*, *"One more blow might have done
+it"*, *"It falls, and they have paid for it"* -- print now.
+
+The per-floor difficulty swing did it. The gradients inside Hold and Slay were never the problem;
+the curve never let the game reach them.
+
+### 2. Knowledge buys survival, not height
+
+**6.0 deaths against 0.6** -- ten to one -- and *overwhelmed* falls from 24 to 4. The informed bot
+almost never walks into a floor it cannot take.
+
+It also climbs **less** (5.4 against 8.9), because half its budget goes on looking. Information
+converts into safety rather than altitude.
+
+And it avoids the band it paid to find: only **6 of 109** of its outcomes are middle ones, 5%
+against the blind bot's 22%. It knows enough never to enter an interesting floor. In a game whose
+thesis is that loss should land, a player who can buy their way out of losing anything is not
+obviously a player who is winning.
+
+**The Phase 2 gate ("an informed bot beats a blind one") therefore reads ambiguous, and that looks
+like the right answer rather than a tie.** What is missing before knowledge can buy height too is
+*time*: a wasted action has to hurt, and holding back has to cost something.
+
+### 3. The run ends of poverty, not of the tower
+
+The blind bot recorded **exactly 6 deaths in all eight runs**. Not chance -- it runs out of people
+and money, and its last ten actions do nothing at all:
+
+```
+roster sizes: 4, 4, 3, 3, 2, 2, 1, 1
+too poor to invoke: 10
+essence: 0, 0, 0, 0, 0, 0
+```
+
+A floor yields `N` essence and entering it costs `N - 1`: **+1 net per sortie, at any depth.**
+Summoning costs 5. So replacing one death takes five sorties, and a bad run leaves you permanently
+unable to field a party.
+
+The economy was built for a game entered once every thirty floors and is now running in one
+entered every floor. It is the same shape of hole as the free heal that 2d-1 closed.
+
 ## Session with Hold and Slay resolving as mechanics (2026-08-20)
 
 Eight incursions, record floor 11, one death, no wipes. 38 floors resolved. **Not one of them cost

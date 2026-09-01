@@ -19,10 +19,23 @@ int readChoice()
             throw std::runtime_error("Input stream is closed.");
 
         std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         c = 0;
     }
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     return c;
+}
+
+std::string readLine()
+{
+    std::string line;
+    if (!std::getline(std::cin, line))
+    {
+        if (std::cin.eof())
+            throw std::runtime_error("Input stream is closed.");
+        else
+            throw std::runtime_error("Error reading input.");
+    }
+    return line;
 }
 
 std::string pickRandom(const std::vector<std::string> &v, std::mt19937 &rng)

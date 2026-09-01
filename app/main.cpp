@@ -76,7 +76,7 @@ void IncursionMenu()
 {
     std::cout << std::endl;
     std::cout << "=== The Tower ===" << std::endl;
-    std::cout << "  1. Start the incursion" << std::endl;
+    std::cout << "  1. Send a party up a floor" << std::endl;
     std::cout << "  2. Send a scout to the next floor" << std::endl;
     std::cout << "  3. Return to main menu" << std::endl;
 }
@@ -238,7 +238,10 @@ int main()
                     case 4:
                     {
                         std::cout << std::endl;
-                        std::string partyName = "Party " + std::to_string(barracks.count() + 1);
+                        std::cout << "What will this party be called?" << std::endl;
+                        std::string partyName = readLine();
+                        if (partyName.empty())
+                            partyName = "Party " + std::to_string(barracks.count() + 1);
                         barracks.create(partyName);
                         std::cout << partyName << " forms up, empty and waiting." << std::endl;
                         break;
@@ -402,8 +405,7 @@ int main()
                         // The ids are copied out BEFORE the incursion: the party loses its dead
                         // during it, and whoever climbed must not rest even if they fell.
                         std::vector<int> climbed = barracks.at(partyIndex).getMembersIds();
-                        runIncursion(barracks.at(partyIndex), roster, state, encounters, injuries, rng);
-                        if (!climbed.empty())
+                        if (runIncursion(barracks.at(partyIndex), roster, state, encounters, injuries, rng))
                         {
                             tcamp.tick(roster, injuries, rng);
                             roster.healRested(climbed);
@@ -416,9 +418,7 @@ int main()
                         std::cout << "Who goes up to look? (unit id)" << std::endl;
                         roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         int scoutId = readChoice();
-                        int owner = barracks.teamOfUnit(scoutId);
-                        runScoutMission(scoutId, barracks.at(owner >= 0 ? owner : 0), roster, state, rng);
-                        barracks.purgeDead(roster); // the scout may belong to any party, or to none
+                        runScoutMission(scoutId, barracks, roster, state, rng);
                         break;
                     }
                     case 3:

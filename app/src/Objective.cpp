@@ -27,6 +27,10 @@ static const std::vector<TraitFit> TRAIT_FIT = {
     {"Superstitious", {  -8,      4,      0,      0}},
 };
 
+static const int FLOOR_BASE = 20;  // what floor zero would be worth
+static const int FLOOR_STEP = 15;  // what each floor adds
+static const int FLOOR_SWING = 2;  // in FLOORS: how far a floor may sit from its own number
+
 Objective makeObjective(int floor, std::mt19937 &rng)
 {
     std::uniform_int_distribution<int> pickType(0, 3);
@@ -34,7 +38,8 @@ Objective makeObjective(int floor, std::mt19937 &rng)
 
     Objective objective;
     objective.type = type;
-    objective.difficulty = 20 + floor * 15; // same magnitude Phase 1 called `danger`
+    std::uniform_int_distribution<int> swing(-FLOOR_STEP * FLOOR_SWING, FLOOR_STEP * FLOOR_SWING);
+    objective.difficulty = FLOOR_BASE + floor * FLOOR_STEP + swing(rng);
     objective.rounds = 0;
 
     if (type == ObjectiveType::Hold)

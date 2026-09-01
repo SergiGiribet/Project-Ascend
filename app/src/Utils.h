@@ -16,9 +16,18 @@ constexpr const char *COLOR_BLUE    = "\x1b[34m";
 
 int readChoice();
 // Pre: None
-// Post: Prints the input prompt "> " and reads an integer from standard input;
-//       returns it, or 0 if the input was not a number (the bad line is discarded).
+// Post: Prints the input prompt "> " and reads an integer from standard input; returns it, or 0
+//       if the input was not a number. Either way it then discards the REST OF THE LINE, so one
+//       call consumes exactly one line -- which is what lets it be interleaved with readLine
+//       without leaving a stray newline for the next reader to trip over. The cost is that
+//       several numbers on one line no longer queue up as several answers.
 //       Throws std::runtime_error if the input stream is closed (EOF).
+
+std::string readLine();
+// Pre: None
+// Post: Reads a line from standard input and returns it without the newline; an empty line comes
+//       back as an empty string, which callers are expected to read as "no answer" and fill in a
+//       default for. Throws std::runtime_error if the input stream is closed (EOF).
 
 std::string pickRandom(const std::vector<std::string> &v, std::mt19937 &rng);
 // Pre: v must not be empty (throws std::runtime_error otherwise).
