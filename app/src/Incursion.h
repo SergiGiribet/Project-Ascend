@@ -46,8 +46,8 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       have stood there; for record+1 they are told plainly that nobody has, and the forecast
 //       is withheld -- that is what a scout is for. The objective type is NOT shown here at all:
 //       knowing what the floor asks before choosing who goes is precisely the knowledge a sortie
-//       has to be paid for. Only after they confirm is state.incursionCount raised and the toll
-//       charged, (start floor - 1) essence; an unaffordable floor falls back to floor 1, free.
+//       has to be paid for. Entering costs no essence at all; the floor chosen is the floor
+//       entered, so the forecast they agreed to is never quietly swapped for another one.
 //
 //       THE FLOOR. The floor presents a random encounter and an objective taken from
 //       state.floorObjectives, which keeps every floor's mission AND its own difficulty across

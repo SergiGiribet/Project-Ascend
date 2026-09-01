@@ -254,13 +254,12 @@ static const IncidentFlavor &pickIncidentFlavor(const Unit &victim, std::mt19937
     return pool[dist(rng)];
 }
 
-static bool woundOne(Team &team, Roster &roster, GameState &state,
-                     const std::vector<Injury> &injuries, int floor, const std::string &cause,
-                     int dmgMin, int dmgMax, std::mt19937 &rng)
+static bool hurt(int unitId, Team &team, Roster &roster, GameState &state,
+                 const std::vector<Injury> &injuries, int floor, const std::string &cause,
+                 int dmgMin, int dmgMax, std::mt19937 &rng)
 {
-    int victimId = pickWeightedVictim(team, roster, rng);
     std::uniform_int_distribution<int> dmg(dmgMin, dmgMax);
-    Unit &victim = roster.findUnitById(victimId);
+    Unit &victim = roster.findUnitById(unitId);
     victim.takeDamage(dmg(rng));
 
     std::cout << "  " << victim.getName();
@@ -273,10 +272,10 @@ static bool woundOne(Team &team, Roster &roster, GameState &state,
         std::cout << "  " << victim.getName();
         if (!victim.getSkills().empty())
             std::cout << ", " << pickRandom(victim.getSkills(), rng) << " to the end,";
-        std::cout << " falls on floor " << floor << ". The others mourn and press on." << std::endl;
+        std::cout << " falls on floor " << floor << "." << std::endl;
 
         state.necropolis.addDeath(victim, floor, cause, state.incursionCount);
-        roster.removeUnitById(victimId);
+        roster.removeUnitById(unitId);
         team.purgeDeadMembers(roster);
 
         if (team.getMembersIds().empty())
@@ -299,28 +298,26 @@ static bool woundOne(Team &team, Roster &roster, GameState &state,
     return true;
 }
 
-static void loseFloor(int floor, Team &team, Roster &roster, GameState &state,
-                      const std::string &cause, std::mt19937 &rng)
+static bool woundOne(Team &team, Roster &roster, GameState &state,
+                     const std::vector<Injury> &injuries, int floor, const std::string &cause,
+                     int dmgMin, int dmgMax, std::mt19937 &rng)
 {
-    const std::vector<int> &ids = team.getMembersIds();
-    std::uniform_int_distribution<size_t> pick(0, ids.size() - 1);
-    int victimId = ids[pick(rng)];
-    const Unit &fallen = roster.findUnitById(victimId);
+    int victimId = pickWeightedVictim(team, roster, rng);
+    return hurt(victimId, team, roster, state, injuries, floor, cause, dmgMin, dmgMax, rng);
+}
 
-    std::cout << "  " << fallen.getName();
-    if (!fallen.getSkills().empty())
-        std::cout << ", " << pickRandom(fallen.getSkills(), rng) << " to the end,";
-    std::cout << " falls on floor " << floor << ". The others retreat." << std::endl;
+static void loseFloor(int floor, Team &team, Roster &roster, GameState &state,
+                      const std::vector<Injury> &injuries, const std::string &cause,
+                      int danger, std::mt19937 &rng)
+{
+    std::vector<int> ids = team.getMembersIds();
 
-    state.necropolis.addDeath(fallen, floor, cause, state.incursionCount);
-    roster.removeUnitById(victimId);
-    team.purgeDeadMembers(roster);
-
-    if (team.getMembersIds().empty())
+    for (int id : ids)
     {
-        std::cout << std::endl;
-        std::cout << "The tower claims them all. No one returns." << std::endl;
+        if (!hurt(id, team, roster, state, injuries, floor, cause, danger / 6, danger / 3, rng))
+            return;
     }
+    std::cout << "  They give up the floor and fall back." << std::endl;
 }
 
 void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState &state, std::mt19937 &rng)
@@ -386,7 +383,7 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     if (state.highestFloor > 0)
     {
         std::cout << "Start from floor? [1-" << state.highestFloor + 1
-                  << "] (toll: 1 essence per floor above the first)" << std::endl;
+                  << "]" << std::endl;
         startFloor = readChoice();
         if (startFloor < 1 || startFloor > state.highestFloor + 1)
             startFloor = 1;
@@ -423,20 +420,6 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     std::cout << std::endl;
     std::cout << "=== Sortie " << state.incursionCount << ": floor " << startFloor
               << " ===" << std::endl;
-
-    int toll = startFloor - 1;
-    if (toll > state.essence)
-    {
-        std::cout << "Not enough essence for floor " << startFloor << " (" << state.essence
-                  << "/" << toll << "). The tower lets you in at floor 1." << std::endl;
-        startFloor = 1;
-        toll = 0;
-    }
-    if (toll > 0)
-    {
-        state.essence -= toll;
-        std::cout << "The tower takes its toll: " << toll << " essence." << std::endl;
-    }
 
     std::cout << std::endl;
 
@@ -520,7 +503,7 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             if (failures * 2 > objective.rounds)
             {
                 std::cout << "  They are pushed off the floor." << std::endl;
-                loseFloor(floor, team, roster, state, enc.cause, rng);
+                loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
                 break;
             }
 
@@ -581,7 +564,7 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
             if (enemyHp > 0)
             {
                 std::cout << "  " << describeSurvivor(enemyHp, enemyHpStart) << std::endl;
-                loseFloor(floor, team, roster, state, enc.cause, rng);
+                loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
                 break;
             }
 
@@ -679,7 +662,7 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
         else
         {
             std::cout << "  The tower overwhelms the team." << std::endl;
-            loseFloor(floor, team, roster, state, enc.cause, rng);
+            loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
 
             break;
         }

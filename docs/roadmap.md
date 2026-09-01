@@ -666,32 +666,41 @@ design work *faster* rather than prettier.
 
 ## 8. Immediate next step
 
-**2d-4: an economy that fits sorties.** A floor yields `N` essence and entering it costs `N - 1`,
-so a sortie nets +1 whatever its depth, while a body costs 5. Measured on 2026-08-26: a run that
-loses people cannot replace them, and ends with an empty roster and no essence rather than with
-the tower winning. Two numbers to reconsider -- what a floor pays, and what the toll is -- plus
-whether the toll should exist at all now that leaving is not a retreat but the normal end of a
-sortie.
+**Decided 2026-09-02, and partly shipped.**
 
-It comes before save (2d-5) and time (2d-6) because it is cheap, and because it distorts every
-measurement taken while it stands.
+1. **The toll is gone.** It existed to stop you skipping floors you had already climbed, and there
+   is no climb to skip. Shipped; measured (see the [backlog](backlog.md)). Income now tracks depth,
+   the poverty spiral is over -- and it opened a new hole: bodies became ammunition, and the blind
+   meat grinder out-climbs the careful player.
+2. **Summoning becomes tiered: price buys the CEILING as well as the odds.** The user's design, and
+   the measurement above is the argument for it. Three tiers re-weighting the same six races, each
+   with a hard cap on what can appear:
 
-**On the table, not yet decided (2026-08-26):**
+   | price | weights, races 1..6 | mean race | party of 5 | ceiling |
+   |---:|---|---:|---:|---|
+   | 5 | `40 25 15 . . .` | 1.7 | 114 | race 3 |
+   | 20 | `20 20 25 20 15 .` | 2.9 | 138 | race 5 |
+   | 60 | `5 10 15 20 25 25` | 4.3 | 165 | race 6 |
 
-1. **Drop the toll entirely**, not reduce it. It existed to stop you skipping floors you had already
-   climbed, and there is no climb to skip any more -- it now taxes the only action the game offers,
-   and it is what flattens income to +1 a sortie at every depth. Without it, clearing floor N pays
-   N net and there is finally an economic reason to go deeper. The anti-farming job it seems to be
-   doing belongs to **time** (2d-6), not to a tax: floor 1 pays 1, which was never worth farming.
-2. **Scale the summoning price with the size of the living roster** rather than with depth --
-   something like `5 + 3 * units`. It lets a wiped run recover (bodies are cheap when you have
-   none), puts a price on hoarding a bench, and creates the bench tension that 2d-6 wants: a large
-   bench is safe and lets people heal, a small one is cheap and everyone climbs wounded.
-   The alternative, scaling with `highestFloor`, keeps a death equally painful at any depth but
-   makes a late wipe a soft lock. Undecided; the argument for roster size is that a soft lock is
-   the worse failure.
-3. **Leave the 250-and-doubling trainer slot alone until there are new numbers** -- it was priced
-   against +1 a sortie and changes meaning on its own.
+   The dots are real zeros: a cheap summon *cannot* produce a race 6. Paying more buys a longer
+   tail, never a guarantee -- a 60 can still draw a 1. Steps of ~25 power, close to two floors each.
+   Consequence to carry into the curve pass: until you can afford tier 2 there is a hard wall around
+   floor 6, and the gate is the wallet.
+3. **The cheapest summon is free while fewer than five units live.** The circle keeps offering souls;
+   no run should end unable to field anyone. Stands in for the free weekly draw the user wants once
+   time and saving exist.
+4. **Deaths stop being decided and start being suffered.** `loseFloor` picks a victim uniformly at
+   random today, ignoring health entirely -- a unit at full strength can die while one on 5 hit
+   points walks home, which inverts everything wounds and `healRested` were built for. Instead the
+   floor hits the whole party on the way out and whoever cannot take it falls. Nobody is chosen and
+   nothing is counted: a fresh party may lose no one, a battered one may lose three, and the
+   gradient appears as a consequence of the state you chose to enter in rather than as a verdict.
+5. **Leave the 250-and-doubling trainer slot alone until there are new numbers.**
 
-Deliberately *not* next: the difficulty curve slope. The per-floor swing already widened the band
-from 0% middle outcomes to 22%; what the slope is worth cannot be read until sorties cost time.
+Found while specifying 4, not yet addressed: `WOUND_DMG`, `HOLD_DMG` and `SLAY_DMG` are flat. The
+enemy's health scales with the floor but its damage does not, while your own health grows with
+levels -- so wounds matter *less* the deeper you go, which is backwards. Deciding it touches the
+curve, so it waits for that pass; the retreat volley scaling with the floor is the first crack in it.
+
+Deliberately *not* next: the difficulty curve slope. The per-floor swing already widened the band;
+what the slope is worth cannot be read until sorties cost time.

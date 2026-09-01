@@ -200,6 +200,73 @@ And the friction the player named, which is its own finding: assigning trainees 
 units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
 essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
 
+## Losing stops being a tax (2026-09-02, automated bot)
+
+Same bot and budget again, one change: `loseFloor` no longer picks a victim. The floor hits the
+whole party on the way out (`danger / 6` to `danger / 3` each, through the same wound path as
+everything else) and whoever cannot take it falls. Nobody is chosen; nothing is counted.
+
+| | toll removed | + volley |
+|---|---:|---:|
+| blind, record | 10.4 | 9.5 |
+| blind, deaths | 16.6 | **12.1** |
+| informed, record | 8.2 | 8.6 |
+| informed, deaths | 0.1 | **0.0** |
+| middle outcomes (blind) | 37% | **40%** |
+
+**Deaths went DOWN, and that is the result.** Every lost floor used to cost exactly one life
+whatever the state of the party. Now a party at full strength can lose a floor and lose no one,
+while a battered one loses three. The spread across runs shows it: deaths were `18,18,16,19,14,14,
+16,18` before -- a flat tax -- and are `14,14,16,17,14,6,9,7` after.
+
+**And it makes the wound economy load-bearing for the first time.** Both bots field their healthiest
+five, so the hurt sit out and `healRested` mends them. That management now *works*, which it could
+not when the victim was drawn uniformly at random -- a unit at full health died as readily as one on
+five hit points, which inverted everything wounds were for.
+
+Two Slay tiers printed for the first time ever: *"It bleeds, but it is still standing"* (3) and
+*"One more blow might have done it"* (2).
+
+**The thing to watch:** the informed bot now takes **zero** deaths across eight runs, refusing 50 of
+its attempts. Backing out is free, so perfect caution is free, and a game about loss has a strategy
+that loses nothing. This is the third separate finding pointing at the same missing piece -- when a
+sortie costs time, refusing one has to cost time too.
+
+## The toll comes out (2026-09-02, automated bot)
+
+Same bot, same budget (8 runs each, 30 tower actions), one change: **entering a floor no longer
+costs essence.** Clearing floor N pays N, and now nets N.
+
+| | before | after |
+|---|---:|---:|
+| blind, record | 8.9 | **10.4** |
+| blind, deaths | 6.0 | **16.6** |
+| informed, record | 5.4 | **8.2** |
+| informed, deaths | 0.6 | **0.1** |
+| informed, sorties refused | 4 | **53** |
+
+**A prediction that was wrong, and worth keeping.** We expected the middle-outcome rate to stay at
+22%, on the grounds that the economy does not touch how a floor resolves. It went to **37%** (77 of
+207). The economy did not change *how* a floor resolves -- it changed **which floors get attempted,
+and by whom.** With replacements affordable, the blind bot climbs higher on parties rebuilt at
+level 1, so it enters floors that are far above it far more often: *overwhelmed* went from 24 to 61.
+The wallet picks the party, and the party decides where the outcome lands.
+
+**The hole it opens: bodies are ammunition.** The blind bot now climbs HIGHER than the informed one
+(10.4 to 8.2) while losing 16.6 people per 30 sorties. At floor 10 a sortie pays 10 and a body costs
+5, so every sortie funds two replacements; sustaining 0.55 deaths a sortie needs 2.75. There is 260%
+slack, and the meat grinder is a winning strategy. In a game whose thesis is that loss should land,
+that is the worst available outcome.
+
+**The tiered summoning already decided on answers it, and now there are numbers for why.** The cheap
+tier caps at race 3 -- a party worth 114 power, which walls out around floor 6. Getting past it needs
+the 60-essence tier, six sorties at floor 10. A grinder losing 0.55 a sortie would need 33 essence a
+sortie to replace with quality against an income of 10: it stays on dregs and stalls.
+
+**One number to watch later:** the informed bot refused 53 of its attempts -- nearly half. It spends
+budget on *not playing* and is rewarded with 0.1 deaths. Backing out is close to free today; when
+sorties take time (2d-6) it will not be, and this is the figure to re-read that day.
+
 ## The sortie loop, measured (2026-08-26, automated bot)
 
 First measurement of the whole 2d loop: several parties, one floor per sortie, floors with their
