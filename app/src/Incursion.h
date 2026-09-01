@@ -49,7 +49,12 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       has to be paid for. Entering costs no essence at all; the floor chosen is the floor
 //       entered, so the forecast they agreed to is never quietly swapped for another one.
 //
-//       THE FLOOR. The floor presents a random encounter and an objective taken from
+//       THE FLOOR is resolved by resolveFloor, which owns everything from the encounter to the
+//       last casualty and answers only whether the floor was cleared. That seam is where the
+//       simulation will be lifted away from the console when a sortie has to resolve with nobody
+//       watching. What follows describes what happens inside it.
+//
+//       The floor presents a random encounter and an objective taken from
 //       state.floorObjectives, which keeps every floor's mission AND its own difficulty across
 //       sorties -- a floor has an identity, and it is worth learning. Printed under the floor
 //       header: the objective's briefing, then how well the party suits it (traitFit summed over
@@ -91,7 +96,8 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       one runs the full death path.
 //
 //       AFTERWARDS. A cleared floor yields its floor number in essence and XP to the survivors,
-//       who may level up; state.highestFloor grows on a new record. Every casualty is recorded in
+//       who may level up; state.highestFloor grows on a new record -- including when the floor is
+//       cleared and an incident then takes the whole party, because they did take the floor. Every casualty is recorded in
 //       state.necropolis BEFORE being removed from roster and purged from team, with the
 //       encounter's cause for difficulty, overwhelm and Hold-round deaths, and the incident's own
 //       flavor text for residual incidents. Wounds are NOT healed here: whoever went carries them

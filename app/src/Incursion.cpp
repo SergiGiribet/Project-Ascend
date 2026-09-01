@@ -368,6 +368,251 @@ void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState 
     std::cout << describeReport(report) << std::endl;
 }
 
+// Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
+// the floor was cleared. Every early exit is a return, and the two that mean "cleared, and
+// then it took them anyway" return true on purpose -- the floor was taken; what happened
+// afterwards is a separate thing, and nothing here decides it.
+//
+// This is the seam. Today it still prints as it goes; when a sortie has to resolve with nobody
+// watching a console (2d-6), what changes is inside here and inside hurt/loseFloor/awardFloor,
+// not in runIncursion.
+static bool resolveFloor(int floor, const Objective &objective, Team &team, Roster &roster,
+                         GameState &state, const std::vector<Encounter> &encounters,
+                         const std::vector<Injury> &injuries, std::mt19937 &rng)
+{
+    std::uniform_int_distribution<int> luck(0, MAX_LUCK);
+    int fit = teamFit(team, roster, objective.type);
+    int power = teamPower(team, roster) + fit;
+    int danger = objective.difficulty;
+    int attack = power + luck(rng);
+    int traitMod = 0;
+
+    std::uniform_int_distribution<size_t> pickEnc(0, encounters.size() - 1);
+    const Encounter &enc = encounters[pickEnc(rng)];
+    std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
+    std::cout << "Objective: " << describeObjective(objective) << std::endl;
+    std::cout << "  " << describeFit(fit) << std::endl;
+
+    auto rep = state.floorReports.find(floor);
+    if (rep != state.floorReports.end() && rep->second.sawObjective && rep->second.claimed.type != objective.type)
+        std::cout << "  " << describeMisreport(rep->second) << std::endl;
+
+    std::vector<std::pair<int, const TraitEvent *>> candidates;
+    for (int id : team.getMembersIds())
+    {
+        const Unit &u = roster.findUnitById(id);
+        for (const TraitEvent &ev : DAMAGE_TRAIT_EVENTS)
+            if (std::find(u.getSkills().begin(), u.getSkills().end(), ev.trait) != u.getSkills().end())
+                candidates.push_back({id, &ev});
+    }
+
+    if (!candidates.empty())
+    {
+        std::uniform_int_distribution<int> coin(0, 1);
+        if (coin(rng) == 1)
+        {
+            auto selected = candidates[std::uniform_int_distribution<size_t>(0, candidates.size() - 1)(rng)];
+            const TraitEvent *event = selected.second;
+
+            const Unit &actor = roster.findUnitById(selected.first);
+            std::cout << "  " << actor.getName() << ", " << event->trait << " as ever, "
+                      << pickRandom(event->deeds, rng) << "." << std::endl;
+
+            traitMod += event->attackModifier;
+        }
+    }
+    attack += traitMod;
+
+    if (objective.type == ObjectiveType::Hold)
+    {
+        int failures = 0;
+        bool wiped = false;
+
+        for (int round = 1; round <= objective.rounds; round++)
+        {
+            int roll = teamPower(team, roster) + teamFit(team, roster, objective.type) + traitMod + luck(rng);
+
+            if (roll >= danger)
+                std::cout << "  Round " << round << ": " << pickRandom(HOLD_HELD, rng)
+                          << "." << std::endl;
+            else
+            {
+                std::cout << "  Round " << round << ": " << pickRandom(HOLD_GAVE_GROUND, rng)
+                          << "." << std::endl;
+                ++failures;
+                if (!woundOne(team, roster, state, injuries, floor, enc.cause,
+                              HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
+                {
+                    wiped = true;
+                    break;
+                }
+            }
+        }
+
+        if (wiped)
+            return false;
+
+        if (failures * 2 > objective.rounds)
+        {
+            std::cout << "  They are pushed off the floor." << std::endl;
+            loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
+            return false;
+        }
+
+        std::cout << (failures == 0 ? "  The line never broke."
+                                    : "  The line held, and it cost them.")
+                  << std::endl;
+        awardFloor(floor, team, roster, state);
+
+        return true;
+    }
+    else if (objective.type == ObjectiveType::Slay)
+    {
+        int enemyHpStart = danger * 3 / 2;
+        int enemyHp = enemyHpStart;
+        int failures = 0;
+        bool wiped = false;
+
+        while (enemyHp > 0 && failures < SLAY_COUNTERS_ENDURED)
+        {
+            int roll = teamPower(team, roster) + teamFit(team, roster, objective.type) + traitMod + luck(rng);
+            int margin = roll - danger;
+
+            if (margin >= 0)
+            {
+                std::uniform_int_distribution<int> critRoll(1, 100);
+                bool crit = critRoll(rng) <= SLAY_CRIT_CHANCE;
+
+                int hit = danger / 2 + margin;
+                if (crit)
+                    hit += enemyHpStart / 2;
+                enemyHp -= hit;
+
+                const std::vector<std::string> &bank =
+                    (crit || margin >= MAX_LUCK) ? SLAY_CRUSHED : SLAY_LANDED;
+                std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
+            }
+            else
+            {
+                ++failures;
+                const std::vector<std::string> &bank =
+                    (margin >= -MAX_LUCK / 2) ? SLAY_BLOCKED : SLAY_MISSED;
+                std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
+
+                if (!woundOne(team, roster, state, injuries, floor, enc.cause,
+                              SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
+                {
+                    wiped = true;
+                    break;
+                }
+            }
+        }
+
+        if (wiped)
+            return false;
+
+        if (enemyHp > 0)
+        {
+            std::cout << "  " << describeSurvivor(enemyHp, enemyHpStart) << std::endl;
+            loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
+            return false;
+        }
+
+        std::cout << (failures == 0 ? "  It falls without landing a blow."
+                                    : "  It falls, and they have paid for it.")
+                  << std::endl;
+        awardFloor(floor, team, roster, state);
+
+        return true;
+    }
+    else if (attack >= danger * 12 / 10)
+    {
+        std::cout << "  The team advances with ease." << std::endl;
+        awardFloor(floor, team, roster, state);
+
+        int chance = incidentChance(floor, team, roster);
+        std::uniform_int_distribution<int> incidentRoll(1, 100);
+        if (incidentRoll(rng) <= chance)
+        {
+            int victimId = pickWeightedVictim(team, roster, rng);
+            Unit &victim = roster.findUnitById(victimId);
+
+            std::uniform_int_distribution<int> fatalRoll(1, 100);
+            if (fatalRoll(rng) <= FATAL_CHANCE)
+            {
+                const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
+                std::cout << "  " << victim.getName() << " falls on floor " << floor << ", " << flavor.cause << "." << std::endl;
+                state.necropolis.addDeath(victim, floor, flavor.cause, state.incursionCount);
+                roster.removeUnitById(victimId);
+                team.purgeDeadMembers(roster);
+
+                if (team.getMembersIds().empty())
+                {
+                    std::cout << std::endl;
+                    std::cout << "The tower claims them all. No one returns." << std::endl;
+                    return true; // the floor WAS cleared; what took them afterwards is its own thing
+                }
+            }
+            else
+            {
+                const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
+                std::uniform_int_distribution<int> dmg(15, 40);
+                victim.takeDamage(dmg(rng));
+
+                if (!victim.isAlive())
+                {
+                    std::cout << "  " << victim.getName() << " falls on floor " << floor
+                              << ", " << flavor.cause << "." << std::endl;
+
+                    state.necropolis.addDeath(victim, floor, flavor.cause, state.incursionCount);
+                    roster.removeUnitById(victimId);
+                    team.purgeDeadMembers(roster);
+
+                    if (team.getMembersIds().empty())
+                    {
+                        std::cout << std::endl;
+                        std::cout << "The tower claims them all. No one returns." << std::endl;
+                        return true; // as above: cleared, and then it took them
+                    }
+                }
+                else
+                {
+                    std::cout << "  " << victim.getName() << " " << flavor.woundLine << "." << std::endl;
+
+                    std::uniform_int_distribution<int> injurieRoll(1, 100);
+                    if (injurieRoll(rng) <= WOUND_INJURY_CHANCE)
+                    {
+                        std::string injury = applyInjury(victim, injuries, rng);
+                        std::cout << "  " << victim.getName() << " will never be whole again -- " << injury << "." << std::endl;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+    else if (attack >= danger)
+    {
+
+        std::cout << "  The team advances with difficulty." << std::endl;
+        awardFloor(floor, team, roster, state);
+
+        if (!woundOne(team, roster, state, injuries, floor, enc.cause,
+                      WOUND_DMG_MIN, WOUND_DMG_MAX, rng))
+            return false;
+
+        return true;
+    }
+    else
+    {
+        std::cout << "  The tower overwhelms the team." << std::endl;
+        loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
+
+        return false;
+    }
+    return true;
+}
+
 bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
@@ -423,255 +668,15 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 
     std::cout << std::endl;
 
-    int highestFloorThisRun = 0;
-    std::uniform_int_distribution<int> luck(0, MAX_LUCK);
-
-    int floor = startFloor;
-    do // one floor, one sortie: a break anywhere below simply ends it early
-    {
-        int fit = teamFit(team, roster, objective.type);
-        int power = teamPower(team, roster) + fit;
-        int danger = objective.difficulty;
-        int attack = power + luck(rng);
-        int traitMod = 0;
-
-        std::uniform_int_distribution<size_t> pickEnc(0, encounters.size() - 1);
-        const Encounter &enc = encounters[pickEnc(rng)];
-        std::cout << "Floor " << floor << ": " << enc.description << "." << std::endl;
-        std::cout << "Objective: " << describeObjective(objective) << std::endl;
-        std::cout << "  " << describeFit(fit) << std::endl;
-
-        auto rep = state.floorReports.find(floor);
-        if (rep != state.floorReports.end() && rep->second.sawObjective && rep->second.claimed.type != objective.type)
-            std::cout << "  " << describeMisreport(rep->second) << std::endl;
-
-        std::vector<std::pair<int, const TraitEvent *>> candidates;
-        for (int id : team.getMembersIds())
-        {
-            const Unit &u = roster.findUnitById(id);
-            for (const TraitEvent &ev : DAMAGE_TRAIT_EVENTS)
-                if (std::find(u.getSkills().begin(), u.getSkills().end(), ev.trait) != u.getSkills().end())
-                    candidates.push_back({id, &ev});
-        }
-
-        if (!candidates.empty())
-        {
-            std::uniform_int_distribution<int> coin(0, 1);
-            if (coin(rng) == 1)
-            {
-                auto selected = candidates[std::uniform_int_distribution<size_t>(0, candidates.size() - 1)(rng)];
-                const TraitEvent *event = selected.second;
-
-                const Unit &actor = roster.findUnitById(selected.first);
-                std::cout << "  " << actor.getName() << ", " << event->trait << " as ever, "
-                          << pickRandom(event->deeds, rng) << "." << std::endl;
-
-                traitMod += event->attackModifier;
-            }
-        }
-        attack += traitMod;
-
-        if (objective.type == ObjectiveType::Hold)
-        {
-            int failures = 0;
-            bool wiped = false;
-
-            for (int round = 1; round <= objective.rounds; round++)
-            {
-                int roll = teamPower(team, roster) + teamFit(team, roster, objective.type) + traitMod + luck(rng);
-
-                if (roll >= danger)
-                    std::cout << "  Round " << round << ": " << pickRandom(HOLD_HELD, rng)
-                              << "." << std::endl;
-                else
-                {
-                    std::cout << "  Round " << round << ": " << pickRandom(HOLD_GAVE_GROUND, rng)
-                              << "." << std::endl;
-                    ++failures;
-                    if (!woundOne(team, roster, state, injuries, floor, enc.cause,
-                                  HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
-                    {
-                        wiped = true;
-                        break;
-                    }
-                }
-            }
-
-            if (wiped)
-                break;
-
-            if (failures * 2 > objective.rounds)
-            {
-                std::cout << "  They are pushed off the floor." << std::endl;
-                loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
-                break;
-            }
-
-            std::cout << (failures == 0 ? "  The line never broke."
-                                        : "  The line held, and it cost them.")
-                      << std::endl;
-            awardFloor(floor, team, roster, state);
-
-            highestFloorThisRun = floor;
-            if (floor > state.highestFloor)
-                state.highestFloor = floor;
-        }
-        else if (objective.type == ObjectiveType::Slay)
-        {
-            int enemyHpStart = danger * 3 / 2;
-            int enemyHp = enemyHpStart;
-            int failures = 0;
-            bool wiped = false;
-
-            while (enemyHp > 0 && failures < SLAY_COUNTERS_ENDURED)
-            {
-                int roll = teamPower(team, roster) + teamFit(team, roster, objective.type) + traitMod + luck(rng);
-                int margin = roll - danger;
-
-                if (margin >= 0)
-                {
-                    std::uniform_int_distribution<int> critRoll(1, 100);
-                    bool crit = critRoll(rng) <= SLAY_CRIT_CHANCE;
-
-                    int hit = danger / 2 + margin;
-                    if (crit)
-                        hit += enemyHpStart / 2;
-                    enemyHp -= hit;
-
-                    const std::vector<std::string> &bank =
-                        (crit || margin >= MAX_LUCK) ? SLAY_CRUSHED : SLAY_LANDED;
-                    std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
-                }
-                else
-                {
-                    ++failures;
-                    const std::vector<std::string> &bank =
-                        (margin >= -MAX_LUCK / 2) ? SLAY_BLOCKED : SLAY_MISSED;
-                    std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
-
-                    if (!woundOne(team, roster, state, injuries, floor, enc.cause,
-                                  SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
-                    {
-                        wiped = true;
-                        break;
-                    }
-                }
-            }
-
-            if (wiped)
-                break;
-
-            if (enemyHp > 0)
-            {
-                std::cout << "  " << describeSurvivor(enemyHp, enemyHpStart) << std::endl;
-                loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
-                break;
-            }
-
-            std::cout << (failures == 0 ? "  It falls without landing a blow."
-                                        : "  It falls, and they have paid for it.")
-                      << std::endl;
-            awardFloor(floor, team, roster, state);
-
-            highestFloorThisRun = floor;
-            if (floor > state.highestFloor)
-                state.highestFloor = floor;
-        }
-        else if (attack >= danger * 12 / 10)
-        {
-            std::cout << "  The team advances with ease." << std::endl;
-            awardFloor(floor, team, roster, state);
-
-            int chance = incidentChance(floor, team, roster);
-            std::uniform_int_distribution<int> incidentRoll(1, 100);
-            if (incidentRoll(rng) <= chance)
-            {
-                int victimId = pickWeightedVictim(team, roster, rng);
-                Unit &victim = roster.findUnitById(victimId);
-
-                std::uniform_int_distribution<int> fatalRoll(1, 100);
-                if (fatalRoll(rng) <= FATAL_CHANCE)
-                {
-                    const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
-                    std::cout << "  " << victim.getName() << " falls on floor " << floor << ", " << flavor.cause << "." << std::endl;
-                    state.necropolis.addDeath(victim, floor, flavor.cause, state.incursionCount);
-                    roster.removeUnitById(victimId);
-                    team.purgeDeadMembers(roster);
-
-                    if (team.getMembersIds().empty())
-                    {
-                        std::cout << std::endl;
-                        std::cout << "The tower claims them all. No one returns." << std::endl;
-                        break;
-                    }
-                }
-                else
-                {
-                    const IncidentFlavor &flavor = pickIncidentFlavor(victim, rng);
-                    std::uniform_int_distribution<int> dmg(15, 40);
-                    victim.takeDamage(dmg(rng));
-
-                    if (!victim.isAlive())
-                    {
-                        std::cout << "  " << victim.getName() << " falls on floor " << floor
-                                  << ", " << flavor.cause << "." << std::endl;
-
-                        state.necropolis.addDeath(victim, floor, flavor.cause, state.incursionCount);
-                        roster.removeUnitById(victimId);
-                        team.purgeDeadMembers(roster);
-
-                        if (team.getMembersIds().empty())
-                        {
-                            std::cout << std::endl;
-                            std::cout << "The tower claims them all. No one returns." << std::endl;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        std::cout << "  " << victim.getName() << " " << flavor.woundLine << "." << std::endl;
-
-                        std::uniform_int_distribution<int> injurieRoll(1, 100);
-                        if (injurieRoll(rng) <= WOUND_INJURY_CHANCE)
-                        {
-                            std::string injury = applyInjury(victim, injuries, rng);
-                            std::cout << "  " << victim.getName() << " will never be whole again -- " << injury << "." << std::endl;
-                        }
-                    }
-                }
-            }
-
-            highestFloorThisRun = floor;
-            if (floor > state.highestFloor)
-                state.highestFloor = floor;
-        }
-        else if (attack >= danger)
-        {
-
-            std::cout << "  The team advances with difficulty." << std::endl;
-            awardFloor(floor, team, roster, state);
-
-            if (!woundOne(team, roster, state, injuries, floor, enc.cause,
-                          WOUND_DMG_MIN, WOUND_DMG_MAX, rng))
-                break;
-
-            highestFloorThisRun = floor;
-            if (floor > state.highestFloor)
-                state.highestFloor = floor;
-        }
-        else
-        {
-            std::cout << "  The tower overwhelms the team." << std::endl;
-            loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
-
-            break;
-        }
-    } while (false);
+    bool cleared = resolveFloor(startFloor, objective, team, roster, state, encounters,
+                                injuries, rng);
+    if (cleared && startFloor > state.highestFloor)
+        state.highestFloor = startFloor;
 
     team.purgeDeadMembers(roster);
 
     std::cout << std::endl;
-    std::cout << (highestFloorThisRun > 0 ? "=== Floor taken ===" : "=== Floor held them ===")
+    std::cout << (cleared ? "=== Floor taken ===" : "=== Floor held them ===")
               << std::endl;
     std::cout << "Tower record: floor " << state.highestFloor
               << "  |  Essence: " << state.essence << std::endl;

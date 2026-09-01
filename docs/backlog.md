@@ -200,6 +200,21 @@ And the friction the player named, which is its own finding: assigning trainees 
 units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
 essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
 
+## A caveat that applies to every outcome table above (2026-09-02)
+
+Noticed while verifying the `resolveFloor` extraction: two runs of **identical** builds gave 58 and
+19 Hold floors out of 202. That is five standard deviations apart, and objective types are drawn
+uniformly, so it is not chance in the generator.
+
+The cause is that **a floor keeps its objective across sorties** (that is the whole point of
+`floorObjectives`), and a bot that cannot clear record+1 attempts *the same floor* again and again.
+So the outcome tables are weighted by which floors happened to block the bot, not by a uniform draw
+over objective types.
+
+Large movements still read (0% -> 22% -> 37% middle outcomes is far beyond this noise). Small ones
+do not. Any future comparison of rates between two builds should either run many more games or
+count per DISTINCT floor rather than per attempt.
+
 ## Losing stops being a tax (2026-09-02, automated bot)
 
 Same bot and budget again, one change: `loseFloor` no longer picks a victim. The floor hits the
