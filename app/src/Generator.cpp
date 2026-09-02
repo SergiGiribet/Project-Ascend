@@ -16,6 +16,7 @@ static std::vector<std::string> loadBank(const std::string &path) {
 // Constructor -------------------------------------------------------------------
 Generator::Generator(const std::string &resourcesDir, std::mt19937 &rng) : banks_(), rng_(rng) {
         banks_["name"] = loadBank(resourcesDir + "/names.txt");
+        banks_["surname"] = loadBank(resourcesDir + "/surnames.txt"); 
         banks_["job"] = loadBank(resourcesDir + "/jobs.txt");
         banks_["motivation"] = loadBank(resourcesDir + "/motivations.txt");
         banks_["place"] = loadBank(resourcesDir + "/places.txt");
@@ -48,7 +49,7 @@ std::string Generator::fillTemplate(const std::string &tmpl) {
 
 Unit Generator::generateUnit(int id, const Necropolis &necropolis) {
     Unit unit(id);
-    unit.setName(pickRandom(banks_.at("name")));
+    unit.setName(pickRandom(banks_.at("name")) + " " + pickRandom(banks_.at("surname")));
     std::string t1 = pickRandom(banks_.at("trait"));
     unit.addSkill(t1);
     std::uniform_int_distribution<int> coin(0,1);

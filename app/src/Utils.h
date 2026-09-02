@@ -29,9 +29,13 @@ std::string readLine();
 //       back as an empty string, which callers are expected to read as "no answer" and fill in a
 //       default for. Throws std::runtime_error if the input stream is closed (EOF).
 
-std::string pickRandom(const std::vector<std::string> &v, std::mt19937 &rng);
+std::string pickRandom(const std::vector<std::string> &v, std::mt19937 &rng,
+                       const std::string &avoid = "");
 // Pre: v must not be empty (throws std::runtime_error otherwise).
-// Post: Returns a uniformly random element of v.
+// Post: Returns a uniformly random element of v, re-drawing while it equals `avoid` -- so a
+//       caller that feeds back the line it printed last never gets the same one twice in a row.
+//       A one-element list is returned as it is, avoid or not: the guard against an endless
+//       re-draw matters more than the repetition. Callers that pass nothing are unaffected.
 
 void enableConsoleColors();
 // Pre: None

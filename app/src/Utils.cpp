@@ -38,12 +38,17 @@ std::string readLine()
     return line;
 }
 
-std::string pickRandom(const std::vector<std::string> &v, std::mt19937 &rng)
+std::string pickRandom(const std::vector<std::string> &v, std::mt19937 &rng,
+                       const std::string &avoid) // the default lives in the header, not here
 {
     if (v.empty())
         throw std::runtime_error("pickRandom: the list is empty.");
     std::uniform_int_distribution<size_t> dist(0, v.size() - 1);
-    return v[dist(rng)];
+    std::string picked = v[dist(rng)];
+    if (v.size() > 1)
+        while (picked == avoid)
+            picked = v[dist(rng)];
+    return picked;
 }
 
 void enableConsoleColors() {

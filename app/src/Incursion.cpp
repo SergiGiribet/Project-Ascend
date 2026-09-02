@@ -328,6 +328,16 @@ static bool pushesOn(const Team &team, const Roster &roster, bool found, int pas
     return roll(rng) <= urge;
 }
 
+// Which of a unit's traits speaks for them on this floor. Deliberately not random: a character
+// who is Alert in one line and Superstitious in the next is not a character. Keyed on the id so
+// two units with the same traits do not sound alike, and on the floor so the same unit is not
+// stuck with one trait for their whole career -- consistent inside a scene, varied across one.
+static const std::string &traitVoice(const Unit &u, int floor)
+{
+    const std::vector<std::string> &skills = u.getSkills();
+    return skills[static_cast<size_t>(u.getId() + floor) % skills.size()];
+}
+
 static bool hurt(int unitId, Team &team, Roster &roster, GameState &state,
                  const std::vector<Injury> &injuries, int floor, const std::string &cause,
                  int dmgMin, int dmgMax, std::mt19937 &rng)
@@ -338,14 +348,14 @@ static bool hurt(int unitId, Team &team, Roster &roster, GameState &state,
 
     std::cout << "  " << victim.getName();
     if (!victim.getSkills().empty())
-        std::cout << ", " << pickRandom(victim.getSkills(), rng) << " as ever, ";
+        std::cout << ", " << traitVoice(victim, floor) << " as ever, ";
     std::cout << "is wounded." << std::endl;
 
     if (!victim.isAlive())
     {
         std::cout << "  " << victim.getName();
         if (!victim.getSkills().empty())
-            std::cout << ", " << pickRandom(victim.getSkills(), rng) << " to the end,";
+            std::cout << ", " << traitVoice(victim, floor) << " to the end,";
         std::cout << " falls on floor " << floor << "." << std::endl;
 
         state.necropolis.addDeath(victim, floor, cause, state.incursionCount);
@@ -499,17 +509,22 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
     {
         int failures = 0;
         bool wiped = false;
+        std::string lastLine; // fed back to pickRandom so no two rounds read the same
 
         for (int round = 1; round <= objective.rounds; round++)
         {
             int roll = floorRoll(team, roster, objective.type, traitMod, rng);
 
             if (roll >= danger)
-                std::cout << "  Round " << round << ": " << pickRandom(HOLD_HELD, rng)
+            {
+                lastLine = pickRandom(HOLD_HELD, rng, lastLine);
+                std::cout << "  Round " << round << ": " << lastLine
                           << "." << std::endl;
+            }
             else
             {
-                std::cout << "  Round " << round << ": " << pickRandom(HOLD_GAVE_GROUND, rng)
+                lastLine = pickRandom(HOLD_GAVE_GROUND, rng, lastLine);
+                std::cout << "  Round " << round << ": " << lastLine
                           << "." << std::endl;
                 ++failures;
                 if (!woundOne(team, roster, state, injuries, floor, enc.cause,
@@ -540,6 +555,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
     }
     else if (objective.type == ObjectiveType::Slay)
     {
+        std::string lastLine; // as above: never the same line twice running
         int enemyHpStart = danger * 3 / 2;
         int enemyHp = enemyHpStart;
         int failures = 0;
@@ -562,14 +578,16 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
 
                 const std::vector<std::string> &bank =
                     (crit || margin >= MAX_LUCK) ? SLAY_CRUSHED : SLAY_LANDED;
-                std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
+                lastLine = pickRandom(bank, rng, lastLine);
+                std::cout << "  " << lastLine << "." << std::endl;
             }
             else
             {
                 ++failures;
                 const std::vector<std::string> &bank =
                     (margin >= -MAX_LUCK / 2) ? SLAY_BLOCKED : SLAY_MISSED;
-                std::cout << "  " << pickRandom(bank, rng) << "." << std::endl;
+                lastLine = pickRandom(bank, rng, lastLine);
+                std::cout << "  " << lastLine << "." << std::endl;
 
                 if (!woundOne(team, roster, state, injuries, floor, enc.cause,
                               SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
@@ -609,23 +627,27 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             passes++;
             exposure += EXPOSURE_STEP;
             std::uniform_int_distribution<int> notice(1, 100);
+        std::string lastLine; // a search can run nine passes; repeats show
 
             if (floorRoll(team, roster, objective.type, traitMod, rng) >= danger)
             {
                 if (!found)
                 {
                     found = true;
-                    std::cout << "  " << pickRandom(RETRIEVE_FOUND, rng) << "." << std::endl;
+                    lastLine = pickRandom(RETRIEVE_FOUND, rng, lastLine);
+                    std::cout << "  " << lastLine << "." << std::endl;
                 }
                 else
                 {
                     extra += floor / 2;
-                    std::cout << "  " << pickRandom(RETRIEVE_MORE, rng) << "." << std::endl;
+                    lastLine = pickRandom(RETRIEVE_MORE, rng, lastLine);
+                    std::cout << "  " << lastLine << "." << std::endl;
                 }
             }
             else
             {
-                std::cout << "  " << pickRandom(RETRIEVE_NOTHING, rng) << "." << std::endl;
+                lastLine = pickRandom(RETRIEVE_NOTHING, rng, lastLine);
+                std::cout << "  " << lastLine << "." << std::endl;
             }
 
             if (exposure >= EXPOSURE_CAUGHT)
@@ -637,7 +659,8 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
 
             if (notice(rng) <= exposure)
             {
-                std::cout << "  " << pickRandom(RETRIEVE_NOTICED, rng) << "." << std::endl;
+                lastLine = pickRandom(RETRIEVE_NOTICED, rng, lastLine);
+                std::cout << "  " << lastLine << "." << std::endl;
                 if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
                           injuries, floor, enc.cause, danger / 6, danger / 3, rng))
                     return found;
