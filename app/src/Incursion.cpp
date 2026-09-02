@@ -89,6 +89,40 @@ static const std::vector<std::string> SLAY_MISSED = {
     "It lets them tire themselves out",
 };
 
+// Retrieve: a pass that turns nothing up. No trailing period; the line composes it.
+static const std::vector<std::string> RETRIEVE_NOTHING = {
+    "Nothing. Dust, and the sound of their own breathing",
+    "They turn over what there is to turn over, and it is nothing",
+    "Whatever this floor is keeping, it is not keeping it here",
+    "Nothing yet. Somewhere above them, something shifts",
+    "They work the far wall and come back with their hands empty",
+};
+
+// Retrieve: the pass that finds it.
+static const std::vector<std::string> RETRIEVE_FOUND = {
+    "It is under a fallen beam, and it takes three of them to lift it",
+    "It had been walled in. The wall does not hold",
+    "They find it where nothing should have been left",
+    "It is smaller than they expected, and much heavier",
+    "It comes away from the floor with a sound none of them like",
+};
+
+// Retrieve: a pass made after they already had what they came for.
+static const std::vector<std::string> RETRIEVE_MORE = {
+    "There is more, and they take it",
+    "Another cache, tucked behind the first",
+    "The floor was keeping two things. Now it keeps neither",
+    "They lever up the next slab and are paid for it",
+};
+
+// Retrieve: the floor working out that they are still here. This is the warning.
+static const std::vector<std::string> RETRIEVE_NOTICED = {
+    "The floor has noticed them",
+    "Something knows they are still here",
+    "The quiet changes shape",
+    "They are not alone in the room any more",
+};
+
 struct IncidentFlavor
 {
     std::string cause;     // lowercase, no trailing period (necropolis composes the sentence)
@@ -132,6 +166,14 @@ static const int SLAY_COUNTERS_ENDURED = 3;
 static const int SLAY_CRIT_CHANCE = 8;
 static const int SLAY_DMG_MIN = 15;
 static const int SLAY_DMG_MAX = 40;
+static const int EXPOSURE_STEP = 12;
+static const int PUSH_BASE_SEARCHING = 85;
+static const int PUSH_BASE_FOUND = 25;
+static const int PUSH_GREEDY = 25;
+static const int PUSH_CURIOUS = 15;
+static const int PUSH_COWARDLY = 30;
+static const int PUSH_FATIGUE = 10;
+static const int EXPOSURE_CAUGHT = 100;
 
 static int teamPower(const Team &team, const Roster &roster)
 {
@@ -152,6 +194,13 @@ static int teamFit(const Team &team, const Roster &roster, ObjectiveType type)
         fit += traitFit(type, roster.findUnitById(id).getSkills());
     }
     return fit;
+}
+
+static int floorRoll(const Team &team, const Roster &roster, ObjectiveType type,
+                     int traitMod, std::mt19937 &rng)
+{
+    std::uniform_int_distribution<int> luck(0, MAX_LUCK);
+    return teamPower(team, roster) + teamFit(team, roster, type) + traitMod + luck(rng);
 }
 
 static Objective objectiveFor(int floor, GameState &state, std::mt19937 &rng)
@@ -193,12 +242,16 @@ static std::string describeSurvivor(int enemyHp, int enemyHpStart)
     return "One more blow might have done it.";
 }
 
+static bool hasTrait(const std::vector<std::string> &traits, const std::string &trait)
+{
+    return std::find(traits.begin(), traits.end(), trait) != traits.end();
+}
+
 static int riskDirection(const std::vector<std::string> &skills)
 {
-    if (std::find(skills.begin(), skills.end(), "Reckless") != skills.end() ||
-        std::find(skills.begin(), skills.end(), "Boaster") != skills.end())
+    if (hasTrait(skills, "Reckless") || hasTrait(skills, "Boaster"))
         return 1;
-    if (std::find(skills.begin(), skills.end(), "Alert") != skills.end())
+    if (hasTrait(skills, "Alert"))
         return -1;
     return 0;
 }
@@ -252,6 +305,27 @@ static const IncidentFlavor &pickIncidentFlavor(const Unit &victim, std::mt19937
         (riskDirection(victim.getSkills()) > 0) ? BOASTER_INCIDENTS : NEUTRAL_INCIDENTS;
     std::uniform_int_distribution<size_t> dist(0, pool.size() - 1);
     return pool[dist(rng)];
+}
+
+static bool pushesOn(const Team &team, const Roster &roster, bool found, int passes,
+                     std::mt19937 &rng)
+{
+    int urge = found ? PUSH_BASE_FOUND : PUSH_BASE_SEARCHING;
+    urge -= passes * PUSH_FATIGUE;
+
+    for (int id : team.getMembersIds())
+    {
+        const std::vector<std::string> &skills = roster.findUnitById(id).getSkills();
+        if (hasTrait(skills, "Greedy"))
+            urge += PUSH_GREEDY;
+        if (hasTrait(skills, "Curious"))
+            urge += PUSH_CURIOUS;
+        if (hasTrait(skills, "Cowardly"))
+            urge -= PUSH_COWARDLY;
+    }
+
+    std::uniform_int_distribution<int> roll(1, 100);
+    return roll(rng) <= urge;
 }
 
 static bool hurt(int unitId, Team &team, Roster &roster, GameState &state,
@@ -380,11 +454,8 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
                          GameState &state, const std::vector<Encounter> &encounters,
                          const std::vector<Injury> &injuries, std::mt19937 &rng)
 {
-    std::uniform_int_distribution<int> luck(0, MAX_LUCK);
     int fit = teamFit(team, roster, objective.type);
-    int power = teamPower(team, roster) + fit;
     int danger = objective.difficulty;
-    int attack = power + luck(rng);
     int traitMod = 0;
 
     std::uniform_int_distribution<size_t> pickEnc(0, encounters.size() - 1);
@@ -402,7 +473,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
     {
         const Unit &u = roster.findUnitById(id);
         for (const TraitEvent &ev : DAMAGE_TRAIT_EVENTS)
-            if (std::find(u.getSkills().begin(), u.getSkills().end(), ev.trait) != u.getSkills().end())
+            if (hasTrait(u.getSkills(), ev.trait))
                 candidates.push_back({id, &ev});
     }
 
@@ -421,7 +492,8 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             traitMod += event->attackModifier;
         }
     }
-    attack += traitMod;
+
+    int attack = floorRoll(team, roster, objective.type, traitMod, rng);
 
     if (objective.type == ObjectiveType::Hold)
     {
@@ -430,7 +502,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
 
         for (int round = 1; round <= objective.rounds; round++)
         {
-            int roll = teamPower(team, roster) + teamFit(team, roster, objective.type) + traitMod + luck(rng);
+            int roll = floorRoll(team, roster, objective.type, traitMod, rng);
 
             if (roll >= danger)
                 std::cout << "  Round " << round << ": " << pickRandom(HOLD_HELD, rng)
@@ -475,7 +547,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
 
         while (enemyHp > 0 && failures < SLAY_COUNTERS_ENDURED)
         {
-            int roll = teamPower(team, roster) + teamFit(team, roster, objective.type) + traitMod + luck(rng);
+            int roll = floorRoll(team, roster, objective.type, traitMod, rng);
             int margin = roll - danger;
 
             if (margin >= 0)
@@ -523,6 +595,71 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
                   << std::endl;
         awardFloor(floor, team, roster, state);
 
+        return true;
+    }
+    else if (objective.type == ObjectiveType::Retrieve)
+    {
+        int passes = 0;
+        int exposure = 0;
+        int extra = 0;
+        bool found = false;
+
+        while (true)
+        {
+            passes++;
+            exposure += EXPOSURE_STEP;
+            std::uniform_int_distribution<int> notice(1, 100);
+
+            if (floorRoll(team, roster, objective.type, traitMod, rng) >= danger)
+            {
+                if (!found)
+                {
+                    found = true;
+                    std::cout << "  " << pickRandom(RETRIEVE_FOUND, rng) << "." << std::endl;
+                }
+                else
+                {
+                    extra += floor / 2;
+                    std::cout << "  " << pickRandom(RETRIEVE_MORE, rng) << "." << std::endl;
+                }
+            }
+            else
+            {
+                std::cout << "  " << pickRandom(RETRIEVE_NOTHING, rng) << "." << std::endl;
+            }
+
+            if (exposure >= EXPOSURE_CAUGHT)
+            {
+                std::cout << "  They stayed too long. What lives here comes for them." << std::endl;
+                loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
+                return false;
+            }
+
+            if (notice(rng) <= exposure)
+            {
+                std::cout << "  " << pickRandom(RETRIEVE_NOTICED, rng) << "." << std::endl;
+                if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
+                          injuries, floor, enc.cause, danger / 6, danger / 3, rng))
+                    return found;
+            }
+
+            if (!pushesOn(team, roster, found, passes, rng))
+                break;
+        }
+        if (!found)
+        {
+            std::cout << "  They give it up and go. Whatever the floor is keeping, it keeps."
+                      << std::endl;
+            return false;
+        }
+
+        if (extra > 0)
+        {
+            state.essence += extra;
+            std::cout << "  They come out with more than they came for: " << extra
+                      << " essence." << std::endl;
+        }
+        awardFloor(floor, team, roster, state);
         return true;
     }
     else if (attack >= danger * 12 / 10)

@@ -535,6 +535,58 @@ party, so a sortie can still resolve with nobody watching a console -- which is 
 
 Rule of three, already predicted: `floorRoll` gets extracted when Retrieve arrives.
 
+### Capture: the bridge between Retrieve and Rescue  *(proposed 2026-09-03, not decided)*
+
+Raised by the user while specifying Retrieve's "caught" branch, and it is better than either mission
+on its own. A party that stays too long is not killed but **taken**, and the floor keeps them. Going
+back for them is a Rescue whose captive **is your own**.
+
+Everything the Rescue mission was going to give you -- a person with a history and a hook -- you
+would instead have *earned and lost*. The captive on floor 9 is the level-7 Nerissa you have been
+carrying since the third sortie, not a stranger rolled on the spot. And she sits on the roster
+screen marked `[held on floor 9]`, unassignable, every time you open it. No notification needed.
+
+It also gives the game a third outcome it does not have: worse than a wound, not as final as death,
+and on a clock.
+
+**Most of it is already built, because it is the training camp with the sign flipped.**
+`TrainingCamp::tick(roster, injuries, rng)` is exactly the shape: units held outside the active
+roster, ticked once per sortie, holding the injury bank, changing over time. One improves them; this
+one takes them apart. `applyInjury` already applies a permanent STR/CON penalty that rest never
+mends, so *"he came back, but not all of him"* is true mechanically without writing anything new.
+
+Decided by the user on the day it was raised:
+
+- They are **not** held forever. A clock in sorties or in real hours -- which, later.
+- **Who is taken** is weighted by health as well as traits. Deliberately a SEPARATE function from
+  `pickWeightedVictim`: wounding the healthiest member is perfectly reasonable, capturing them is
+  not -- they take whoever cannot run. Same machinery, different question.
+- They **can die** while held, on a roll against what is left of them.
+- The longer they are held, the more injuries they accumulate. The user's word for it was a torture
+  system, and `applyInjury` plus a per-tick roll is most of it.
+
+Open, and worth answering before building:
+
+- The length of the clock, and whether missing it kills them or only ruins them.
+- What a rescued unit comes back **as**. A new hook, certainly. A changed trait? Somebody who has
+  been up and down twice should not be the same person, and this is the cheapest place in the whole
+  design to say so.
+- A death in captivity wants its own necropolis cause -- *"died in the dark on floor 9, still
+  waiting"* -- which then becomes a hook on somebody summoned later. The tower does not swallow
+  them; it keeps them, and afterwards the others read about it.
+
+**The danger to hold on to.** Torture long enough and they come back worth nothing in stats, at
+which point the player learns not to go. The answer is NOT to soften it: it is that the reason to go
+must never have been the statistics. They come back with their level, their history and a hook
+nobody else has. If the player goes anyway knowing they will get a cripple, the game has won. But
+that has to be a decision taken with open eyes, not an accident of tuning.
+
+**Sequencing.** The sub-mission *is* Rescue, which does not exist yet, so this cannot come before it:
+Retrieve first (caught = the volley), then Rescue with a generated captive, then capture, which turns
+"a generated captive" into "one of yours". Designing Retrieve knowing this is coming costs nothing --
+being caught is a single place in the code, and one day it stops saying "they take the volley" and
+starts saying "some of them are taken".
+
 ### 2e — Personalities, and the closing measurement
 
 Only once there is somewhere to spend information does it matter *how good* the information is.
