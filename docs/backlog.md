@@ -200,6 +200,37 @@ And the friction the player named, which is its own finding: assigning trainees 
 units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
 essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
 
+## The captive decays between attempts  *(proposed 2026-09-03, not built)*
+
+The user's idea, and it answers a question the capture design had left open. A Rescue floor should
+remember its captive **between sorties**, and every failed attempt should leave them worth less:
+a 6-star at level 70 on the first try is a 5-star at level 57 on the second, and so on down.
+
+Why it is better than a deadline. The capture design needed a clock, and every version of a hard
+clock is arbitrary -- why five sorties and not six? Decay needs no number: you can always go back,
+and the tower simply keeps taking pieces of them while you decide. **The pressure comes from the
+prize shrinking rather than from a timer expiring**, which is the same pressure but without a rule
+to memorise. When there is nothing left to take, they die.
+
+It also puts the weight on the FIRST attempt, which is where it belongs: send the party you have
+now, or come back for someone lesser.
+
+Three things it needs, and two of them are already wanted elsewhere:
+
+- **The floor has to remember its captive**, not roll one on success. That is the same per-floor
+  store the capture mechanic needs (`floorObjectives` and `floorReports` already establish the
+  pattern), so the two features pay for one structure.
+- **What is stored is a description, not a Unit** -- a race and a level is enough. The caller still
+  builds the person when they come out, so the simulation still knows nothing about a `Generator`,
+  which is the decision taken on 2026-09-02.
+- **The player must not simply read the captive's stats off the screen**, or the decision collapses
+  into arithmetic: is a 5-star worth five sorties. What is up there should come from a **scout**,
+  like everything else about a floor -- and a scout can be wrong about it. A Boaster reporting a
+  6-star that turns out to be a 3-star is exactly the shape this game keeps reaching for.
+
+Open: whether a captive who decays to nothing dies quietly (a necropolis entry you were never told
+about, discovered when you finally arrive) or is announced. The first is crueller and better.
+
 ## A caveat that applies to every outcome table above (2026-09-02)
 
 Noticed while verifying the `resolveFloor` extraction: two runs of **identical** builds gave 58 and

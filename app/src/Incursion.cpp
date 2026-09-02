@@ -115,6 +115,23 @@ static const std::vector<std::string> RETRIEVE_MORE = {
     "They lever up the next slab and are paid for it",
 };
 
+// Rescue: a round that closes on the captive. No trailing period; the line composes it.
+static const std::vector<std::string> RESCUE_CLOSER = {
+    "A door gives way ahead of them",
+    "The way opens, and they take it",
+    "One more corridor falls behind them",
+    "They cut through and gain ground",
+    "They are closer now, and something knows it",
+};
+
+// Rescue: a round that goes nowhere. The floor is not fighting them, it is delaying them.
+static const std::vector<std::string> RESCUE_HELD = {
+    "The floor closes ranks in front of them",
+    "They lose the way and have to double back",
+    "Something stands where the way was",
+    "They are turned around, and it costs",
+};
+
 // Retrieve: the floor working out that they are still here. This is the warning.
 static const std::vector<std::string> RETRIEVE_NOTICED = {
     "The floor has noticed them",
@@ -682,6 +699,50 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             std::cout << "  They come out with more than they came for: " << extra
                       << " essence." << std::endl;
         }
+        awardFloor(floor, team, roster, state);
+        return true;
+    }
+    else if (objective.type == ObjectiveType::Rescue)
+    {
+        int reach = danger * 3 / 4; // what a comfortable party covers inside the clock, and a marginal one does not
+        int progress = 0;
+        bool wiped = false;
+        std::string lastLine;
+
+        for (int round = 1; round <= objective.rounds; round++)
+        {
+            int margin = floorRoll(team, roster, objective.type, traitMod, rng) - danger;
+
+            if (margin > 0) {
+                progress += margin;
+                lastLine = pickRandom(RESCUE_CLOSER, rng, lastLine);
+                std::cout << "  " << lastLine << "." << std::endl;
+            
+                if (progress >= reach)
+                    break;
+            }
+            else 
+            {
+                lastLine = pickRandom(RESCUE_HELD, rng, lastLine);
+                std::cout << "  " << lastLine << "." << std::endl;
+                if (!woundOne(team, roster, state, injuries, floor, enc.cause, 
+                    HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
+                {
+                    wiped = true;
+                    break;
+                }
+            }
+        }
+        if (wiped)
+            return false;
+        
+        if (progress < reach)
+        {
+            std::cout << "  They are still a corridor away when the sound stops." << std::endl;
+            return false;
+        }
+
+        std::cout << "  They reach the captive and cut them loose." << std::endl;
         awardFloor(floor, team, roster, state);
         return true;
     }

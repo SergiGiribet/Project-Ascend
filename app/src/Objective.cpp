@@ -44,6 +44,8 @@ Objective makeObjective(int floor, std::mt19937 &rng)
 
     if (type == ObjectiveType::Hold)
         objective.rounds = 2 + floor / 4;
+    else if (type == ObjectiveType::Rescue)
+        objective.rounds = 3 + floor / 5;
 
     return objective;
 }
@@ -59,7 +61,8 @@ std::string describeObjective(const Objective &objective)
     case ObjectiveType::Retrieve:
         return "Find what the floor hides and carry it out.";
     case ObjectiveType::Rescue:
-        return "Free the captive before the floor claims them.";
+        return "Free the captive within " + std::to_string(objective.rounds)
+             + " rounds, or the floor claims them.";
     }
     return "Clear the floor.";
 }

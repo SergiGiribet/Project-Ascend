@@ -21,7 +21,9 @@ enum class ObjectiveType {
 struct Objective {
     ObjectiveType type;
     int difficulty; // floor-scaled magnitude (the old `danger`); every type uses it
-    int rounds;     // ONLY meaningful for Hold (rounds to survive); 0 for the other types
+    int rounds;     // a count of rounds, and it means a different thing to each type that uses
+                    // it: for Hold, how long they must last; for Rescue, how long the captive
+                    // has. 0 for Slay and Retrieve, whose length is not fixed in advance
 };
 
 Objective makeObjective(int floor, std::mt19937 &rng);
