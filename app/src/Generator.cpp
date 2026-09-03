@@ -47,7 +47,7 @@ std::string Generator::fillTemplate(const std::string &tmpl) {
     return result;
 }
 
-Unit Generator::generateUnit(int id, const Necropolis &necropolis) {
+Unit Generator::generateUnit(int id, const Necropolis &necropolis, const SummonTier &tier) {
     Unit unit(id);
     unit.setName(pickRandom(banks_.at("name")) + " " + pickRandom(banks_.at("surname")));
     std::string t1 = pickRandom(banks_.at("trait"));
@@ -58,7 +58,7 @@ Unit Generator::generateUnit(int id, const Necropolis &necropolis) {
         while (t2 == t1) t2 = pickRandom(banks_.at("trait"));
         unit.addSkill(t2);
     }
-    std::discrete_distribution<int> raceDist{40, 25, 15, 10, 7, 3};
+    std::discrete_distribution<int> raceDist(tier.raceWeights.begin(), tier.raceWeights.end());
     int race = raceDist(rng_)+1; // this returns 0-5 +1 for the 1-6*
     unit.setRace(race);
     Stats stats(80 + race * 20, 80 + race * 20, 8 + race * 2, 8 + race * 2);

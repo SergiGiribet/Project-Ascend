@@ -47,6 +47,11 @@ bool Roster::contains(int id) const
     return false;
 }
 
+ int Roster::size() const
+{
+    return static_cast<int>(units_.size());
+}
+
 // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Roster::addUnit(const Unit &unit)
 {

@@ -42,6 +42,10 @@ public:
     // Pre: None
     // Post: Returns true if a unit with the specified id is in the roster; false otherwise.
 
+    int size() const;
+    // Pre: None
+    // Post: Returns how nay units are on the roster.
+
     // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void addUnit(const Unit &unit);
     // Pre: unit must be a valid Unit object with a unique id.

@@ -16,12 +16,11 @@ struct GameState {
     int incursionCount = 0;         // Total incursions launched this session.
     Necropolis necropolis;          // Registry of the fallen; feeds hook generation.
     int essence = 25;               // The tower's currency. Earned by clearing floors (+floor number),
-                                    // spent on summoning (invokeCost) and on training-camp trainer
+                                    // spent on summoning (SummonTier::price) and on training-camp trainer
                                     // slots. Entering costs nothing: the entry toll was dropped on
                                     // 2026-09-02 because under sorties it taxed the only action the
                                     // game offers and left income flat at +1 whatever the depth.
                                     // You pay to enter in people, not in essence, and scouting too.
-    int invokeCost = 5;             // Essence price of summoning a new unit.
     std::map<int, Objective> floorObjectives; // Each floor keeps the mission it was given until
                                           // someone faces it. Persisting them is what lets
                                           // scouted knowledge survive leaving the tower.

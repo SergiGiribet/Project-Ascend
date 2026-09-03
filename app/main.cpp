@@ -154,14 +154,37 @@ int main()
             case 1:
             {
                 std::cout << std::endl;
-                int affordable = state.essence / state.invokeCost;
+                int freeSlots = std::max(0, 5 - roster.size());
+
+                std::cout << "The circle can be called three ways." << std::endl;
+                for (int i = 0; i < static_cast<int>(SUMMON_TIERS.size()); i++) {
+                    const SummonTier &t = SUMMON_TIERS[i];
+                    int canPay = (i == 0 ? freeSlots : 0) + state.essence / t.price;
+                    std::cout << "  " << (i + 1) << ". " << t.name << " -- " << t.price
+                              << " essence (up to " << canPay << ")" << std::endl;
+                }
+
+                if (freeSlots > 0)
+                    std::cout << "The first " << freeSlots
+                              << " answer for nothing: the circle keeps offering while you are"
+                              << " this few." << std::endl;
+
+                std::cout << "Which? (0 to step away)" << std::endl;
+                int pick = readChoice();
+                if (pick < 1 || pick > static_cast<int>(SUMMON_TIERS.size()))
+                    break;
+                
+                const SummonTier &tier = SUMMON_TIERS[pick - 1];
+
+                int free = (pick == 1) ? freeSlots : 0;
+                int affordable = free + state.essence / tier.price;
+
                 if (affordable == 0)
                 {
                     std::cout << "Not enough essence to invoke: " << state.essence
-                              << "/" << state.invokeCost << ". The circle stays dark." << std::endl;
+                              << "/" << tier.price << ". The circle stays dark." << std::endl;
                     break;
                 }
-
                 std::cout << "How many? (up to " << affordable << ", 0 to cancel)" << std::endl;
                 int count = readChoice();
                 if (count <= 0)
@@ -172,13 +195,19 @@ int main()
                     count = affordable;
                 }
 
-                state.essence -= count * state.invokeCost;
-                std::cout << "The circle drinks " << count * state.invokeCost << " essence." << std::endl;
+                int freeUsed = std::min(count, free);
+                int cost = (count - freeUsed) * tier.price;
+                state.essence -= cost;
+
+                if (cost > 0)
+                    std::cout << "The circle drinks " << cost << " essence." << std::endl;
+                else
+                    std::cout << "The circle asks for nothing." << std::endl;
                 std::cout << "The summoning circle glows..." << std::endl;
 
                 for (int i = 0; i < count; ++i)
                 {
-                    Unit newUnit = gen.generateUnit(nextId++, state.necropolis);
+                    Unit newUnit = gen.generateUnit(nextId++, state.necropolis, tier);
                     roster.addUnit(newUnit);
                     newUnit.printUnit();
                 }
