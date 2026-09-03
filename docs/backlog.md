@@ -200,6 +200,96 @@ And the friction the player named, which is its own finding: assigning trainees 
 units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
 essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
 
+## A bench for the resolutions, and what it found (2026-09-03)
+
+With all four missions built, the obvious question was whether they are equally hard. The autoplay
+bot could not answer it: changing one Rescue constant moved Retrieve by **36 points** and Slay by
+16. At ~25 distinct floors per type the standard deviation of a proportion near 50% is already 10
+points, so the instrument was noise.
+
+**The bot measures the LOOP; balance is a property of ONE FLOOR.** What a run costs, whether
+knowledge pays, whether the economy lets you keep playing -- those are properties of the journey and
+the bot found every one of them. The chance that a party of power P clears a floor of difficulty D
+under mission M has nothing to do with the journey, and pushing it through a whole playthrough
+buries it under essence, deaths and whichever floor happened to block the bot. So: a standalone
+bench (`bench.py`), the four resolutions ported line for line, ten thousand clean samples a cell.
+
+### Three things it found immediately
+
+Clear rate against power/difficulty, before any change:
+
+```
+              0.80  0.83  0.86  0.89  0.92  0.95  0.98  1.01
+floor 10
+  Slay          0%    1%   10%   33%   60%   86%   98%  100%
+  Hold          0%    2%   22%   51%   75%   92%   99%  100%
+  Rescue        0%    0%    0%    0%    0%    0%    0%    1%
+floor 20
+  Slay          0%    0%    0%    0%    5%   50%   93%  100%
+  Hold          0%    0%    0%    0%    1%   45%   95%  100%
+```
+
+1. **Luck could never hurt you.** `uniform(0, MAX_LUCK)` is one-sided, so power >= difficulty was a
+   guaranteed win for every mission. All the uncertainty in the game lived below parity. Written in
+   July, unnoticed until now.
+2. **The game got more deterministic with depth.** A flat 30 against a difficulty climbing 15 a
+   floor: the transition spans 0.83-0.98 at floor 10 and 0.92-0.98 at floor 20. The deeper you go,
+   the less can happen -- the August curve finding, now per mission and with numbers.
+3. **Rescue was not hard, it was impossible.** Zero even above parity.
+
+### One line fixed the first two
+
+Luck became symmetric and a share of the floor: `uniform(-danger/6, +danger/6)`. The forecast tiers
+and the Slay narration thresholds move with it, since both described the old spread.
+
+```
+              0.85  0.90  0.95  1.00  1.05  1.10  1.15
+floor 10  Slay  0%    8%   27%   55%   79%   95%  100%
+floor 20  Slay  0%    8%   28%   53%   79%   94%  100%
+```
+
+**The curves at floor 10 and floor 20 are now the same curve.** The band runs 0.85 to 1.15 -- five
+or six floors -- and sits around parity instead of entirely under it.
+
+This is not the curve rebalance that 2d-7 is holding: `FLOOR_STEP` decides the PACE of progression
+and cannot be read until sorties cost time. The width of the roll decides whether a band exists at
+all, and that measures on its own.
+
+### A mechanic that had been dead for two days
+
+Every objective type now has its own branch, so the old `else if (attack >= danger * 12 / 10)`
+chain became unreachable -- and the **residual incident** was inside it. Eight runs, 240 sorties,
+zero occurrences of "advances with ease". Lifted out into `clearFloor`, it now applies to every
+cleared floor of any type: you won, and on the way out the tower took someone. Better placed than
+it ever was.
+
+### Unequal missions are content, not error
+
+Decided with the user: the four missions do **not** have to be equally hard. An uneven floor is
+another reason to send a scout -- knowing the type tells you whether to go at all, not merely who
+to send. Two constraints only: every mission must be **beatable**, and the harder ones must be
+**rarer**, so the average floor stays fair while any one floor need not be. `TYPE_WEIGHTS` replaces
+the uniform draw.
+
+After Rescue's `reach` dropped to `danger / 4` and the weights landed:
+
+| type | clear rate | tries per floor | floors sampled |
+|---|---:|---:|---:|
+| Retrieve | 67% | 1.5 | 33 |
+| Rescue | 41% | 2.3 | **15** |
+| Slay | 40% | 2.1 | 35 |
+| Hold | 30% | 2.9 | 26 |
+
+Rescue went from 16% to 41% on one constant and now appears half as often as Slay.
+
+### And then we stopped
+
+Named at the time, and worth keeping: **we were doing 2d-7 before 2d-5 and 2d-6.** Every number
+tuned now gets re-tuned once a sortie costs time, because time changes what refusing and grinding
+are worth -- which is the exact mistake caught in August ("retuning 15 now would be tuning a number
+that is about to mean something else"). Three separate measurements have pointed at time; the bench
+will still be there when its numbers mean something stable.
+
 ## The captive decays between attempts  *(proposed 2026-09-03, not built)*
 
 The user's idea, and it answers a question the capture design had left open. A Rescue floor should
