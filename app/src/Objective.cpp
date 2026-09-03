@@ -27,13 +27,20 @@ static const std::vector<TraitFit> TRAIT_FIT = {
     {"Superstitious", {  -8,      4,      0,      0}},
 };
 
+// Indexed by ObjectiveType: Slay, Hold, Retrieve, Rescue. Not uniform on purpose. The four
+// missions are not equally hard and should not be -- an uneven floor is another reason to send a
+// scout, because knowing the type tells you whether to go at all and not merely who to send. What
+// an uneven floor must not be is COMMON: the harder the mission, the rarer it is, so the average
+// floor stays fair while any one floor need not be.
+static const std::array<int, 4> TYPE_WEIGHTS = {30, 28, 27, 15};
+
 static const int FLOOR_BASE = 20;  // what floor zero would be worth
 static const int FLOOR_STEP = 15;  // what each floor adds
 static const int FLOOR_SWING = 2;  // in FLOORS: how far a floor may sit from its own number
 
 Objective makeObjective(int floor, std::mt19937 &rng)
 {
-    std::uniform_int_distribution<int> pickType(0, 3);
+    std::discrete_distribution<int> pickType(TYPE_WEIGHTS.begin(), TYPE_WEIGHTS.end());
     ObjectiveType type = static_cast<ObjectiveType>(pickType(rng));
 
     Objective objective;
