@@ -10,6 +10,11 @@ void Necropolis::addDeath(const Unit &unit, int floor, const std::string &cause,
     records_.push_back({unit.getName(), floor, cause, turn, unit.getSkills()});
 }
 
+void Necropolis::addRecord(const DeathRecord &record)
+{
+    records_.push_back(record);
+}
+
 bool Necropolis::empty() const
 {
     return records_.empty();
@@ -52,4 +57,9 @@ void Necropolis::print() const
         std::cout << " - fell on floor " << r.floorDied
                   << " (incursion " << r.turn << "), " << r.cause << "." << std::endl;
     }
+}
+
+const std::vector<DeathRecord> &Necropolis::records() const
+{
+    return records_;
 }

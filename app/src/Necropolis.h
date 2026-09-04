@@ -46,6 +46,12 @@ class Necropolis {
         // Post: Appends a DeathRecord (name and traits taken from the unit, plus floor, cause
         //       and turn) to the registry.
 
+        void addRecord(const DeathRecord &record);
+        // Pre: None.
+        // Post: Appends record as it is. This is for LOADING, not for dying: addDeath builds a record
+        //       from a unit that is still on the roster, and on load there is no unit left to build it
+        //       from. Keeping them apart is what stops a loaded game from having to invent one.
+
         bool empty() const;
         // Pre: None
         // Post: Returns true if no death has been recorded yet; false otherwise.
@@ -57,6 +63,10 @@ class Necropolis {
         void print() const;
         // Pre: None
         // Post: Lists the fallen, oldest first; prints a notice if there are none.
+
+        const std::vector<DeathRecord> &records() const;
+        // Pre: None
+        // Post: Returns a read-only view of every death, oldest first.
 
     private:
         std::vector<DeathRecord> records_;

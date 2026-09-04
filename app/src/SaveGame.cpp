@@ -4,6 +4,26 @@
 #include <stdexcept>
 #include <sstream>
 
+// A list on one line, comma separated, written only if there is anything to write -- an
+// absent key means the default, and a unit with no traits simply has no skills line.
+static void writeList(std::ofstream &out, const std::string &key,
+                      const std::vector<std::string> &items)
+{
+    if (items.empty())
+        return;
+
+    out << key << " ";
+    bool first = true;
+    for (const std::string &item : items)
+    {
+        if (!first)
+            out << ",";
+        out << item;
+        first = false;
+    }
+    out << "\n";
+}
+
 void saveGame(const std::string &path, const GameState &state, const Roster &roster)
 {
     std::ofstream out(path);
@@ -31,27 +51,23 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
         out << "con " << s.getConstitution() << "\n";
         out << "history " << u.getHistory() << "\n";
 
-        // An absent key means the default, so an empty value writes no line at all:
-        // nothing to read back, and no trailing spaces left lying around the file.
         if (!u.getHook().empty())
             out << "hook " << u.getHook() << "\n";
 
-        if (!u.getSkills().empty())
-        {
-            out << "skills ";
-            bool first = true;
-            for (const std::string &t : u.getSkills())
-            {
-                if (!first)
-                    out << ",";
-                out << t;
-                first = false;
-            }
-            out << "\n";
-        }
+        writeList(out, "skills", u.getSkills());
 
         for (const Injury &inj : u.getInjuries())
             out << "injury " << inj.name << "," << inj.strPenalty << "," << inj.conPenalty << "\n";
+    }
+
+    for (const DeathRecord &d : state.necropolis.records())
+    {
+        out << "\n[death]\n";
+        out << "name " << d.name << "\n";
+        out << "floor " << d.floorDied << "\n";
+        out << "cause " << d.cause << "\n";
+        out << "turn " << d.turn << "\n";
+        writeList(out, "skills", d.skills);
     }
 }
 
@@ -65,6 +81,13 @@ struct PendingUnit
     std::string name, history, hook;
     std::vector<std::string> skills;
     std::vector<Injury> injuries;
+};
+
+struct PendingDeath
+{
+    std::string name, cause;
+    int floor = 0, turn = 0;
+    std::vector<std::string> skills;
 };
 
 static Unit buildUnit(const PendingUnit &p)
@@ -84,6 +107,11 @@ static Unit buildUnit(const PendingUnit &p)
     return u;
 }
 
+static DeathRecord buildDeath (const PendingDeath &p)
+{
+    return DeathRecord{p.name, p.floor, p.cause, p.turn, p.skills};
+}
+
 bool loadGame(const std::string &path, GameState &state, Roster &roster)
 {
     std::ifstream in(path);
@@ -91,7 +119,17 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
         return false;
 
     PendingUnit pending;
-    bool building = false;
+    PendingDeath dying;
+    std::string section;
+
+    auto closeSection = [&]()
+    {
+        if (section == "unit")
+            roster.addUnit(buildUnit(pending));
+        else if (section == "death")
+            state.necropolis.addRecord(buildDeath(dying));
+        section.clear();
+    };
 
     std::string line;
     while (std::getline(in, line))
@@ -101,10 +139,17 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
 
         if (line == "[unit]")
         {
-            if (building)
-                roster.addUnit(buildUnit(pending));
+            closeSection();
+            section = "unit";
             pending = PendingUnit();
-            building = true;
+            continue;
+        }
+
+        if (line == "[death]")
+        {
+            closeSection();
+            section = "death";
+            dying = PendingDeath();
             continue;
         }
 
@@ -114,20 +159,16 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
         std::string key = line.substr(0, pos);
         std::string value = line.substr(pos + 1);
 
-        if (!building)
+        if (section.empty())
         {
-            if (key == "essence")
-                state.essence = std::stoi(value);
-            else if (key == "highestFloor")
-                state.highestFloor = std::stoi(value);
-            else if (key == "incursionCount")
-                state.incursionCount = std::stoi(value);
-            else if (key == "nextUnitId")
-                state.nextUnitId = std::stoi(value);
+            if (key == "essence")               state.essence = std::stoi(value);
+            else if (key == "highestFloor")     state.highestFloor = std::stoi(value);
+            else if (key == "incursionCount")   state.incursionCount = std::stoi(value);
+            else if (key == "nextUnitId")       state.nextUnitId = std::stoi(value);
             continue;
         }
 
-        if (building)
+        if (section == "unit")
         {
             if (key == "id")            pending.id = std::stoi(value);
             else if (key == "race")     pending.race = std::stoi(value);
@@ -155,9 +196,24 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
                     pending.injuries.push_back(Injury{name, std::stoi(sp), std::stoi(cp)});
             }
         }
+
+        if (section == "death")
+        {
+            if (key == "name")       dying.name = value;
+            else if (key == "cause") dying.cause = value;
+            else if (key == "floor") dying.floor = std::stoi(value);
+            else if (key == "turn")  dying.turn = std::stoi(value);
+            else if (key == "skills")
+            {
+                std::istringstream ss(value);
+                std::string item;
+                while (std::getline(ss, item, ','))
+                    dying.skills.push_back(item);
+            }
+            continue;
+        }
     }
 
-    if (building)
-        roster.addUnit(buildUnit(pending));
+    closeSection();
     return true;
 }
