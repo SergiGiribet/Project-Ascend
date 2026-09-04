@@ -24,7 +24,8 @@ static void writeList(std::ofstream &out, const std::string &key,
     out << "\n";
 }
 
-void saveGame(const std::string &path, const GameState &state, const Roster &roster)
+void saveGame(const std::string &path, const GameState &state, const Roster &roster,
+              const Barracks &barracks)
 {
     std::ofstream out(path);
     if (!out)
@@ -83,7 +84,8 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
     {
         out << "\n[report]\n";
         out << "n " << n << "\n";
-        out << "scout " << r.scout << "\n";
+        if (!r.scout.empty())
+            out << "scout " << r.scout << "\n";
         out << "scoutId " << r.scoutId << "\n";
         out << "sawObjective " << (r.sawObjective ? 1 : 0) << "\n";
         out << "sawDanger " << (r.sawDanger ? 1 : 0) << "\n";
@@ -93,6 +95,19 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
         out << "claimedRounds " << r.claimed.rounds << "\n";
     }
 
+
+    // Last on purpose: a party is a list of ids, so every one of them has to be back on the
+    // roster before the party that names them is read.
+    for (int i = 0; i < barracks.count(); ++i)
+    {
+        const Team &t = barracks.at(i);
+        out << "\n[party]\n";
+        out << "name " << t.getName() << "\n";
+        std::vector<std::string> ids;
+        for (int id : t.getMembersIds())
+            ids.push_back(std::to_string(id));
+        writeList(out, "members", ids);
+    }
 }
 
 // The fields of the unit currently being read. They arrive one per line, and the Unit itself
@@ -112,6 +127,14 @@ struct PendingDeath
     std::string name, cause;
     int floor = 0, turn = 0;
     std::vector<std::string> skills;
+};
+
+// A party is read as a name and a list of ids, and only turned into a real one once the
+// whole block has arrived -- Barracks::assign wants the roster to already hold each member.
+struct PendingParty
+{
+    std::string name;
+    std::vector<int> members;
 };
 
 struct PendingFloor
@@ -167,7 +190,8 @@ static Report buildReport(const PendingReport &p)
     return r;
 }
 
-bool loadGame(const std::string &path, GameState &state, Roster &roster)
+bool loadGame(const std::string &path, GameState &state, Roster &roster,
+              Barracks &barracks)
 {
     std::ifstream in(path);
     if (!in)
@@ -175,6 +199,7 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
 
     PendingUnit pending;
     PendingDeath dying;
+    PendingParty onParty;
     PendingFloor onFloor;
     PendingReport onReport;
     std::string section;
@@ -187,6 +212,13 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
             state.necropolis.addRecord(buildDeath(dying));
         else if (section == "floor")
             state.floorObjectives[onFloor.n] = Objective{toType(onFloor.type), onFloor.difficulty, onFloor.rounds};
+        else if (section == "party")
+        {
+            int index = barracks.create(onParty.name);
+            for (int id : onParty.members)
+                if (roster.contains(id))
+                    barracks.assign(id, index, roster);
+        }
         else if (section == "report")
             state.floorReports[onReport.n] = buildReport(onReport);
         section.clear();
@@ -219,6 +251,14 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
             closeSection();
             section = "floor";
             onFloor = PendingFloor();
+            continue;
+        }
+
+        if (line == "[party]")
+        {
+            closeSection();
+            section = "party";
+            onParty = PendingParty();
             continue;
         }
 
@@ -290,7 +330,21 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
             continue;
         }
 
-                if (section == "floor")
+        if (section == "party")
+        {
+            if (key == "name")
+                onParty.name = value;
+            else if (key == "members")
+            {
+                std::istringstream ss(value);
+                std::string item;
+                while (std::getline(ss, item, ','))
+                    onParty.members.push_back(std::stoi(item));
+            }
+            continue;
+        }
+
+        if (section == "floor")
         {
             if (key == "n")                 onFloor.n = std::stoi(value);
             else if (key == "type")         onFloor.type = std::stoi(value);

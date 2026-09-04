@@ -1,77 +1,77 @@
 version 1
-essence 7
-highestFloor 4
-incursionCount 4
-nextUnitId 8
+essence 6
+highestFloor 3
+incursionCount 3
+nextUnitId 7
 
 [unit]
 id 1
-name Corvin Bramwell
-race 2
-level 2
-xp 0
-hp 111
-maxHp 130
-str 13
-con 13
-history Exiled from Nightford, they survived as a Poacher. They fight so no one else has to.
-skills Superstitious
+name Dashiell Ynesford
+race 5
+level 1
+xp 60
+hp 127
+maxHp 180
+str 18
+con 18
+history Exiled from Stonehall, they survived as a Peasant. They seek glory to restore their family's name.
+skills Curious,Greedy
 
 [unit]
 id 2
-name Katriel Halloway
-race 1
+name Rosalind Thornbury
+race 2
 level 1
 xp 50
-hp 130
-maxHp 130
-str 10
-con 15
-history Years spent as a Herbalist in Ashenbarrow shaped them. They fight so no one else has to.
-skills Superstitious,Reckless
+hp 120
+maxHp 120
+str 12
+con 12
+history Once a Peasant from Eldenholt. They fled a debt that can never be repaid.
+skills Spiteful,Greedy
 
 [unit]
 id 3
-name Imogen Ravensmere
+name Wendeline Thornbury
 race 3
 level 1
-xp 90
+xp 50
 hp 140
 maxHp 140
 str 14
 con 14
-history They left Grimfen to become more than a Knight. They chase a legend heard by the fireside.
-skills Greedy,Brave
+history They fled Umberfell without looking back. They search for a brother who vanished in the tower.
+skills Brave,Boaster
 
 [unit]
 id 4
-name Quinley Underhill
-race 3
+name Edmund Ravensmere
+race 2
 level 1
-xp 90
-hp 140
-maxHp 140
-str 14
-con 14
-history Once a Merchant from Oakenshield. They trust no one, and prefer it that way.
-skills Spiteful,Brave
+xp 50
+hp 120
+maxHp 120
+str 12
+con 12
+history Years spent as a Knight in Nightford shaped them. They fight so no one else has to.
+skills Boaster,Gentle
 
 [unit]
 id 5
-name Quinley Norwood
-race 1
+name Fiora Ravensmere
+race 2
 level 1
-xp 90
-hp 88
-maxHp 100
-str 10
-con 10
-history They fled Ashenbarrow without looking back. They believe the tower will grant them forgiveness.
-skills Curious,Gentle
+xp 50
+hp 120
+maxHp 120
+str 12
+con 12
+history Once a Deserter from Umberfell. They hoard every coin, fearing the poverty they knew.
+skills Alert,Boaster
 
 [unit]
 id 6
-name Elowen Barrow
+name Lucasta Elmsworth
 race 1
 level 1
 xp 0
@@ -79,86 +79,27 @@ hp 100
 maxHp 100
 str 10
 con 10
-history A Knight from Frostmere, or so they claim. They fled a debt that can never be repaid.
-skills Spiteful,Stubborn
-
-[unit]
-id 7
-name Theodora Fenwright
-race 1
-level 1
-xp 40
-hp 100
-maxHp 100
-str 10
-con 10
-history Once a Deserter from Eldenholt. They dream of buying back the land they lost.
-skills Boaster,Alert
+history In Silverfen, they were just another Poacher. They owe their life to a stranger and mean to repay it.
+skills Curious,Boaster
 
 [floor]
 n 1
-type 1
-difficulty 27
-rounds 2
+type 0
+difficulty 36
+rounds 0
 
 [floor]
 n 2
-type 2
-difficulty 74
+type 0
+difficulty 40
 rounds 0
 
 [floor]
 n 3
-type 2
-difficulty 62
+type 0
+difficulty 79
 rounds 0
 
-[floor]
-n 4
-type 2
-difficulty 61
-rounds 0
-
-[report]
-n 1
-scout Corvin Bramwell
-scoutId 1
-sawObjective 1
-sawDanger 1
-bias 8
-claimedType 1
-claimedDifficulty 27
-claimedRounds 2
-
-[report]
-n 2
-scout Quinley Norwood
-scoutId 5
-sawObjective 1
-sawDanger 1
-bias -8
-claimedType 2
-claimedDifficulty 74
-claimedRounds 0
-
-[report]
-n 3
-scout Elowen Barrow
-scoutId 6
-sawObjective 1
-sawDanger 1
-bias -4
-claimedType 2
-claimedDifficulty 62
-claimedRounds 0
-
-[report]
-n 4
-scout Elowen Barrow
-scoutId 6
-sawObjective 1
-sawDanger 1
-bias -10
-claimedType 2
-claimedDifficulty 61
-claimedRounds 0
+[party]
+name Party 1
+members 1,3,2,4,5

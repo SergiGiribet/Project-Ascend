@@ -34,3 +34,8 @@ cmake_install.cmake
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# === Partida en curs ===
+# Una sola ranura, sobreescrita constantment: es genera sola si no hi es, i no ha de viatjar
+# entre maquines ni entre branques.
+app/save.txt
