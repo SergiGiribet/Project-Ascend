@@ -587,6 +587,52 @@ Retrieve first (caught = the volley), then Rescue with a generated captive, then
 being caught is a single place in the code, and one day it stops saying "they take the volley" and
 starts saying "some of them are taken".
 
+### Two ways to play, and which of them is the actual problem  *(2026-09-04)*
+
+Tiered summoning shipped, and the prediction attached to it failed: the blind grinder was supposed
+to stall on cheap bodies against the floor-6 wall. It did not, for two reasons neither of us had
+counted. **A grinder also earns** -- it clears floors while it loses people, so it saves up and buys
+the dear tier every few sorties rather than living on dregs. And **survivors level**, so one good
+run sets a record that the deaths never take back.
+
+What the tiers did do is make the outcome extreme rather than rare: deaths per run went
+`27, 0, 9, 0, 34, 1, 5, 35`.
+
+**The user's reading, and it corrected mine.** Bodies being usable as ammunition is not a fault. How
+someone plays will follow their own values: some will spend people without blinking, others will
+treat them as people with somewhere to go home to. The game should let both exist and charge each
+of them something different -- which is exactly what the numbers show:
+
+| | floors reached | deaths |
+|---|---:|---:|
+| grinder | 9.2 | 13.9 |
+| careful | 7.1 | **0.0** |
+
+**Two floors of depth for fourteen people.** For a player who counts them that is no trade at all;
+for one who does not, it is. Both are viable. That is the space, not a failure of it.
+
+**And a warning about the instrument, which is what made me read it wrong.** The blind bot is not a
+callous player: it is a program that cannot feel anything. It measures what is mechanically optimal,
+never what is emotionally available. A human who has read Nerissa's hook and remembers pulling her
+off floor 9 does not play like it even when it would win. Bot results speak about INCENTIVES; they
+cannot speak about GDD 1.1, and any conclusion of the form "the bot proves loss does not land" is
+the wrong tool reaching for the wrong question.
+
+**What is actually still wrong is the zero.** The careful bot does not lose few people -- it loses
+NONE, not one across eight runs. That is not a way of playing, it is a safety valve that always
+works, and what makes it work is that **refusing a sortie is free**: forty-one refusals at no cost.
+Caution should cost something and should occasionally fail, and that failure is the one that would
+land, because it would be somebody you were looking after.
+
+**The target is not to punish the grinder. It is to make the zero impossible.** Which is time
+again -- the fourth measurement in a row to point there.
+
+**One thing the game already does and nobody had looked at:** a grinder's necropolis and a carer's
+are different documents, thirty-five names against three. And since new summons draw their hooks
+from the fallen, the grinder's roster fills with people carrying the echo of thirty-five strangers,
+while the other's carries three they remember. The record of which player you were is already being
+kept.
+
 ### 2e — Personalities, and the closing measurement
 
 Only once there is somewhere to spend information does it matter *how good* the information is.

@@ -1,0 +1,44 @@
+version 1
+essence 26
+highestFloor 1
+incursionCount 1
+nextUnitId 4
+
+[unit]
+id 1
+name Hazel Blackwood
+race 2
+level 1
+xp 10
+hp 120
+maxHp 120
+str 12
+con 12
+history Whispers say they left Hollowfen under strange circumstances. They dream of buying back the land they lost.
+skills Spiteful,Loyal
+
+[unit]
+id 2
+name Delilah Underhill
+race 3
+level 1
+xp 10
+hp 140
+maxHp 140
+str 14
+con 14
+history Grew up in Ashenbarrow working as a Knight. They trust no one, and prefer it that way.
+skills Curious
+
+[unit]
+id 3
+name Noor Underhill
+race 1
+level 1
+xp 10
+hp 100
+maxHp 100
+str 10
+con 10
+history Once a Gravedigger from Eldenholt. They swore an oath they no longer believe in.
+skills Gentle,Cowardly

@@ -16,6 +16,10 @@ struct GameState {
     int incursionCount = 0;         // Total incursions launched this session.
     Necropolis necropolis;          // Registry of the fallen; feeds hook generation.
     int essence = 25;               // The tower's currency. Earned by clearing floors (+floor number),
+    int nextUnitId = 1;             // The id the next summoned unit gets. Lives here and not in
+                                    // main because it has to survive a save: reload with it reset
+                                    // and the next unit reuses a living unit's id, which quietly
+                                    // corrupts every party and every death record.
                                     // spent on summoning (SummonTier::price) and on training-camp trainer
                                     // slots. Entering costs nothing: the entry toll was dropped on
                                     // 2026-09-02 because under sorties it taxed the only action the

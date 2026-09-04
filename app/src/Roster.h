@@ -46,6 +46,11 @@ public:
     // Pre: None
     // Post: Returns how nay units are on the roster.
 
+    const std::vector<Unit> &units() const;
+     // Pre: None
+    // Post: Returns a read-only view of every unit on the roster, in the order they were added.
+    //       Invalidated by addUnit/removeUnitById, like every other reference into the roster.
+    
     // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     void addUnit(const Unit &unit);
     // Pre: unit must be a valid Unit object with a unique id.

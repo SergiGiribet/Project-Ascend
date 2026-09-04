@@ -10,6 +10,7 @@
 #include "src/Injury.h"
 #include "src/TrainingCamp.h"
 #include "src/Barracks.h"
+#include "src/SaveGame.h"
 
 #include <iostream>
 #include <ctime>
@@ -133,14 +134,19 @@ int main()
         TrainingCamp tcamp;
 
         barracks.create("Party 1");
+        bool returning = loadGame("save.txt", state, roster);
 
         std::mt19937 rng(std::random_device{}());
         Generator gen("resources", rng);
         std::vector<Encounter> encounters = loadEncounters("resources/encounters.txt");
         std::vector<Injury> injuries = loadInjuries("resources/injuries.txt");
-        int nextId = 1;
 
-        printIntro();
+        // The intro is for whoever is arriving. Someone coming back already knows what the
+        // tower is, and being told twice makes the save feel like it did not work.
+        if (returning)
+            std::cout << "The tower remembers where you left off." << std::endl;
+        else
+            printIntro();
 
         do
         {
@@ -207,7 +213,7 @@ int main()
 
                 for (int i = 0; i < count; ++i)
                 {
-                    Unit newUnit = gen.generateUnit(nextId++, state.necropolis, tier);
+                    Unit newUnit = gen.generateUnit(state.nextUnitId++, state.necropolis, tier);
                     roster.addUnit(newUnit);
                     newUnit.printUnit();
                 }
@@ -503,6 +509,7 @@ int main()
             case 9:
             {
                 std::cout << "The tower will be waiting. Goodbye!" << std::endl;
+                saveGame("save.txt", state, roster);
                 return 0;
             }
             default:

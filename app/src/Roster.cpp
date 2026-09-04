@@ -52,6 +52,11 @@ bool Roster::contains(int id) const
     return static_cast<int>(units_.size());
 }
 
+const std::vector<Unit> &Roster::units() const
+{
+    return units_;
+}
+
 // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 void Roster::addUnit(const Unit &unit)
 {
