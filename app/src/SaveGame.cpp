@@ -69,6 +69,30 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
         out << "turn " << d.turn << "\n";
         writeList(out, "skills", d.skills);
     }
+
+    for (const auto &[n, obj] : state.floorObjectives)
+    {
+        out << "\n[floor]\n";
+        out << "n " << n << "\n";
+        out << "type " << static_cast<int>(obj.type) << "\n";
+        out << "difficulty " << obj.difficulty << "\n";
+        out << "rounds " << obj.rounds << "\n"; 
+    }
+
+    for (const auto &[n, r] : state.floorReports)
+    {
+        out << "\n[report]\n";
+        out << "n " << n << "\n";
+        out << "scout " << r.scout << "\n";
+        out << "scoutId " << r.scoutId << "\n";
+        out << "sawObjective " << (r.sawObjective ? 1 : 0) << "\n";
+        out << "sawDanger " << (r.sawDanger ? 1 : 0) << "\n";
+        out << "bias " << r.bias << "\n";
+        out << "claimedType " << static_cast<int>(r.claimed.type) << "\n";
+        out << "claimedDifficulty " << r.claimed.difficulty << "\n";
+        out << "claimedRounds " << r.claimed.rounds << "\n";
+    }
+
 }
 
 // The fields of the unit currently being read. They arrive one per line, and the Unit itself
@@ -90,6 +114,25 @@ struct PendingDeath
     std::vector<std::string> skills;
 };
 
+struct PendingFloor
+{
+    int n = 0, type = 0, difficulty = 0, rounds = 0;
+};
+
+struct PendingReport
+{
+    int n = 0, scoutId = -1, bias = 0, claimedType = 0, claimedDifficulty = 0, claimedRounds = 0;
+    std::string scout;
+    bool sawObjective = false, sawDanger = false;
+};
+
+static ObjectiveType toType(int t)
+{
+    if (t < 0 || t > 3)
+        throw std::runtime_error("Save file has an unknown objective type: " + std::to_string(t));
+    return static_cast<ObjectiveType>(t);
+}
+
 static Unit buildUnit(const PendingUnit &p)
 {
     Unit u(p.id);
@@ -107,9 +150,21 @@ static Unit buildUnit(const PendingUnit &p)
     return u;
 }
 
-static DeathRecord buildDeath (const PendingDeath &p)
+static DeathRecord buildDeath(const PendingDeath &p)
 {
     return DeathRecord{p.name, p.floor, p.cause, p.turn, p.skills};
+}
+
+static Report buildReport(const PendingReport &p)
+{
+    Report r;
+    r.scout = p.scout;
+    r.scoutId = p.scoutId;
+    r.sawObjective = p.sawObjective;
+    r.sawDanger = p.sawDanger;
+    r.bias = p.bias;
+    r.claimed = Objective{toType(p.claimedType), p.claimedDifficulty, p.claimedRounds};
+    return r;
 }
 
 bool loadGame(const std::string &path, GameState &state, Roster &roster)
@@ -120,6 +175,8 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
 
     PendingUnit pending;
     PendingDeath dying;
+    PendingFloor onFloor;
+    PendingReport onReport;
     std::string section;
 
     auto closeSection = [&]()
@@ -128,6 +185,10 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
             roster.addUnit(buildUnit(pending));
         else if (section == "death")
             state.necropolis.addRecord(buildDeath(dying));
+        else if (section == "floor")
+            state.floorObjectives[onFloor.n] = Objective{toType(onFloor.type), onFloor.difficulty, onFloor.rounds};
+        else if (section == "report")
+            state.floorReports[onReport.n] = buildReport(onReport);
         section.clear();
     };
 
@@ -150,6 +211,22 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
             closeSection();
             section = "death";
             dying = PendingDeath();
+            continue;
+        }
+
+        if (line == "[floor]")
+        {
+            closeSection();
+            section = "floor";
+            onFloor = PendingFloor();
+            continue;
+        }
+
+        if (line == "[report]")
+        {
+            closeSection();
+            section = "report";
+            onReport = PendingReport();
             continue;
         }
 
@@ -199,10 +276,10 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
 
         if (section == "death")
         {
-            if (key == "name")       dying.name = value;
-            else if (key == "cause") dying.cause = value;
-            else if (key == "floor") dying.floor = std::stoi(value);
-            else if (key == "turn")  dying.turn = std::stoi(value);
+            if (key == "name")          dying.name = value;
+            else if (key == "cause")    dying.cause = value;
+            else if (key == "floor")    dying.floor = std::stoi(value);
+            else if (key == "turn")     dying.turn = std::stoi(value);
             else if (key == "skills")
             {
                 std::istringstream ss(value);
@@ -212,6 +289,30 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster)
             }
             continue;
         }
+
+                if (section == "floor")
+        {
+            if (key == "n")                 onFloor.n = std::stoi(value);
+            else if (key == "type")         onFloor.type = std::stoi(value);
+            else if (key == "difficulty")   onFloor.difficulty = std::stoi(value);
+            else if (key == "rounds")       onFloor.rounds = std::stoi(value);
+            continue;
+        }
+
+        if (section == "report")
+        {
+            if (key == "n")                        onReport.n = std::stoi(value);
+            else if (key == "scout")               onReport.scout = value;
+            else if (key == "scoutId")             onReport.scoutId = std::stoi(value);
+            else if (key == "sawObjective")        onReport.sawObjective = (std::stoi(value) != 0);
+            else if (key == "sawDanger")           onReport.sawDanger = (std::stoi(value) != 0);
+            else if (key == "bias")                onReport.bias = std::stoi(value);
+            else if (key == "claimedType")         onReport.claimedType = std::stoi(value);
+            else if (key == "claimedDifficulty")   onReport.claimedDifficulty = std::stoi(value);
+            else if (key == "claimedRounds")       onReport.claimedRounds = std::stoi(value);
+            continue;
+        }
+
     }
 
     closeSection();

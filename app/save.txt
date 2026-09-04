@@ -1,93 +1,164 @@
 version 1
-essence 3
-highestFloor 7
-incursionCount 14
-nextUnitId 9
+essence 7
+highestFloor 4
+incursionCount 4
+nextUnitId 8
 
 [unit]
-id 3
-name Dashiell Blackwood
+id 1
+name Corvin Bramwell
 race 2
 level 2
-xp 170
-hp 7
+xp 0
+hp 111
 maxHp 130
 str 13
 con 13
-history Whispers say they left Palehaven under strange circumstances. They owe their life to a stranger and mean to repay it.
-skills Spiteful,Boaster
+history Exiled from Nightford, they survived as a Poacher. They fight so no one else has to.
+skills Superstitious
+
+[unit]
+id 2
+name Katriel Halloway
+race 1
+level 1
+xp 50
+hp 130
+maxHp 130
+str 10
+con 15
+history Years spent as a Herbalist in Ashenbarrow shaped them. They fight so no one else has to.
+skills Superstitious,Reckless
+
+[unit]
+id 3
+name Imogen Ravensmere
+race 3
+level 1
+xp 90
+hp 140
+maxHp 140
+str 14
+con 14
+history They left Grimfen to become more than a Knight. They chase a legend heard by the fireside.
+skills Greedy,Brave
 
 [unit]
 id 4
-name Silas Ironvale
-race 1
-level 2
-xp 120
-hp 56
-maxHp 110
-str 11
-con 11
-history They wandered out of Ravenmoor with nothing but a Gravedigger's tools. They owe their life to a stranger and mean to repay it.
-skills Cowardly,Stubborn
+name Quinley Underhill
+race 3
+level 1
+xp 90
+hp 140
+maxHp 140
+str 14
+con 14
+history Once a Merchant from Oakenshield. They trust no one, and prefer it that way.
+skills Spiteful,Brave
 
 [unit]
 id 5
-name Katriel Blackwood
+name Quinley Norwood
 race 1
-level 2
-xp 170
-hp 47
-maxHp 110
-str 11
-con 8
-history Years spent as a Herbalist in Grimfen shaped them. They trust no one, and prefer it that way.
-skills Gentle,Loyal
-injury Shattered Knee,0,3
+level 1
+xp 90
+hp 88
+maxHp 100
+str 10
+con 10
+history They fled Ashenbarrow without looking back. They believe the tower will grant them forgiveness.
+skills Curious,Gentle
+
+[unit]
+id 6
+name Elowen Barrow
+race 1
+level 1
+xp 0
+hp 100
+maxHp 100
+str 10
+con 10
+history A Knight from Frostmere, or so they claim. They fled a debt that can never be repaid.
+skills Spiteful,Stubborn
 
 [unit]
 id 7
-name Hazel Selwyn
-race 2
+name Theodora Fenwright
+race 1
 level 1
-xp 70
-hp 150
-maxHp 150
-str 12
-con 17
-history Whispers say they left Hollowfen under strange circumstances. They seek glory to restore their family's name.
-hook They heard how Delilah Thornbury died, and came anyway.
-skills Reckless,Superstitious
+xp 40
+hp 100
+maxHp 100
+str 10
+con 10
+history Once a Deserter from Eldenholt. They dream of buying back the land they lost.
+skills Boaster,Alert
 
-[unit]
-id 8
-name Lucasta Danforth
-race 2
-level 1
-xp 0
-hp 59
-maxHp 120
-str 12
-con 12
-history In Palehaven, they were just another Merchant. They trust no one, and prefer it that way.
-skills Superstitious,Curious
+[floor]
+n 1
+type 1
+difficulty 27
+rounds 2
 
-[death]
-name Delilah Thornbury
-floor 7
-cause erased from every map, line by line
-turn 10
-skills Boaster,Cowardly
+[floor]
+n 2
+type 2
+difficulty 74
+rounds 0
 
-[death]
-name Osric Blackwood
-floor 8
-cause broken under a hero's stone fist
-turn 13
-skills Loyal
+[floor]
+n 3
+type 2
+difficulty 62
+rounds 0
 
-[death]
-name Cordelia Ironvale
-floor 8
-cause opened like a door and left ajar
-turn 14
-skills Loyal
+[floor]
+n 4
+type 2
+difficulty 61
+rounds 0
+
+[report]
+n 1
+scout Corvin Bramwell
+scoutId 1
+sawObjective 1
+sawDanger 1
+bias 8
+claimedType 1
+claimedDifficulty 27
+claimedRounds 2
+
+[report]
+n 2
+scout Quinley Norwood
+scoutId 5
+sawObjective 1
+sawDanger 1
+bias -8
+claimedType 2
+claimedDifficulty 74
+claimedRounds 0
+
+[report]
+n 3
+scout Elowen Barrow
+scoutId 6
+sawObjective 1
+sawDanger 1
+bias -4
+claimedType 2
+claimedDifficulty 62
+claimedRounds 0
+
+[report]
+n 4
+scout Elowen Barrow
+scoutId 6
+sawObjective 1
+sawDanger 1
+bias -10
+claimedType 2
+claimedDifficulty 61
+claimedRounds 0
