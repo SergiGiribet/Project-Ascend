@@ -133,7 +133,7 @@ int main()
         GameState state;
         TrainingCamp tcamp;
 
-        bool returning = loadGame("save.txt", state, roster, barracks);
+        bool returning = loadGame("save.txt", state, roster, barracks, tcamp);
         if (barracks.count() == 0)
             barracks.create("Party 1"); // a new game, or a save from before parties were kept
 
@@ -510,7 +510,7 @@ int main()
             case 9:
             {
                 std::cout << "The tower will be waiting. Goodbye!" << std::endl;
-                saveGame("save.txt", state, roster, barracks);
+                saveGame("save.txt", state, roster, barracks, tcamp);
                 return 0;
             }
             default:

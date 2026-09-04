@@ -1,77 +1,38 @@
 version 1
-essence 6
-highestFloor 3
-incursionCount 3
-nextUnitId 7
+essence 25
+highestFloor 0
+incursionCount 0
+nextUnitId 6
 
 [unit]
 id 1
-name Dashiell Ynesford
-race 5
-level 1
-xp 60
-hp 127
-maxHp 180
-str 18
-con 18
-history Exiled from Stonehall, they survived as a Peasant. They seek glory to restore their family's name.
-skills Curious,Greedy
-
-[unit]
-id 2
-name Rosalind Thornbury
-race 2
-level 1
-xp 50
-hp 120
-maxHp 120
-str 12
-con 12
-history Once a Peasant from Eldenholt. They fled a debt that can never be repaid.
-skills Spiteful,Greedy
-
-[unit]
-id 3
-name Wendeline Thornbury
+name Aldric Larkmead
 race 3
 level 1
-xp 50
+xp 0
 hp 140
 maxHp 140
 str 14
 con 14
-history They fled Umberfell without looking back. They search for a brother who vanished in the tower.
-skills Brave,Boaster
+history Born in the shadow of Ravenmoor, raised as a Deserter. They hoard every coin, fearing the poverty they knew.
+skills Stubborn
 
 [unit]
-id 4
-name Edmund Ravensmere
+id 2
+name Garrett Fairholt
 race 2
 level 1
-xp 50
+xp 0
 hp 120
 maxHp 120
 str 12
 con 12
-history Years spent as a Knight in Nightford shaped them. They fight so no one else has to.
-skills Boaster,Gentle
+history Born in the shadow of Ironvale, raised as a Poacher. They swore an oath they no longer believe in.
+skills Stubborn
 
 [unit]
-id 5
-name Fiora Ravensmere
-race 2
-level 1
-xp 50
-hp 120
-maxHp 120
-str 12
-con 12
-history Once a Deserter from Umberfell. They hoard every coin, fearing the poverty they knew.
-skills Alert,Boaster
-
-[unit]
-id 6
-name Lucasta Elmsworth
+id 3
+name Quill Ironvale
 race 1
 level 1
 xp 0
@@ -79,27 +40,38 @@ hp 100
 maxHp 100
 str 10
 con 10
-history In Silverfen, they were just another Poacher. They owe their life to a stranger and mean to repay it.
-skills Curious,Boaster
+history Nobody knows where they came from, but they have the hands of a Poacher. They fight so no one else has to.
+skills Superstitious
 
-[floor]
-n 1
-type 0
-difficulty 36
-rounds 0
+[unit]
+id 4
+name Theodora Sheffield
+race 1
+level 1
+xp 0
+hp 100
+maxHp 100
+str 10
+con 10
+history They fled Eldenholt without looking back. They owe their life to a stranger and mean to repay it.
+skills Cowardly,Alert
 
-[floor]
-n 2
-type 0
-difficulty 40
-rounds 0
-
-[floor]
-n 3
-type 0
-difficulty 79
-rounds 0
+[unit]
+id 5
+name Percival Loxley
+race 3
+level 1
+xp 0
+hp 140
+maxHp 140
+str 14
+con 14
+history They wandered out of Wyvernrest with nothing but a Deserter's tools. They chase a legend heard by the fireside.
+skills Boaster
 
 [party]
 name Party 1
-members 1,3,2,4,5
+
+[camp]
+slots 1
+trainer 1,2,3

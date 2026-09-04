@@ -25,7 +25,7 @@ static void writeList(std::ofstream &out, const std::string &key,
 }
 
 void saveGame(const std::string &path, const GameState &state, const Roster &roster,
-              const Barracks &barracks)
+              const Barracks &barracks, const TrainingCamp &camp)
 {
     std::ofstream out(path);
     if (!out)
@@ -108,6 +108,19 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
             ids.push_back(std::to_string(id));
         writeList(out, "members", ids);
     }
+
+    // The camp holds ids too, so like the parties it is written after the units. One line
+    // per trainer: the first id is theirs, the rest are the trainees under them.
+    out << "\n[camp]\n";
+    out << "slots " << camp.purchasedSlots() << "\n";
+    for (const TrainingCamp::Assignment &a : camp.assignments())
+    {
+        std::vector<std::string> ids;
+        ids.push_back(std::to_string(a.trainerId));
+        for (int id : a.traineeIds)
+            ids.push_back(std::to_string(id));
+        writeList(out, "trainer", ids);
+    }
 }
 
 // The fields of the unit currently being read. They arrive one per line, and the Unit itself
@@ -131,6 +144,14 @@ struct PendingDeath
 
 // A party is read as a name and a list of ids, and only turned into a real one once the
 // whole block has arrived -- Barracks::assign wants the roster to already hold each member.
+// One trainer and the trainees under them, held until the block ends: the camp validates
+// every id against the roster, and slots have to be bought before a trainer can take one.
+struct PendingCamp
+{
+    int slots = TrainingCamp::STARTING_SLOTS;
+    std::vector<std::vector<int>> trainers; // each: the trainer id, then their trainees
+};
+
 struct PendingParty
 {
     std::string name;
@@ -191,7 +212,7 @@ static Report buildReport(const PendingReport &p)
 }
 
 bool loadGame(const std::string &path, GameState &state, Roster &roster,
-              Barracks &barracks)
+              Barracks &barracks, TrainingCamp &camp)
 {
     std::ifstream in(path);
     if (!in)
@@ -199,6 +220,7 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
 
     PendingUnit pending;
     PendingDeath dying;
+    PendingCamp onCamp;
     PendingParty onParty;
     PendingFloor onFloor;
     PendingReport onReport;
@@ -212,6 +234,20 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
             state.necropolis.addRecord(buildDeath(dying));
         else if (section == "floor")
             state.floorObjectives[onFloor.n] = Objective{toType(onFloor.type), onFloor.difficulty, onFloor.rounds};
+        else if (section == "camp")
+        {
+            for (int i = TrainingCamp::STARTING_SLOTS; i < onCamp.slots; ++i)
+                camp.buySlot();
+            for (const std::vector<int> &line : onCamp.trainers)
+            {
+                if (line.empty() || !roster.contains(line[0]))
+                    continue;
+                camp.addTrainer(line[0], roster);
+                for (size_t t = 1; t < line.size(); ++t)
+                    if (roster.contains(line[t]))
+                        camp.assignTrainee(line[0], line[t], roster);
+            }
+        }
         else if (section == "party")
         {
             int index = barracks.create(onParty.name);
@@ -251,6 +287,14 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
             closeSection();
             section = "floor";
             onFloor = PendingFloor();
+            continue;
+        }
+
+        if (line == "[camp]")
+        {
+            closeSection();
+            section = "camp";
+            onCamp = PendingCamp();
             continue;
         }
 
@@ -326,6 +370,22 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
                 std::string item;
                 while (std::getline(ss, item, ','))
                     dying.skills.push_back(item);
+            }
+            continue;
+        }
+
+        if (section == "camp")
+        {
+            if (key == "slots")
+                onCamp.slots = std::stoi(value);
+            else if (key == "trainer")
+            {
+                std::vector<int> ids;
+                std::istringstream ss(value);
+                std::string item;
+                while (std::getline(ss, item, ','))
+                    ids.push_back(std::stoi(item));
+                onCamp.trainers.push_back(ids);
             }
             continue;
         }

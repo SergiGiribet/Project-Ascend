@@ -50,6 +50,11 @@ bool TrainingCamp::contains(int unitId) const
     return false;
 }
 
+const std::vector<TrainingCamp::Assignment> &TrainingCamp::assignments() const
+{
+    return assignments_;
+}
+
 void TrainingCamp::buySlot()
 {
     purchasedSlots_++;

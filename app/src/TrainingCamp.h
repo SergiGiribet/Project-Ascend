@@ -77,12 +77,19 @@ public:
     // Post: Lists trainers with their trainees (resolved through the roster), free slots, and
     //       the next slot's cost; prints a notice if the camp is empty.
 
-private:
+    // Public because a save has to write WHICH trainees belong to WHICH trainer, and
+    // trainerIds()/traineeIds() flatten exactly that away.
     struct Assignment
     {
         int trainerId;
         std::vector<int> traineeIds;
     };
+
+    const std::vector<Assignment> &assignments() const;
+    // Pre: None
+    // Post: Returns a read-only view of every trainer and the trainees under them.
+
+private:
     std::vector<Assignment> assignments_; // size <= purchasedSlots_
     int purchasedSlots_;
 };
