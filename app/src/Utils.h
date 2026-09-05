@@ -42,4 +42,27 @@ void enableConsoleColors();
 // Post: Enables ANSI escape sequence processing (colors) in the Windows console;
 //       silently does nothing if the console does not support it (e.g. redirected output).
 
+long long nowSeconds();
+// Pre: None
+// Post: Returns the number of seconds since the Unix epoch, read from the system clock -- the
+//       wall clock, not a monotonic one, because a sortie has to be able to say "they left at
+//       16:00" and still mean it tomorrow, with the game closed. The cost is that the player can
+//       move it: departures are compared against the last seen time so the clock cannot be wound
+//       BACK, and winding it forward while the game is closed is not preventable and is accepted.
+
+int timeScale();
+// Pre: None
+// Post: Returns how many times faster than real life the game runs; never less than 1. Read once,
+//       on the first call, from the environment variable ASCEND_TIME_SCALE and cached for the rest
+//       of the process. This is not a debug convenience: at scale 1 a sortie takes real hours, so
+//       without it neither the bench nor the autoplay bot could take a single sample.
+
+long long realSeconds(int gameMinutes);
+// Pre: None
+// Post: Converts a span of GAME time into the real seconds it takes at the current scale. The
+//       whole game reasons in game minutes -- a march is 15 per floor, a step 20 to 40 -- and this
+//       is the only place that knows what a real second is. Truncates: at a high scale, anything
+//       shorter than one game hour lands on zero and resolves at once.
+
+
 #endif

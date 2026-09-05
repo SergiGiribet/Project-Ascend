@@ -6,10 +6,12 @@
 #define GAMESTATE_H
 
 #include <map>
+#include <vector>
 
 #include "Necropolis.h"
 #include "Objective.h"
 #include "Scouting.h"
+#include "Sortie.h"
 
 struct GameState {
     int highestFloor = 0;                       // Highest tower floor ever cleared this session; never decreases.
@@ -30,7 +32,8 @@ struct GameState {
                                                 // scouted knowledge survive leaving the tower.
     std::map<int, Report> floorReports;         // What a scout claimed about each floor, kept so the
                                                 // truth can name them when the floor proves otherwise.
-
+    std::vector<Sortie> sorties;                // Parties currently inside the tower.
+    long long lastSeen = 0;                      // nowSeconds() the last time the game looked at the clock.
 };
 
 #endif

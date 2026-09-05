@@ -4,12 +4,14 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <optional>
 
 #include "Roster.h"
 #include "Team.h"
 #include "GameState.h"
 #include "Injury.h"
 #include "Barracks.h"
+#include "Sortie.h"
 
 struct Encounter
 {
@@ -34,7 +36,7 @@ void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState 
 //       purged from every party (Barracks::purgeDead): a scout is picked from the whole roster,
 //       so they may belong to any party, or to none.
 
-bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng);
+bool runIncursion(int partyIndex, Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng);
 // Pre: Every id in team refers to a unit present in roster; encounters and injuries must not
 //      be empty; rng must be seeded.
 // Post: Runs ONE floor and comes back out -- a sortie, not a climb. Returns true if the party
@@ -103,5 +105,29 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
 //       flavor text for residual incidents. Wounds are NOT healed here: whoever went carries them
 //       home, and only units that stayed behind recover (Roster::healRested, called by main).
 //       Permanent injuries and the dead both stay.
+
+std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
+                                   GameState &state, std::mt19937 &rng);
+// Pre: partyIndex must name a party that exists in the Barracks, and `team` must be that party.
+// Post: Runs the departure dialogue -- refuses an empty party, asks which floor, shows what is
+//       known about it (a forecast if it has been stood on, a scout's account if one was bought,
+//       nothing at all otherwise) and asks for confirmation. Returns the Sortie they left on, or
+//       std::nullopt if they did not go -- in which case NOTHING has been spent or changed.
+//       `team` and `roster` are const on purpose: deciding to enter cannot hurt anyone, and the
+//       compiler is what says so.
+//       If the floor is new its objective is rolled here and cached in state.floorObjectives, so
+//       what the player was shown is what they will face. The seed is drawn from `rng` here and
+//       never again: from this line on, the sortie owes nothing to anything that happens at home.
+
+bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &state,
+                   const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries);
+// Pre: `team` must be the party named by sortie.partyIndex, and the floor's objective must already
+//      be in state.floorObjectives -- launchSortie is what puts it there.
+// Post: Plays the floor out and writes down what it cost: essence and experience awarded, the dead
+//       struck from the roster and entered in the Necropolis, the survivors' wounds kept, and
+//       state.highestFloor raised if the floor was new. Returns whether the floor was taken.
+//       Takes no rng and must not: it builds its own from sortie.seed. That is what makes looking
+//       twice give the same answer, and what stops anything the player did at home while the party
+//       was away from reaching into the tower.
 
 #endif

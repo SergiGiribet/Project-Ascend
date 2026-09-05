@@ -6,7 +6,9 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
-
+#include <chrono>
+#include <cstdlib>
+#include <algorithm>
 
 
 int readChoice()
@@ -56,4 +58,37 @@ void enableConsoleColors() {
     DWORD mode = 0;
     if (out != INVALID_HANDLE_VALUE && GetConsoleMode(out, &mode))
         SetConsoleMode(out, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+}
+
+long long nowSeconds()
+{
+    std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+    std::chrono::seconds since = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch());
+    return since.count();
+}
+
+// MSVC deprecates getenv because the pointer it returns can be invalidated by a later putenv in
+// the same process. Nothing here ever sets an environment variable, and the value is copied into
+// an int before the call returns, so the pointer never outlives the statement that reads it.
+#pragma warning(push)
+#pragma warning(disable : 4996)
+static int readScale()
+{
+    const char *raw = std::getenv("ASCEND_TIME_SCALE");
+    if (raw == nullptr)
+        return 1;
+    return std::max(1, std::atoi(raw));
+}
+#pragma warning(pop)
+
+
+int timeScale()
+{
+    static const int scale = readScale();
+    return scale;
+}
+
+long long realSeconds(int gameMinutes)
+{
+    return static_cast<long long>(gameMinutes) * 60 / timeScale();
 }

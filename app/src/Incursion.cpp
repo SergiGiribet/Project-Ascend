@@ -807,12 +807,13 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
     return true;
 }
 
-bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
+std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
+                                    GameState &state, std::mt19937 &rng)
 {
     if (team.getMembersIds().empty())
     {
         std::cout << "No units in the team. Assemble a team first." << std::endl;
-        return false;
+        return std::nullopt;
     }
 
     std::cout << std::endl;
@@ -852,20 +853,34 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
     if (readChoice() != 1)
     {
         std::cout << "They stay in the doorway. Nothing is spent." << std::endl;
-        return false;
+        return std::nullopt;
     }
+
+    Sortie sortie;
+    sortie.partyIndex   = partyIndex;
+    sortie.floor        = startFloor;
+    sortie.departedAt   = nowSeconds();
+    sortie.seed         = static_cast<unsigned int>(rng());
+    return sortie;
+}
+
+bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &state,
+                    const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries)
+{
+    std::mt19937 rng(sortie.seed);
+    Objective objective = objectiveFor(sortie.floor, state, rng);
 
     state.incursionCount++;
     std::cout << std::endl;
-    std::cout << "=== Sortie " << state.incursionCount << ": floor " << startFloor
+    std::cout << "=== Sortie " << state.incursionCount << ": floor " << sortie.floor
               << " ===" << std::endl;
 
     std::cout << std::endl;
 
-    bool cleared = resolveFloor(startFloor, objective, team, roster, state, encounters,
+    bool cleared = resolveFloor(sortie.floor, objective, team, roster, state, encounters,
                                 injuries, rng);
-    if (cleared && startFloor > state.highestFloor)
-        state.highestFloor = startFloor;
+    if (cleared && sortie.floor > state.highestFloor)
+        state.highestFloor = sortie.floor;
 
     team.purgeDeadMembers(roster);
 
@@ -880,6 +895,15 @@ bool runIncursion(Team &team, Roster &roster, GameState &state, const std::vecto
                   << " the tower will mend them." << std::endl;
         team.printTeam(roster);
     }
+    return cleared;
+}
+
+bool runIncursion(int partyIndex, Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
+{
+    std::optional<Sortie> sortie = launchSortie(partyIndex, team, roster, state, rng);
+    if (!sortie)
+        return false;
+    resolveSortie(*sortie, team, roster, state, encounters, injuries);
     return true;
 }
 

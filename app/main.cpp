@@ -441,7 +441,7 @@ int main()
                         // The ids are copied out BEFORE the incursion: the party loses its dead
                         // during it, and whoever climbed must not rest even if they fell.
                         std::vector<int> climbed = barracks.at(partyIndex).getMembersIds();
-                        if (runIncursion(barracks.at(partyIndex), roster, state, encounters, injuries, rng))
+                        if (runIncursion(partyIndex, barracks.at(partyIndex), roster, state, encounters, injuries, rng))
                         {
                             tcamp.tick(roster, injuries, rng);
                             roster.healRested(climbed);
