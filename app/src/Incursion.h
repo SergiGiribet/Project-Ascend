@@ -11,6 +11,7 @@
 #include "GameState.h"
 #include "Injury.h"
 #include "Barracks.h"
+#include "TrainingCamp.h"
 #include "Sortie.h"
 
 struct Encounter
@@ -36,76 +37,6 @@ void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState 
 //       purged from every party (Barracks::purgeDead): a scout is picked from the whole roster,
 //       so they may belong to any party, or to none.
 
-bool runIncursion(int partyIndex, Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng);
-// Pre: Every id in team refers to a unit present in roster; encounters and injuries must not
-//      be empty; rng must be seeded.
-// Post: Runs ONE floor and comes back out -- a sortie, not a climb. Returns true if the party
-//       actually went in, false if it did not (empty party, or the player held back); the caller
-//       uses that to decide whether time passed at all, so a refused sortie must cost nothing.
-//
-//       ENTRY, before anything is spent. The player picks a floor, at most one above the tower
-//       record. For a floor at or below the record they get the danger forecast, because they
-//       have stood there; for record+1 they are told plainly that nobody has, and the forecast
-//       is withheld -- that is what a scout is for. The objective type is NOT shown here at all:
-//       knowing what the floor asks before choosing who goes is precisely the knowledge a sortie
-//       has to be paid for. Entering costs no essence at all; the floor chosen is the floor
-//       entered, so the forecast they agreed to is never quietly swapped for another one.
-//
-//       THE FLOOR is resolved by resolveFloor, which owns everything from the encounter to the
-//       last casualty and answers only whether the floor was cleared. That seam is where the
-//       simulation will be lifted away from the console when a sortie has to resolve with nobody
-//       watching. What follows describes what happens inside it.
-//
-//       The floor presents a random encounter and an objective taken from
-//       state.floorObjectives, which keeps every floor's mission AND its own difficulty across
-//       sorties -- a floor has an identity, and it is worth learning. Printed under the floor
-//       header: the objective's briefing, then how well the party suits it (traitFit summed over
-//       the members -- a signed modifier added to the party's power, shown as a plain-language
-//       tier plus the number), then, if a scout claimed something else about this floor, a line
-//       saying so and naming them (from state.floorReports). At most one trait event per floor
-//       (Brave/Cowardly/Reckless) narrates a deed and modifies the roll.
-//
-//       RESOLUTION, HOLD. Hold objectives resolve round by round rather than on one roll. For
-//       each of the objective's rounds the party rolls again -- power, fit and the trait
-//       modifier, all recomputed every round, so a death mid-fight weakens the rest of it --
-//       against the floor's difficulty. A failed round wounds one member (HOLD_DMG_MIN..MAX)
-//       through the wound path below. Giving ground on more than half the rounds means being
-//       pushed off the floor; otherwise the floor is cleared, flawlessly or at a price, with no
-//       further wound: the rounds already charged for it.
-//
-//       RESOLUTION, SLAY. Slay objectives are an exchange with whatever holds the floor. The
-//       enemy starts with (difficulty * 3 / 2) health, never shown to the player as a number
-//       (style guide 1.6). Each exchange the party rolls as above; a blow that beats the
-//       difficulty takes (difficulty / 2 + the margin) off the enemy, so a stronger party lands
-//       fewer and larger blows. SLAY_CRIT_CHANCE percent of landed blows also take half the
-//       enemy's starting health -- the one fat tail that keeps a short fight from being a
-//       calculation. A blow that misses draws a counterattack (SLAY_DMG_MIN..MAX through the
-//       wound path below); after SLAY_COUNTERS_ENDURED of them the party pulls back off the
-//       floor, and one line says how close they came, which is the only thing a loss gives them.
-//       The narration of each exchange is chosen by the margin, so a near miss reads as a block
-//       and a wide one as a dodge, without a second roll.
-//
-//       RESOLUTION, EVERY OTHER TYPE. One roll against the difficulty, in three tiers. Cleared
-//       with ease: may still strike a residual incident (chance grows with floor depth and with
-//       Boaster members, shrinks with Alert members, capped), whose own second roll decides
-//       whether it is fatal or merely wounding, with its own flavor text -- an ironic one if the
-//       victim is a Boaster. Cleared with difficulty: always wounds someone. Below that: the
-//       tower overwhelms the party and one member falls.
-//
-//       WOUNDS. The victim is chosen by a weighted lottery (Reckless/Boaster more likely, Alert
-//       less likely, never forced). A wound the victim survives has a small chance of leaving a
-//       permanent injury (applyInjury: a lasting STR/CON penalty, never healed by rest); a lethal
-//       one runs the full death path.
-//
-//       AFTERWARDS. A cleared floor yields its floor number in essence and XP to the survivors,
-//       who may level up; state.highestFloor grows on a new record -- including when the floor is
-//       cleared and an incident then takes the whole party, because they did take the floor. Every casualty is recorded in
-//       state.necropolis BEFORE being removed from roster and purged from team, with the
-//       encounter's cause for difficulty, overwhelm and Hold-round deaths, and the incident's own
-//       flavor text for residual incidents. Wounds are NOT healed here: whoever went carries them
-//       home, and only units that stayed behind recover (Roster::healRested, called by main).
-//       Permanent injuries and the dead both stay.
-
 std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
                                    GameState &state, std::mt19937 &rng);
 // Pre: partyIndex must name a party that exists in the Barracks, and `team` must be that party.
@@ -129,5 +60,24 @@ bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &
 //       Takes no rng and must not: it builds its own from sortie.seed. That is what makes looking
 //       twice give the same answer, and what stops anything the player did at home while the party
 //       was away from reaching into the tower.
+
+void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp &camp,
+             const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries,
+             std::mt19937 &rng);
+// Pre: Every sortie in state.sorties must name a party that still exists.
+// Post: Brings the world up to the present. Any sortie whose time is up is taken out of
+//       state.sorties and played out -- printing everything that happened up there, in one go,
+//       because nobody was watching. state.lastSeen is advanced to now.
+//       A system clock that has been wound BACK does not move time at all: `now` is clamped to
+//       lastSeen, so a party cannot be un-returned by changing the date. Winding it forward while
+//       the game is closed is not preventable and is accepted.
+//       Called on every main-menu redraw, so it must be cheap and must be safe to call when
+//       nothing is due -- which is nearly always.
+
+void printSorties(const GameState &state, const Barracks &barracks);
+// Pre: Every sortie in state.sorties must name a party that still exists.
+// Post: Prints one line per party currently inside the tower -- which party, which floor, and how
+//       long until they are due -- or nothing at all when none are out. This is the only place the
+//       player is told that a sortie exists, so it runs before the menu, every time.
 
 #endif

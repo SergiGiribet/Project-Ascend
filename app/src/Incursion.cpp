@@ -201,6 +201,7 @@ static const int PUSH_CURIOUS = 15;
 static const int PUSH_COWARDLY = 30;
 static const int PUSH_FATIGUE = 10;
 static const int EXPOSURE_CAUGHT = 100;
+static const int MARCH_PER_FLOOR = 15;
 
 static int teamPower(const Team &team, const Roster &roster)
 {
@@ -479,6 +480,13 @@ void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState 
     Report report = scoutAhead(scout, objective, rng);
     state.floorReports[floor] = report;
     std::cout << describeReport(report) << std::endl;
+}
+
+// 6a placeholder: the march up and back, plus a flat hour on the floor. In 6c the flat hour is
+// replaced by what the resolution actually costs, and this function goes away.
+static int sortieMinutes(int floor)
+{
+    return 2 * MARCH_PER_FLOOR * floor + 60;
 }
 
 // Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
@@ -898,13 +906,68 @@ bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &
     return cleared;
 }
 
-bool runIncursion(int partyIndex, Team &team, Roster &roster, GameState &state, const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries, std::mt19937 &rng)
+void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp &camp,
+            const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries,
+            std::mt19937 &rng)
 {
-    std::optional<Sortie> sortie = launchSortie(partyIndex, team, roster, state, rng);
-    if (!sortie)
-        return false;
-    resolveSortie(*sortie, team, roster, state, encounters, injuries);
-    return true;
+    long long now = nowSeconds();
+    if (now < state.lastSeen)
+        now = state.lastSeen;
+    state.lastSeen = now;
+
+    std::vector<Sortie> finished;
+    std::vector<Sortie> stillOut;
+    for (const Sortie &s : state.sorties)
+    {
+        if (now >= s.departedAt + realSeconds(sortieMinutes(s.floor)))
+            finished.push_back(s);
+        else
+            stillOut.push_back(s);
+    }
+    state.sorties = stillOut;
+
+    for (const Sortie &s : finished)
+    {
+        Team &team = barracks.at(s.partyIndex);
+        std::vector<int> climbed = team.getMembersIds();
+        resolveSortie(s, team, roster, state, encounters, injuries);
+        camp.tick(roster, injuries, rng);
+        roster.healRested(climbed);
+    }
+}
+
+// How much of a sortie is still ahead of them, in GAME minutes. The inverse of realSeconds, and it
+// lives down here because only the display ever converts backwards: the game itself always reasons
+// forwards, from a departure and a clock.
+static int minutesLeft(const Sortie &sortie, long long now)
+{
+    long long elapsed = (now - sortie.departedAt) * timeScale() / 60;
+    int left = sortieMinutes(sortie.floor) - static_cast<int>(elapsed);
+    return left > 0 ? left : 0;
+}
+
+// Deliberately vague. The design asks for an estimate and not a timer -- nobody up there is
+// checking a watch -- and in 6c the true length of a sortie stops being knowable in advance at
+// all. Saying it roughly now means the words will not have to change when it becomes a guess.
+static std::string describeWait(int minutes)
+{
+    if (minutes <= 20)
+        return "any time now";
+    if (minutes < 90)
+        return "within the hour";
+    return "in about " + std::to_string((minutes + 30) / 60) + " hours";
+}
+
+void printSorties(const GameState &state, const Barracks &barracks)
+{
+    if (state.sorties.empty())
+        return;
+
+    long long now = nowSeconds();
+    std::cout << std::endl;
+    for (const Sortie &s : state.sorties)
+        std::cout << "  " << barracks.at(s.partyIndex).getName() << " is on floor " << s.floor
+                  << ". Expected back " << describeWait(minutesLeft(s, now)) << "." << std::endl;
 }
 
 std::vector<Encounter> loadEncounters(const std::string &path)

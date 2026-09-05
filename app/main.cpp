@@ -11,6 +11,7 @@
 #include "src/TrainingCamp.h"
 #include "src/Barracks.h"
 #include "src/SaveGame.h"
+#include "src/Sortie.h"
 
 #include <iostream>
 #include <ctime>
@@ -151,6 +152,8 @@ int main()
 
         do
         {
+            catchUp(barracks, roster, state, tcamp, encounters, injuries, rng);
+            printSorties(state, barracks);
             Menu();
             printStatus(state);
 
@@ -438,14 +441,9 @@ int main()
                         int partyIndex = pickParty(barracks, roster);
                         if (partyIndex < 0)
                             break;
-                        // The ids are copied out BEFORE the incursion: the party loses its dead
-                        // during it, and whoever climbed must not rest even if they fell.
-                        std::vector<int> climbed = barracks.at(partyIndex).getMembersIds();
-                        if (runIncursion(partyIndex, barracks.at(partyIndex), roster, state, encounters, injuries, rng))
-                        {
-                            tcamp.tick(roster, injuries, rng);
-                            roster.healRested(climbed);
-                        }
+                        std::optional<Sortie> sortie = launchSortie(partyIndex, barracks.at(partyIndex), roster, state, rng);
+                        if (sortie)
+                            state.sorties.push_back(*sortie);
                         break;
                     }
                     case 2:
