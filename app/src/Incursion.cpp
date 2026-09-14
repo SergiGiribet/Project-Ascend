@@ -906,6 +906,20 @@ bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &
     return cleared;
 }
 
+bool partyIsAway(const GameState &state, int partyIndex)
+{
+    for (const Sortie &s : state.sorties)
+        if (s.partyIndex == partyIndex)
+            return true;
+    return false;
+}
+
+bool unitIsAway(const GameState &state, const Barracks &barracks, int unitId)
+{
+    int party = barracks.teamOfUnit(unitId);
+    return party >= 0 && partyIsAway(state, party);
+}
+
 void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp &camp,
             const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries,
             std::mt19937 &rng)

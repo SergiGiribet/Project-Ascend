@@ -238,9 +238,20 @@ int main()
                         int partyIndex = pickParty(barracks, roster);
                         if (partyIndex < 0)
                             break;
+                        if (partyIsAway(state, partyIndex))
+                        {
+                            std::cout << barracks.at(partyIndex).getName() << " is in the tower." << std::endl;
+                            break;
+                        }
                         std::cout << "Who joins " << barracks.at(partyIndex).getName() << "? (unit id)" << std::endl;
                         roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         int selectedUnitId = readChoice();
+                        if (unitIsAway(state, barracks, selectedUnitId))
+                        {
+                            std::cout << roster.findUnitById(selectedUnitId).getName()
+                                      << " is in the tower with their party." << std::endl;
+                            break;
+                        }
                         try
                         {
                             bool already = barracks.teamOfUnit(selectedUnitId) == partyIndex;
@@ -261,6 +272,11 @@ int main()
                         int partyIndex = pickParty(barracks, roster);
                         if (partyIndex < 0)
                             break;
+                        if (partyIsAway(state, partyIndex))
+                        {
+                            std::cout << barracks.at(partyIndex).getName() << " is in the tower." << std::endl;
+                            break;
+                        }
                         std::cout << "Who leaves " << barracks.at(partyIndex).getName() << "? (unit id)" << std::endl;
                         barracks.at(partyIndex).printTeam(roster);
                         int selectedUnitId = readChoice();
@@ -296,6 +312,11 @@ int main()
                         int partyIndex = pickParty(barracks, roster);
                         if (partyIndex < 0)
                             break;
+                        if (partyIsAway(state, partyIndex))
+                        {
+                            std::cout << barracks.at(partyIndex).getName() << " is in the tower." << std::endl;
+                            break;
+                        }
                         std::cout << barracks.at(partyIndex).getName() << " is no more; its members answer to no one." << std::endl;
                         barracks.disband(partyIndex);
                         break;
@@ -330,6 +351,12 @@ int main()
                         roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         tcamp.print(roster);
                         int selectedUnitId = readChoice();
+                        if (unitIsAway(state, barracks, selectedUnitId))
+                        {
+                            std::cout << roster.findUnitById(selectedUnitId).getName()
+                                    << " is in the tower with their party." << std::endl;
+                            break;
+                        }
                         try
                         {
                             tcamp.addTrainer(selectedUnitId, roster);
@@ -355,7 +382,13 @@ int main()
                             std::cout << "Who becomes a trainee? (unit id, 0 to stop)" << std::endl;
                             traineeId = readChoice();
                             if (traineeId == 0)
-                                break; 
+                                break;
+                            if (unitIsAway(state, barracks, traineeId))
+                            {
+                                std::cout << roster.findUnitById(traineeId).getName()
+                                    << " is in the tower with their party." << std::endl;
+                                continue;
+                            }
                             try
                             {
                                 tcamp.assignTrainee(trainerId, traineeId, roster);
@@ -441,6 +474,11 @@ int main()
                         int partyIndex = pickParty(barracks, roster);
                         if (partyIndex < 0)
                             break;
+                        if (partyIsAway(state, partyIndex))
+                        {
+                            std::cout << barracks.at(partyIndex).getName() << " is already in the tower." << std::endl;
+                            break;
+                        }
                         std::optional<Sortie> sortie = launchSortie(partyIndex, barracks.at(partyIndex), roster, state, rng);
                         if (sortie)
                             state.sorties.push_back(*sortie);
@@ -452,6 +490,11 @@ int main()
                         std::cout << "Who goes up to look? (unit id)" << std::endl;
                         roster.printRoster(barracks.memberTags(), tcamp.trainerIds(), tcamp.traineeIds());
                         int scoutId = readChoice();
+                        if (unitIsAway(state, barracks, scoutId))
+                        {
+                            std::cout << "They are already in the tower." << std::endl;
+                            break;
+                        }
                         runScoutMission(scoutId, barracks, roster, state, rng);
                         break;
                     }
@@ -508,8 +551,7 @@ int main()
             case 9:
             {
                 std::cout << "The tower will be waiting. Goodbye!" << std::endl;
-                saveGame("save.txt", state, roster, barracks, tcamp);
-                return 0;
+                break;
             }
             default:
             {
@@ -517,6 +559,7 @@ int main()
                 break;
             }
             }
+            saveGame("save.txt", state, roster, barracks, tcamp);
         } while (choice != 9);
         }
         catch (const std::exception &e)

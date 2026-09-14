@@ -80,4 +80,17 @@ void printSorties(const GameState &state, const Barracks &barracks);
 //       long until they are due -- or nothing at all when none are out. This is the only place the
 //       player is told that a sortie exists, so it runs before the menu, every time.
 
+bool partyIsAway(const GameState &state, int partyIndex);
+// Pre: None.
+// Post: Returns whether that party is inside the tower right now -- that is, whether any sortie in
+//       state.sorties names it. A party that is away must not be sent again, disbanded, or have its
+//       members moved: the replay that resolves the sortie assumes the party is exactly as it was
+//       the moment it left, and every guard in the game exists to keep that true.
+
+bool unitIsAway(const GameState &state, const Barracks &barracks, int unitId);
+// Pre: None.
+// Post: Returns whether that unit is inside the tower right now. This is NOT "is in a party": a
+//       party sitting in the barracks can be taken apart, trained and rebuilt freely. One line on
+//       top of partyIsAway, through Barracks::teamOfUnit, which answers -1 for a unit in no party.
+
 #endif

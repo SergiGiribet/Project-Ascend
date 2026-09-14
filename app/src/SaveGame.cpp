@@ -33,6 +33,7 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
 
     out << "version 1\n";
     out << "essence " << state.essence << "\n";
+    out << "lastSeen " << state.lastSeen << "\n";
     out << "highestFloor " << state.highestFloor << "\n";
     out << "incursionCount " << state.incursionCount << "\n";
     out << "nextUnitId " << state.nextUnitId << "\n";
@@ -120,6 +121,17 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
         for (int id : a.traineeIds)
             ids.push_back(std::to_string(id));
         writeList(out, "trainer", ids);
+    }
+
+    // Last of all. A sortie names a party by INDEX, so every [party] block has to have been read and
+    // turned into a real party before this one means anything.
+    for (const Sortie &s : state.sorties)
+    {
+        out << "\n[sortie]\n";
+        out << "party " << s.partyIndex << "\n";
+        out << "floor " << s.floor << "\n";
+        out << "departed " << s.departedAt << "\n";
+        out << "seed " << s.seed << "\n";
     }
 }
 
@@ -224,6 +236,8 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
     PendingParty onParty;
     PendingFloor onFloor;
     PendingReport onReport;
+    Sortie onSortie;   // no Pending twin: a Sortie is four scalars with defaults,
+                       // so unlike a Unit it can be filled in a line at a time.
     std::string section;
 
     auto closeSection = [&]()
@@ -247,6 +261,10 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
                     if (roster.contains(line[t]))
                         camp.assignTrainee(line[0], line[t], roster);
             }
+        }
+        else if (section == "sortie")
+        {
+            state.sorties.push_back(onSortie);
         }
         else if (section == "party")
         {
@@ -298,6 +316,14 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
             continue;
         }
 
+        if (line == "[sortie]")
+        {
+            closeSection();
+            section = "sortie";
+            onSortie = Sortie();
+            continue;
+        }
+
         if (line == "[party]")
         {
             closeSection();
@@ -326,6 +352,7 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
             else if (key == "highestFloor")     state.highestFloor = std::stoi(value);
             else if (key == "incursionCount")   state.incursionCount = std::stoi(value);
             else if (key == "nextUnitId")       state.nextUnitId = std::stoi(value);
+            else if (key == "lastSeen")         state.lastSeen = std::stoll(value);
             continue;
         }
 
@@ -387,6 +414,15 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
                     ids.push_back(std::stoi(item));
                 onCamp.trainers.push_back(ids);
             }
+            continue;
+        }
+
+        if (section == "sortie")
+        {
+            if (key == "party")             onSortie.partyIndex = std::stoi(value);
+            else if (key == "floor")        onSortie.floor      = std::stoi(value);
+            else if (key == "departed")     onSortie.departedAt = std::stoll(value);
+            else if (key == "seed")         onSortie.seed       = static_cast<unsigned int>(std::stoul(value));
             continue;
         }
 
