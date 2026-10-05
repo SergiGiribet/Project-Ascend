@@ -93,4 +93,13 @@ bool unitIsAway(const GameState &state, const Barracks &barracks, int unitId);
 //       party sitting in the barracks can be taken apart, trained and rebuilt freely. One line on
 //       top of partyIsAway, through Barracks::teamOfUnit, which answers -1 for a unit in no party.
 
+
+void disbandParty(Barracks &barracks, GameState &state, int index);
+// Pre: 0 <= index < barracks.count() (throws std::out_of_range otherwise), and that party must
+//      not be in the tower (throws std::runtime_error otherwise).
+// Post: The party is gone and its members belong to no party. Every sortie still names the SAME
+//       party it named before: those with a higher index are moved down by one, in step with the
+//       Barracks. The only way to disband a party -- calling Barracks::disband directly while a
+//       sortie is out leaves that sortie pointing at somebody else's party.
+
 #endif

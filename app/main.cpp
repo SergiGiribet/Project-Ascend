@@ -314,8 +314,9 @@ int main()
                             std::cout << barracks.at(partyIndex).getName() << " is in the tower." << std::endl;
                             break;
                         }
-                        std::cout << barracks.at(partyIndex).getName() << " is no more; its members answer to no one." << std::endl;
-                        barracks.disband(partyIndex);
+                        std::string name = barracks.at(partyIndex).getName();
+                        disbandParty(barracks, state, partyIndex);
+                        std::cout << name << " is no more; its members answer to no one." << std::endl;
                         break;
                     }
                     case 6:

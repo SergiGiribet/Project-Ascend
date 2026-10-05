@@ -58,7 +58,8 @@ public:
     void disband(int index);
     // Pre: 0 <= index < count() (throws std::out_of_range otherwise).
     // Post: Removes that party; its members belong to no party afterwards and are otherwise
-    //       untouched. Every later index shifts down by one.
+    //       untouched. Every later index shifts down by one -- so do not call this directly
+    //       from the game: disbandParty (Incursion.h) does, and keeps Sortie::partyIndex in step.
 
     void assign(int unitId, int index, const Roster &roster);
     // Pre: 0 <= index < count(), unitId must be present in roster, and the target party must not
