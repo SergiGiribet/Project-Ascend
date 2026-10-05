@@ -490,6 +490,20 @@ static int sortieMinutes(int floor)
     return 2 * MARCH_PER_FLOOR * floor + 60;
 }
 
+// How long this sortie lasts, in GAME minutes. Everything that needs the length of a sortie asks
+// here, never sortieMinutes directly: it takes the whole Sortie and not just the floor because in
+// 6c the length comes out of the resolution, and this is the only body that will have to change.
+static int sortieLength(const Sortie &sortie)
+{
+    return sortieMinutes(sortie.floor);
+}
+
+// The moment the party is back, in REAL seconds -- the same clock as departedAt and nowSeconds().
+static long long dueAt(const Sortie &sortie)
+{
+    return sortie.departedAt + realSeconds(sortieLength(sortie));
+}
+
 // Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
 // the floor was cleared. Every early exit is a return, and the two that mean "cleared, and
 // then it took them anyway" return true on purpose -- the floor was taken; what happened
@@ -921,6 +935,17 @@ bool unitIsAway(const GameState &state, const Barracks &barracks, int unitId)
     return party >= 0 && partyIsAway(state, party);
 }
 
+std::vector<int> awayUnitIds(const GameState &state, const Barracks &barracks){
+    std::vector<int> ids;
+    for (const Sortie &s : state.sorties) 
+    {
+        const Team &team = barracks.at(s.partyIndex);
+        for (int id : team.getMembersIds())
+            ids.push_back(id);
+    }
+    return ids;
+}
+
 void disbandParty(Barracks &barracks, GameState &state, int index){
     if (partyIsAway(state, index))
         throw std::runtime_error(barracks.at(index).getName()
@@ -942,23 +967,31 @@ void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp 
     state.lastSeen = now;
 
     std::vector<Sortie> finished;
-    std::vector<Sortie> stillOut;
     for (const Sortie &s : state.sorties)
     {
-        if (now >= s.departedAt + realSeconds(sortieMinutes(s.floor)))
+        if (now >= dueAt(s))
             finished.push_back(s);
-        else
-            stillOut.push_back(s);
     }
-    state.sorties = stillOut;
+
+    std::stable_sort(finished.begin(), finished.end(),
+                    [](const Sortie &a, const Sortie &b)
+                    { return dueAt(a) < dueAt(b); });
 
     for (const Sortie &s : finished)
     {
         Team &team = barracks.at(s.partyIndex);
         std::vector<int> climbed = team.getMembersIds();
+        state.sorties.erase(std::remove_if(state.sorties.begin(), state.sorties.end(),
+                                        [&s](const Sortie &sortie)
+                                        { return sortie.partyIndex == s.partyIndex;}),
+                            state.sorties.end());
         resolveSortie(s, team, roster, state, encounters, injuries);
         camp.tick(roster, injuries, rng);
-        roster.healRested(climbed);
+
+        std::vector<int> notResting = climbed;
+        for (int id : awayUnitIds(state, barracks))
+            notResting.push_back(id);
+        roster.healRested(notResting);
     }
 }
 
@@ -968,7 +1001,7 @@ void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp 
 static int minutesLeft(const Sortie &sortie, long long now)
 {
     long long elapsed = (now - sortie.departedAt) * timeScale() / 60;
-    int left = sortieMinutes(sortie.floor) - static_cast<int>(elapsed);
+    int left = sortieLength(sortie) - static_cast<int>(elapsed);
     return left > 0 ? left : 0;
 }
 

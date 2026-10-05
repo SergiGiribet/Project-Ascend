@@ -60,10 +60,12 @@ public:
     // Pre: None
     // Post: Removes the unit with the specified id from the roster; does nothing if no unit has that id.
 
-    void healRested(const std::vector<int> &climbedIds);
+    void healRested(const std::vector<int> &notRestingIds);
     // Pre: None.
-    // Post: Restores to full health every unit that did NOT climb this incursion -- the bench and
-    //       the camp. Units in climbedIds keep their wounds and carry them into the next sortie.
+    // Post: Restores to full health every unit NOT in notRestingIds -- the bench and the camp.
+    //       Units in the list keep their wounds. Who belongs in it is the caller's business, not the
+    //       roster's: catchUp passes the party that just came down, which carries its wounds into
+    //       the next sortie, and every unit still in the tower, whose sortie has not been played out.
     //       Permanent injuries are never healed, by either path.
 
     // Display --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
