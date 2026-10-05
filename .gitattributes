@@ -1,0 +1,3 @@
+# Normalize EOL for all files that Git considers text files: the same bytes on Windows and on
+# Linux, so a resource bank never reaches std::getline with a stray '\r' on the end of each line.
+* text=auto eol=lf

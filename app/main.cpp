@@ -121,10 +121,7 @@ int main()
     int choice = 0;
     try
     {
-
-        std::time_t now = std::time(nullptr);
-        std::tm tm;
-        localtime_s(&tm, &now);
+        std::tm tm = localTime(std::time(nullptr));
         char name[64];
         std::strftime(name, sizeof name, "sessions/session_%Y%m%d_%H%M%S.log", &tm);
         SessionLog log(name);

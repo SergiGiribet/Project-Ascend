@@ -4,6 +4,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <ctime>
 
 constexpr const char *COLOR_RESET   = "\x1b[0m";
 constexpr const char *COLOR_GREEN   = "\x1b[32m";
@@ -41,6 +42,7 @@ void enableConsoleColors();
 // Pre: None
 // Post: Enables ANSI escape sequence processing (colors) in the Windows console;
 //       silently does nothing if the console does not support it (e.g. redirected output).
+//       Does nothing at all outside Windows, whose terminals already speak ANSI.
 
 long long nowSeconds();
 // Pre: None
@@ -63,6 +65,11 @@ long long realSeconds(int gameMinutes);
 //       whole game reasons in game minutes -- a march is 15 per floor, a step 20 to 40 -- and this
 //       is the only place that knows what a real second is. Truncates: at a high scale, anything
 //       shorter than one game hour lands on zero and resolves at once.
+
+std::tm localTime(std::time_t t);
+// Pre: None
+// Post: Returns t broken down into local calendar time. This is the one place that knows each
+//       platform's thread-safe variant: localtime_s on Windows, localtime_r everywhere else.
 
 
 #endif

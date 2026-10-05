@@ -28,13 +28,22 @@ personality — and a tower that keeps them.
 
 ## Build and run
 
-Requirements: MSVC (Visual Studio 2026 Community or equivalent) on Windows.
+Requirements: a C++17 compiler. MSVC (Visual Studio 2026 Community or equivalent) on Windows;
+g++ or clang++ on Linux. The code is the same on both; everything platform-specific lives in
+`src/Utils.cpp`.
 
 ```
-:: from a Developer Command Prompt (or after vcvars64.bat):
+:: Windows, from a Developer Command Prompt (or after vcvars64.bat):
 cd app
 cl /W4 /w15038 /EHsc /nologo main.cpp src\*.cpp /Fe:ascend.exe
 ascend.exe
+```
+
+```
+# Linux:
+cd app
+g++ -std=c++17 -Wall -Wextra -Wpedantic -o ascend main.cpp src/*.cpp
+./ascend
 ```
 
 Important: run it **from the `app/` folder** — the data banks are loaded through the relative
