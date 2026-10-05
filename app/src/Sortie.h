@@ -10,6 +10,8 @@
 // outcome is not in it, and cannot be, because it does not exist anywhere until it is simulated.
 struct Sortie {
     int partyIndex = -1;            // Index into Barracks; a party has at most one sortie at a time.
+                                    // Kept valid across disbands by disbandParty, which is the only
+                                    // thing allowed to make indices shift.
     int floor = 0;                  // Which floor they went to.
     long long departedAt = 0;       // nowSeconds() at the moment they left. Real time, not game time.
     unsigned int seed = 0;          // Seeds a std::mt19937 of the sortie's own, so the replay is

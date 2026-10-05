@@ -921,6 +921,17 @@ bool unitIsAway(const GameState &state, const Barracks &barracks, int unitId)
     return party >= 0 && partyIsAway(state, party);
 }
 
+void disbandParty(Barracks &barracks, GameState &state, int index){
+    if (partyIsAway(state, index))
+        throw std::runtime_error(barracks.at(index).getName()
+                                 + " is in the tower and cannot be disbanded.");
+    barracks.disband(index);
+
+    for(Sortie &s : state.sorties)
+        if (s.partyIndex > index)
+            s.partyIndex--;
+}
+
 void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp &camp,
             const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries,
             std::mt19937 &rng)
