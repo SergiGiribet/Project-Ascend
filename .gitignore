@@ -39,3 +39,6 @@ Desktop.ini
 # Una sola ranura, sobreescrita constantment: es genera sola si no hi es, i no ha de viatjar
 # entre maquines ni entre branques.
 app/save.txt
+
+# === Executable de Linux (g++/clang++) ===
+app/ascend
