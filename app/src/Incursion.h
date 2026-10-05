@@ -68,6 +68,10 @@ void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp 
 // Post: Brings the world up to the present. Any sortie whose time is up is taken out of
 //       state.sorties and played out -- printing everything that happened up there, in one go,
 //       because nobody was watching. state.lastSeen is advanced to now.
+//       When several are due at once they are played out in the order they came back, not the
+//       order they left, ties keeping their place. Each one leaves state.sorties only as its turn
+//       comes, so the rest that resting heals never includes a unit still up there -- whether its
+//       sortie is due later or was due in this same call and is waiting for its turn.
 //       A system clock that has been wound BACK does not move time at all: `now` is clamped to
 //       lastSeen, so a party cannot be un-returned by changing the date. Winding it forward while
 //       the game is closed is not preventable and is accepted.
@@ -93,6 +97,12 @@ bool unitIsAway(const GameState &state, const Barracks &barracks, int unitId);
 //       party sitting in the barracks can be taken apart, trained and rebuilt freely. One line on
 //       top of partyIsAway, through Barracks::teamOfUnit, which answers -1 for a unit in no party.
 
+std::vector<int> awayUnitIds(const GameState &state, const Barracks &barracks);
+// Pre: Every sortie in state.sorties must name a party that still exists.
+// Post: Returns the ids of every unit inside the tower right now -- the members of each party that
+//       has a sortie in state.sorties, in sortie order -- and an empty vector when nobody is out.
+//       This is who must not be touched at home: catchUp hands it to Roster::healRested so that
+//       resting never reaches a unit whose sortie has not been played out yet.
 
 void disbandParty(Barracks &barracks, GameState &state, int index);
 // Pre: 0 <= index < barracks.count() (throws std::out_of_range otherwise), and that party must
