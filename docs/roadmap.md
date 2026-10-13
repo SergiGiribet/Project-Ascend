@@ -10,7 +10,8 @@ rebalance was promoted out of §6 and into the phase on 2026-08-20, when Hold an
 to have gradients the difficulty curve never lets fire; 2d was restructured on 2026-08-21 around
 several teams and sorties that take time, which moved the save system forward and sent the curve
 back to last on purpose; 2d-3 shipped on 2026-08-26 and its measurement put an economy pass ahead
-of both save and time.
+of both save and time. Brought up to date on 2026-10-13: 2d-4 and 2d-5 shipped, 2d-6 half built,
+how a sortie takes time decided (*2d-6* below), milestones added (§8), and §7's numbers re-measured.
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -34,6 +35,13 @@ session showed the intended loop — an **injured veteran becomes a trainer** �
 own, with no prompting. Today's polish pass finished the legibility: injury stat costs are now
 visible (`{One-Handed (-3 STR)}` on the roster and card, via a shared `injuryLabel`), trait
 deeds vary instead of repeating, and the camp's slot label is unambiguous.
+
+**Phase 2, as of 2026-10-13** -- the floor became a mission and the run became a sortie. Done:
+objectives with four real mechanics (Hold, Slay, Retrieve, Rescue), trait fit, recon by unit,
+several parties, one floor per sortie, floors with their own difficulty, tiered summoning (2d-4),
+a save file (2d-5) and the first half of timed sorties (2d-6, "6a"). The game builds on Windows
+(MSVC) and Linux (g++/clang++) from one source since 2026-10-05. Open: the rest of 2d-6, the curve
+(2d-7), personalities (2e), and the gate that closes the phase -- which has not flipped.
 
 ---
 
@@ -168,7 +176,7 @@ retreat. Two real causes:
 Both consequences are now adopted as the rest of Phase 2, and they replace the old 2c/2d (see
 "Beyond Phase 2" below for where those went).
 
-### 2c — Recon by unit  *(current work)*
+### 2c — Recon by unit  *(done 2026-08-18; personalities moved to 2e)*
 
 Scouting stops costing essence and starts costing **people**. You send someone ahead; what comes
 back depends on who they are. The cost is force (they sit out the floor) and risk (they can come
@@ -434,11 +442,11 @@ several teams. So:
 
 | Step | What | Note |
 |---|---|---|
-| 2d-2 | **Several teams**: the roster holds parties, a unit belongs to at most one, the tower takes one party at a time | pure refactor, no new mechanic; the existing loop still runs, so it is measurable on its own |
-| 2d-3 | **One sortie = one floor**: the run ends when the floor does, re-entry at `record+1` is the supported path, lower floors are re-enterable as training | mostly deletion in `runIncursion`; **this is where the loop changes shape, so this is where we measure** |
-| 2d-4 | **Economy for sorties**: what a floor pays and what a body costs, rescaled now that entering is the loop | added 2026-08-26; it distorts every measurement while it stands |
-| 2d-5 | Save system (was T3) | prerequisite of the next step, not polish |
-| 2d-6 | **Sorties take time**, announced as an estimate rather than a timer; recovery slower than a sortie | the piece that keeps training honest |
+| 2d-2 | **Several teams**: the roster holds parties, a unit belongs to at most one, the tower takes one party at a time | pure refactor, no new mechanic; the existing loop still runs, so it is measurable on its own -- **done** |
+| 2d-3 | **One sortie = one floor**: the run ends when the floor does, re-entry at `record+1` is the supported path, lower floors are re-enterable as training | mostly deletion in `runIncursion`; **this is where the loop changes shape, so this is where we measure** -- **done 2026-08-26** |
+| 2d-4 | **Economy for sorties**: what a floor pays and what a body costs, rescaled now that entering is the loop | added 2026-08-26; it distorts every measurement while it stands -- **done**: toll removed 2026-09-02, summoning tiers 2026-09-04 |
+| 2d-5 | Save system (was T3) | prerequisite of the next step, not polish -- **done 2026-09-04** (`SaveGame.cpp`) |
+| 2d-6 | **Sorties take time**, announced as an estimate rather than a timer; recovery slower than a sortie | the piece that keeps training honest -- **in progress**: "6a" shipped 2026-09-14, the rest decided 2026-10-13 (below) |
 | 2d-7 | Curve, re-measured under the new structure | the swing already widened the band; what is left is the slope |
 
 2d-3 replaces the old 2d-2 and, together with 2d-2 above, subsumes the old 2d-3: an expedition
@@ -532,6 +540,10 @@ coming.
 
 **Neither takes input inside `resolveFloor`.** Every decision is either made at entry or made by the
 party, so a sortie can still resolve with nobody watching a console -- which is what 2d-6 needs.
+(Still true after 2026-10-13; the step structure of 2d-6 is where input would one day go.)
+
+**Not built yet** *(checked 2026-10-13)*: a freed captive does not join the roster. A cleared
+Rescue pays the floor like any other and the captive is never generated.
 
 Rule of three, already predicted: `floorRoll` gets extracted when Retrieve arrives.
 
@@ -633,6 +645,64 @@ from the fallen, the grinder's roster fills with people carrying the echo of thi
 while the other's carries three they remember. The record of which player you were is already being
 kept.
 
+### 2d-6 -- how a sortie takes time  *(6a shipped 2026-09-14; the rest decided 2026-10-13)*
+
+**What 6a built.** A `Sortie` records the party, the floor, the moment they left and a seed;
+`catchUp` runs on every menu redraw and resolves whatever is due; the length is a placeholder
+(`2 * MARCH_PER_FLOOR * floor + 60` game minutes) behind `ASCEND_TIME_SCALE`; `partyIsAway` and
+`unitIsAway` stop anyone touching a party in the tower; sorties live in the save. A review on
+2026-10-05 found and fixed two bugs in it -- disbanding a party shifted the indices sorties point at
+(PR #2), and `catchUp` healed parties still in the tower and resolved sorties in vector order
+rather than return order (PR #3). The length now lives in one place, `sortieLength`/`dueAt`.
+
+**Two numbers, from two sources** *(2026-10-06)*. What the player is told is an **estimate**,
+built only from what they knew when the party left. How long it really takes is the **true
+length**, and it comes out of the resolution: a sortie that goes badly can run long. A party back
+early, or at twice its estimate, has told you something before you read a line. `describeWait`
+therefore shows the estimate, never the truth -- showing the truth would spoil the outcome.
+
+**The resolution advances in steps** *(decided 2026-10-13)*. The resolution already has a clock:
+a Hold or Rescue round, a Slay exchange, a Retrieve pass. So instead of resolving the floor in one
+go when the party is due, `resolveFloor` becomes **a state plus a step**: the state is what lives
+in its locals today (rounds done, failures, the enemy's health, exposure, progress, the last line,
+the rng), `stepFloor` plays one step, and `catchUp` plays as many steps as the clock owes each
+sortie. The party is back when the resolution ends. Rejected on the way: resolving the whole floor
+at departure on copies and committing on return -- it would give the true length up front, but it
+fixes the outcome the moment they leave, which closes the door below.
+
+Three consequences worth writing down:
+
+- **The true length needs no formula.** It is the number of steps the floor took.
+- **The comment in `Sortie.h` is wrong and will be rewritten.** It says the sortie is replayed on
+  copies and committed only at the end; the code has always played on the real units. Under steps
+  that is the *right* behaviour -- the party is physically in the tower, getting hurt as it goes.
+  What must still hold is that nothing at home reaches in, which `healRested` excluding
+  `awayUnitIds` already guarantees.
+- **The save grows.** A sortie in progress stores its floor state and its rng mid-sequence
+  (`std::mt19937` writes and reads itself with `<<` and `>>`).
+- **The state is a common core plus a `std::variant`**, one alternative per mission
+  (`HoldState`, `SlayState`, `RetrieveState`, `RescueState`), not one flat struct with every
+  field. Chosen 2026-10-13 for the long run: a Hold cannot carry an enemy's health, a wrong-type
+  read throws instead of silently reading zero, and when Capture arrives `std::visit` makes the
+  compiler point at every place that must handle it. A virtual hierarchy was rejected: `Sortie` is
+  copied (`catchUp`, the save), and a `variant` copies like a value.
+
+**Player input between steps is the seam, not the feature.** The long-term vision is a sortie the
+player can intervene in while it runs. Phase 2 does not build that -- every decision is still made
+at entry or by the party, so a sortie resolves with nobody watching -- but between two steps is
+exactly where an intervention would go, and the structure leaves room for it.
+
+| Step | What | Note |
+|---|---|---|
+| 6c-1 | `resolveFloor` becomes `enterFloor` + a loop over `stepFloor`, **with identical behaviour** | pure refactor; proven with `app/tests/equivalence.sh` (1,080 sorties, output compared character for character against the commit before). The order of rng draws is the trap |
+| 6c-2 | `Sortie` carries the floor state; `catchUp` advances by elapsed time; the save stores it | the save format changes here |
+| 6c-3 | Time per step; the estimate, and `describeWait` showing it | open: what a step costs, and whether it depends on floor or mission |
+| 6c-4 | Recovery slower than a sortie | today `healRested` restores **full** health to everyone not in the tower whenever any sortie comes back, so rest is instant |
+
+6c-1 is also the best chance T1 (§7) will get: once a step is its own function, having it return
+events instead of printing is a small move. Done as a **separate** step after 6c-1, so each change
+is verified on its own.
+
 ### 2e — Personalities, and the closing measurement
 
 Only once there is somewhere to spend information does it matter *how good* the information is.
@@ -673,11 +743,12 @@ bot as about the game.
 
 Named here because the vision is much larger than the phase, and scope creep is the main risk:
 
-- Real-time expeditions (6-12h missions running while the player does other things). Needs a
-  **save system, which the project does not have** — the only `ofstream` in the codebase is the
-  session log. It is also a genre change, from a session game to a management game with offline
-  progression. 2d is its prerequisite; build it after the loop convinces.
-- Persistence / save-load. Same reason. Build it once, knowing what has to be saved.
+- ~~Real-time expeditions~~ and ~~persistence / save-load~~ -- **pulled into the phase** on
+  2026-08-21, when three measurements pointed at time as the missing dimension. They are 2d-5 and
+  2d-6 now; the reasons they were once out (no save, a genre change) are recorded in those
+  sections.
+- **Player input while a sortie runs.** Its seam is built in 2d-6 (between steps); the feature is
+  not. Every decision in Phase 2 is made at entry or by the party.
 - Armory, shop, items, equipment. Phase 3 — but note 2d-1 is the seam they plug into.
 - Real-time visualisation of a floor resolving. Presentation layer, and it wants the abstracted
   resolution to be settled first.
@@ -755,6 +826,22 @@ already works to learn nothing about whether the loop is good. **The order below
 because there the resolution **is** the printing — one body of code does both. That fusion, not
 the absence of an engine, is what blocks every step below.
 
+**Re-measured 2026-10-13 -- the fusion has grown, not shrunk:**
+
+| File | Lines | `std::cout` | on 2026-08-18 |
+|---|---:|---:|---|
+| `main.cpp` | 570 | 122 | 375 / 85 |
+| `Incursion.cpp` | 1054 | 85 | 478 / 56 |
+| `SaveGame.cpp` | 469 | 9 | -- |
+| `TrainingCamp.cpp` | 218 | 7 | -- |
+| `Objective.cpp` | 96 | 1 | 81 / 0 |
+| `Generator.cpp` | 85 | 0 | 84 / 0 |
+| `Injury.cpp` | 76 | 0 | 76 / 0 |
+
+Every mechanic since August -- four missions, sorties, time -- was written print-as-you-go. Nothing
+wrong with that while the design moves, but it is the debt Godot will collect. The cheapest place
+to start paying it is 2d-6 (see there).
+
 ### T1 — Separate simulation from presentation  *(begins inside 2c)*
 
 Resolution stops printing and starts **returning data**: an ordered list of events that a caller
@@ -788,7 +875,11 @@ Start with the roster (pure display, no input), then the team screen, then the i
 The console front-end keeps working the whole time — two renderers over one simulation is the
 point of T1, and the console one is what the bot and the session logs use.
 
-### T3 — Save system
+### T3 — Save system  *(done 2026-09-04, as 2d-5)*
+
+Pulled forward into the phase because timed sorties could not exist without it. What follows is
+the original reasoning, kept for the record. Still owed: sorties in progress with their floor state
+(2d-6, 6c-2).
 
 Independent of any engine, and a hard prerequisite for the long-form expeditions in the vision.
 The project has **no persistence today**: the only `ofstream` in the codebase is the session log,
@@ -817,25 +908,43 @@ language being learned).
 
 None of T2, T3 or T4 begins before **the Phase 2 gate flips** (an informed bot beating a blind
 one, §5). T1 is the exception and starts now, because it is the only one that makes the current
-design work *faster* rather than prettier.
+design work *faster* rather than prettier. T3 became the second exception on 2026-08-21, for the
+reason given there. Re-read on 2026-10-13 and kept: the question of *when Godot* has the same
+answer it had in August -- after the gate, with T1 far enough along that the simulation speaks data.
 
-## 8. Immediate next step
+## 8. Immediate next step, and the milestones  *(rewritten 2026-10-13)*
 
-**2d-4: the economy, decided 2026-08-26 and still unbuilt.** Three summoning tiers where the price
-buys the CEILING as well as the odds, and a free cheap summon while fewer than five units live. The
-full design and the weight table are in the section above; nothing about it has changed.
+**Next: 2d-6, step 6c-1** -- `resolveFloor` into `enterFloor` plus `stepFloor`, behaviour identical,
+proven against recorded output for fixed seeds. Then 6c-2 to 6c-4 as laid out in the 2d-6 section.
+2d-4 and 2d-5, which this section used to point at, both shipped on 2026-09-04.
 
-It is next because everything else in 2d is now done. Sorties, floors with their own difficulty, a
-scout who can be wrong, and all four missions as real mechanics all shipped between 2026-08-26 and
-2026-09-03, along with an economy fix (the toll), a loss that costs what the party's state says
-rather than a flat life, and a roll that no longer makes the game more deterministic the deeper it
-goes.
+**Milestones** *(decided 2026-10-13)*. Showing the game does not wait for Godot, and does not wait
+for the gate either -- the gate has no date, and it opens onto the engine move, so a demo tied to
+it would be a snapshot of something about to be left behind.
 
-After it: **save (2d-5), then time (2d-6), then the curve's slope (2d-7)** -- in that order, and
-the order matters. Three separate measurements have now pointed at time as the missing dimension:
-the informed bot refuses roughly half its attempts for free and takes 0.1 deaths; knowledge buys
-survival but not height; training on low floors is unbounded. Until refusing a sortie and grinding
-one both cost something, every balance number is provisional.
+| Milestone | When | What it is for |
+|---|---|---|
+| **Playtest** | 2d-6 closed | people who know it is a test, playing with time running. It answers what no bot can: **does the curve feel like a wall?** |
+| **Demo** | 2d closed (after 2d-7) | something to show: the whole loop with time, a save and a tuned curve |
+| **Demo 1, then Godot** | 2e closed and the gate flipped | personalities, the closing measurement, and the start of T2/T4 |
+
+**2d-7 uses two sources.** The **bench** gives the slope -- thousands of samples per cell; a handful
+of human players cannot, at ~10 points of noise per 25 floors (see the backlog). The **playtest
+logs** say how the slope feels. Neither replaces the other.
+
+**The playtest needs three things first**, all small:
+
+1. `SessionLog` records what the player types, not only what the game prints -- otherwise a log
+   from someone else says what happened to them but never what they chose (backlog).
+2. A playtest value for `ASCEND_TIME_SCALE`, so a week of evenings reaches the curve.
+3. A way to collect `sessions/*.log` from the players.
+
+**And two housekeeping items that should not wait for any milestone:**
+
+- **`main` is still the 2025 Godot prototype**, and it is the branch GitHub shows. Either merge
+  `phase2` into `main` or make `phase2` the default branch.
+- **The bot and `bench.py` are not in this repository.** 2d-7 and the gate both depend on them;
+  they should be versioned before either is run again.
 
 Deliberately *not* next, and this needed saying out loud on 2026-09-03: **more balance tuning.**
 The bench (`bench.py`, described in the [backlog](backlog.md)) makes mission balance cheap to

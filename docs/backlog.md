@@ -1,5 +1,32 @@
 # Backlog: parked ideas and saved material
 
+## Open defects and gaps  *(checked against the code 2026-10-13)*
+
+Small things, each verified in the code on the date above. When one is fixed, strike it here with
+the commit; when one grows into design, it moves to the [roadmap](roadmap.md).
+
+- **The summoning menu leaves in silence on a bad number** (`main.cpp:181`). `0` is "step away",
+  but so is `7` or `-3`; everywhere else the game says "Invalid choice". Split the two: 0 leaves,
+  anything else out of range gets a line. It made the author believe a summon had been lost
+  (2026-10-05).
+- **`SessionLog` records `cout` but not `cin`.** A log says what the game printed, never what the
+  player typed, so every diagnosis is by elimination. **Prerequisite of the playtest** (roadmap §8).
+- **The comment in `Sortie.h` describes code that does not exist** -- replay on copies, commit at
+  the end. The code plays on the real units. Rewritten as part of 2d-6 (roadmap).
+- **Rest is instant.** `healRested` restores full health to everyone not in the tower whenever any
+  sortie returns. This is 2d-6's "recovery slower than a sortie", not built yet.
+- **A freed captive never joins the roster.** Decided on 2026-09-02; a cleared Rescue pays like any
+  other floor.
+- **The bot and `bench.py` are not in the repository.** Every measurement in this file came from
+  them, and 2d-7 and the Phase 2 gate depend on them.
+- Minor: `Objective.h` says the type is "chosen uniformly" (it is weighted, `TYPE_WEIGHTS`, since
+  2026-09-03) and that a rescued unit "joins the roster on success" (it does not, see above).
+- Minor: in `GameState.h` the comment on `essence` is split in two by the one on `nextUnitId`.
+- Minor, style: `disbandParty` and `awayUnitIds` open their brace on the signature line, and
+  `disbandParty` writes `for(` -- the rest of the file does neither.
+- ~~At stdin EOF `readChoice()` returns 0 forever~~ -- fixed: it throws on `std::cin.eof()`.
+
+
 ## Playtest findings — step 8 (2026-07-17)
 
 Findings from the author's own sessions; they define the Phase 0.5 iteration:
@@ -199,6 +226,29 @@ player:
 And the friction the player named, which is its own finding: assigning trainees and reassigning
 units is tedious enough to discourage doing it, and there is no way to summon in bulk. With 197
 essence spare and invocation at 5, the interesting number of summons is ten at a time, not one.
+
+## Reviewing 6a: two bugs in timed sorties (2026-10-05)
+
+The first review of 2d-6's first half found two bugs. Neither would have been caught by playing:
+both need two parties in the tower at once.
+
+1. **Disbanding a party moved other parties' sorties.** `Sortie` points at its party by index into
+   the Barracks, and `Barracks::disband` erased from the middle of a vector. Disband party 0 while
+   party 1 is out, and the sortie now points at whoever slid into slot 0 -- or past the end, which
+   corrupted the save. Fixed with `disbandParty`, the only function allowed to shift indices
+   (PR #2).
+2. **`catchUp` healed parties still in the tower**, and it was worse than it looked: the resolution
+   plays on the real units, so healing party B while it was up there changed *the outcome* of B's
+   sortie. In the test, B came back at 80/100 instead of 30/50. Sorties due in the same batch also
+   healed one another before resolving, and resolved in vector order rather than return order.
+   Fixed: each sortie leaves `state.sorties` as it resolves, `healRested` excludes everyone still
+   away, and the batch is sorted by return time (PR #3).
+
+**How it was tested, and why it counts.** A harness that builds the world directly and calls
+`catchUp`, with no menus and no clock. It ran against the new code (6/6) **and against the old code
+(3 FAIL)**. A test that has never failed proves nothing; failing on the old code is what shows it
+detects the bug. The harness lives outside the repository (ignored `build/`) and is reusable for
+6c-1.
 
 ## A bench for the resolutions, and what it found (2026-09-03)
 
