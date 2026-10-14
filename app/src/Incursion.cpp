@@ -2,6 +2,7 @@
 #include "Utils.h"
 #include "Objective.h"
 #include "Scouting.h"
+#include "FloorState.h"
 
 #include <fstream>
 #include <iostream>
@@ -504,14 +505,6 @@ static long long dueAt(const Sortie &sortie)
     return sortie.departedAt + realSeconds(sortieLength(sortie));
 }
 
-// Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
-// the floor was cleared. Every early exit is a return, and the two that mean "cleared, and
-// then it took them anyway" return true on purpose -- the floor was taken; what happened
-// afterwards is a separate thing, and nothing here decides it.
-//
-// This is the seam. Today it still prints as it goes; when a sortie has to resolve with nobody
-// watching a console (2d-6), what changes is inside here and inside hurt/loseFloor/awardFloor,
-// not in runIncursion.
 // A cleared floor still lets the tower take its cut. This used to live inside the "advances with
 // ease" branch, which stopped being reachable the day all four objective types got a mechanic of
 // their own -- so something we wanted was quietly dead for two days. It belongs to every clearing
@@ -565,9 +558,13 @@ static bool clearFloor(int floor, Team &team, Roster &roster, GameState &state,
     return true;
 }
 
-static bool resolveFloor(int floor, const Objective &objective, Team &team, Roster &roster,
-                         GameState &state, const std::vector<Encounter> &encounters,
-                         const std::vector<Injury> &injuries, std::mt19937 &rng)
+// Opens ONE floor: rolls the encounter and the trait event, prints the briefing, and returns the
+// FloorState the steps will carry from there. It only reads the party -- nothing on the way in
+// can hurt anyone; that starts with the first step. These are the floor's first rolls and their
+// order (encounter, coin, actor) is fixed: move one and every sortie after it plays differently.
+static FloorState enterFloor(int floor, const Objective &objective, const Team &team,
+                             const Roster &roster, const GameState &state,
+                             const std::vector<Encounter> &encounters, std::mt19937 &rng)
 {
     int fit = teamFit(team, roster, objective.type);
     int danger = objective.difficulty;
@@ -608,6 +605,45 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
         }
     }
 
+    FloorState fs;
+    fs.cause = enc.cause;
+    fs.traitMod = traitMod;
+
+    // A switch with no default, so a new ObjectiveType without a state of its own is a warning
+    // here instead of a floor that silently starts as a Hold.
+    switch (objective.type)
+    {
+    case ObjectiveType::Hold:
+        fs.mission = HoldState{};
+        break;
+    case ObjectiveType::Slay:
+        fs.mission = SlayState{danger * 3 / 2, 0};
+        break;
+    case ObjectiveType::Retrieve:
+        fs.mission = RetrieveState{};
+        break;
+    case ObjectiveType::Rescue:
+        fs.mission = RescueState{};
+        break;
+    }
+
+    return fs;
+}
+
+// Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
+// the floor was cleared. Every early exit is a return, and the two that mean "cleared, and
+// then it took them anyway" return true on purpose -- the floor was taken; what happened
+// afterwards is a separate thing, and nothing here decides it.
+//
+// This is the seam. Today it still prints as it goes; when a sortie has to resolve with nobody
+// watching a console (2d-6), what changes is inside here and inside hurt/loseFloor/awardFloor,
+// not in runIncursion.
+static bool resolveFloor(int floor, const Objective &objective, Team &team, Roster &roster,
+                         GameState &state, const std::vector<Encounter> &encounters,
+                         const std::vector<Injury> &injuries, std::mt19937 &rng)
+{
+    FloorState fs = enterFloor(floor, objective, team, roster, state, encounters, rng);
+    int danger = objective.difficulty;
 
     if (objective.type == ObjectiveType::Hold)
     {
@@ -617,7 +653,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
 
         for (int round = 1; round <= objective.rounds; round++)
         {
-            int roll = floorRoll(team, roster, objective.type, traitMod, danger, rng);
+            int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
 
             if (roll >= danger)
             {
@@ -631,7 +667,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
                 std::cout << "  Round " << round << ": " << lastLine
                           << "." << std::endl;
                 ++failures;
-                if (!woundOne(team, roster, state, injuries, floor, enc.cause,
+                if (!woundOne(team, roster, state, injuries, floor, fs.cause,
                               HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
                 {
                     wiped = true;
@@ -646,7 +682,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
         if (failures * 2 > objective.rounds)
         {
             std::cout << "  They are pushed off the floor." << std::endl;
-            loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
+            loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
             return false;
         }
 
@@ -665,7 +701,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
 
         while (enemyHp > 0 && failures < SLAY_COUNTERS_ENDURED)
         {
-            int roll = floorRoll(team, roster, objective.type, traitMod, danger, rng);
+            int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
             int margin = roll - danger;
 
             if (margin >= 0)
@@ -691,7 +727,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
                 lastLine = pickRandom(bank, rng, lastLine);
                 std::cout << "  " << lastLine << "." << std::endl;
 
-                if (!woundOne(team, roster, state, injuries, floor, enc.cause,
+                if (!woundOne(team, roster, state, injuries, floor, fs.cause,
                               SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
                 {
                     wiped = true;
@@ -706,7 +742,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
         if (enemyHp > 0)
         {
             std::cout << "  " << describeSurvivor(enemyHp, enemyHpStart) << std::endl;
-            loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
+            loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
             return false;
         }
 
@@ -729,7 +765,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             passes++;
             exposure += EXPOSURE_STEP;
 
-            if (floorRoll(team, roster, objective.type, traitMod, danger, rng) >= danger)
+            if (floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) >= danger)
             {
                 if (!found)
                 {
@@ -753,7 +789,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             if (exposure >= EXPOSURE_CAUGHT)
             {
                 std::cout << "  They stayed too long. What lives here comes for them." << std::endl;
-                loseFloor(floor, team, roster, state, injuries, enc.cause, danger, rng);
+                loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
                 return false;
             }
 
@@ -762,7 +798,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
                 lastLine = pickRandom(RETRIEVE_NOTICED, rng, lastLine);
                 std::cout << "  " << lastLine << "." << std::endl;
                 if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
-                          injuries, floor, enc.cause, danger / 6, danger / 3, rng))
+                          injuries, floor, fs.cause, danger / 6, danger / 3, rng))
                     return found;
             }
 
@@ -793,7 +829,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
 
         for (int round = 1; round <= objective.rounds; round++)
         {
-            int margin = floorRoll(team, roster, objective.type, traitMod, danger, rng) - danger;
+            int margin = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) - danger;
 
             if (margin > 0) {
                 progress += margin;
@@ -807,7 +843,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             {
                 lastLine = pickRandom(RESCUE_HELD, rng, lastLine);
                 std::cout << "  " << lastLine << "." << std::endl;
-                if (!woundOne(team, roster, state, injuries, floor, enc.cause, 
+                if (!woundOne(team, roster, state, injuries, floor, fs.cause, 
                     HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
                 {
                     wiped = true;
