@@ -5,7 +5,8 @@
 // ids of its members (std::vector<int>) and resolves them through the Roster when needed.
 //
 // Responsibilities:
-//   - Add a member by id (validating it exists in the roster and is not already in the team).
+//   - Add a member by id, for Barracks only (validating it exists in the roster and is not already
+//     in the team).
 //   - Remove a member by id.
 //   - Print the team composition (needs the roster passed as const reference to resolve ids to names/stats).
 //   - Purge ids of units that died in the incursion (kept consistent with the roster after each incursion).
@@ -44,11 +45,6 @@ public:
     // Post: Returns the name of the team.
 
     // Modifiers ------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    void addMember(int id, const Roster &roster);
-    // Pre: id must be a valid unit id present in the roster, not already in the team,
-    //      and the team must not be full (MAX_MEMBERS) (throws std::runtime_error otherwise).
-    // Post: Adds the unit with the specified id to the team.
-
     void removeMember(int id);
     // Pre: None
     // Post: Removes the unit with the specified id from the team; does nothing if no
@@ -66,6 +62,17 @@ public:
     //       still prints its name: with several parties, WHICH one is empty is the information.
 
 private:
+    // Only Barracks may add a member: it frees the unit from any other party first, which is what
+    // keeps "one party at most" true. A public addMember would let anyone holding a Team & --
+    // Barracks::at, Postings::party -- put a unit in two parties. Through a Team & a unit can only
+    // leave, and leaving never breaks a rule.
+    friend class Barracks;
+
+    void addMember(int id, const Roster &roster);
+    // Pre: id must be a valid unit id present in the roster, not already in the team,
+    //      and the team must not be full (MAX_MEMBERS) (throws std::runtime_error otherwise).
+    // Post: Adds the unit with the specified id to the team.
+
     std::vector<int> memberIds_;
     std::string name_;
 };
