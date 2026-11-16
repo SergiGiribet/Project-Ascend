@@ -3,6 +3,7 @@
 #include "Objective.h"
 #include "Scouting.h"
 #include "FloorState.h"
+#include "Postings.h"
 
 #include <fstream>
 #include <iostream>
@@ -436,7 +437,7 @@ static void loseFloor(int floor, Team &team, Roster &roster, GameState &state,
     std::cout << "  They give up the floor and fall back." << std::endl;
 }
 
-void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState &state, std::mt19937 &rng)
+void runScoutMission(int scoutId, Postings &postings, Roster &roster, GameState &state, std::mt19937 &rng)
 {
     if (!roster.contains(scoutId))
     {
@@ -475,7 +476,7 @@ void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState 
         state.necropolis.addDeath(scout, floor, "lost scouting the floor alone",
                                   state.incursionCount);
         roster.removeUnitById(scoutId);
-        barracks.purgeDead(roster);
+        postings.purgeDead(roster);
         return;
     }
 
@@ -982,18 +983,18 @@ std::vector<int> awayUnitIds(const GameState &state, const Barracks &barracks){
     return ids;
 }
 
-void disbandParty(Barracks &barracks, GameState &state, int index){
+void disbandParty(Postings &postings, GameState &state, int index){
     if (partyIsAway(state, index))
-        throw std::runtime_error(barracks.at(index).getName()
+        throw std::runtime_error(postings.barracks().at(index).getName()
                                  + " is in the tower and cannot be disbanded.");
-    barracks.disband(index);
+    postings.disband(index);
 
     for(Sortie &s : state.sorties)
         if (s.partyIndex > index)
             s.partyIndex--;
 }
 
-void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp &camp,
+void catchUp(Postings &postings, Roster &roster, GameState &state,
             const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries,
             std::mt19937 &rng)
 {
@@ -1015,17 +1016,17 @@ void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp 
 
     for (const Sortie &s : finished)
     {
-        Team &team = barracks.at(s.partyIndex);
+        Team &team = postings.party(s.partyIndex);
         std::vector<int> climbed = team.getMembersIds();
         state.sorties.erase(std::remove_if(state.sorties.begin(), state.sorties.end(),
                                         [&s](const Sortie &sortie)
                                         { return sortie.partyIndex == s.partyIndex;}),
                             state.sorties.end());
         resolveSortie(s, team, roster, state, encounters, injuries);
-        camp.tick(roster, injuries, rng);
+        postings.tickCamp(roster, injuries, rng);
 
         std::vector<int> notResting = climbed;
-        for (int id : awayUnitIds(state, barracks))
+        for (int id : awayUnitIds(state, postings.barracks()))
             notResting.push_back(id);
         roster.healRested(notResting);
     }
