@@ -646,11 +646,10 @@ enum class StepResult {
 // that only reports the end, because from 6c-3 every step costs time. fs must come from
 // enterFloor for this same objective; calling again after Cleared or Lost is a bug. The rng
 // draws keep the order resolveFloor made them in -- move one and every sortie after it changes.
-static StepResult stepFloor(int floor, const Objective &objective, Team &team, Roster &roster,
-                            GameState &state, const std::vector<Injury> &injuries,
-                            FloorState &fs, std::mt19937 &rng)
+static StepResult stepHold(int floor, const Objective &objective, Team &team, Roster &roster,
+                           GameState &state, const std::vector<Injury> &injuries,
+                           FloorState &fs, HoldState &hs, std::mt19937 &rng)
 {
-    HoldState &hs = std::get<HoldState>(fs.mission);
     int danger = objective.difficulty;
 
     int round = hs.round;
@@ -692,6 +691,23 @@ static StepResult stepFloor(int floor, const Objective &objective, Team &team, R
     return clearFloor(floor, team, roster, state, injuries, rng)
                ? StepResult::Cleared
                : StepResult::Lost;
+}
+
+// Lets std::visit take one lambda per alternative: a struct that inherits every lambda's
+// operator(), and the guide that lets the compiler work out the lambdas' types.
+template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+static StepResult stepFloor(int floor, const Objective &objective, Team &team, Roster &roster,
+                            GameState &state, const std::vector<Injury> &injuries,
+                            FloorState &fs, std::mt19937 &rng)
+{
+    return std::visit(overloaded{
+        [&](HoldState &hs) { return stepHold(floor, objective, team, roster, state, injuries, fs, hs, rng); },
+        [](SlayState &) -> StepResult { throw std::logic_error("stepFloor: Slay is not stepped yet"); },
+        [](RetrieveState &) -> StepResult { throw std::logic_error("stepFloor: Retrieve is not stepped yet"); },
+        [](RescueState &) -> StepResult { throw std::logic_error("stepFloor: Rescue is not stepped yet"); },
+    }, fs.mission);
 }
 
 // Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
