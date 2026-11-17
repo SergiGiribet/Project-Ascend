@@ -12,6 +12,7 @@
 #include "Injury.h"
 #include "Barracks.h"
 #include "TrainingCamp.h"
+#include "Postings.h"
 #include "Sortie.h"
 
 struct Encounter
@@ -25,7 +26,7 @@ std::vector<Encounter> loadEncounters(const std::string &path);
 // Post: Returns every entry in file order; throws std::runtime_error if the file is missing,
 //       empty, or a non-empty line contains no '|'.
 
-void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState &state, std::mt19937 &rng);
+void runScoutMission(int scoutId, Postings &postings, Roster &roster, GameState &state, std::mt19937 &rng);
 // Pre: rng must be seeded.
 // Post: Sends the unit with scoutId up ALONE to look at floor (state.highestFloor + 1), after
 //       printing their own read of the odds and asking for confirmation; an id not on the roster
@@ -34,8 +35,8 @@ void runScoutMission(int scoutId, Barracks &barracks, Roster &roster, GameState 
 //       back wounded (SCOUT_WOUND_MIN..MAX) and their claim is stored in state.floorReports for
 //       that floor. If the risk roll or the wound kills them they bring nothing back -- the death
 //       IS the report -- and they are recorded in state.necropolis, removed from the roster and
-//       purged from every party (Barracks::purgeDead): a scout is picked from the whole roster,
-//       so they may belong to any party, or to none.
+//       purged from every party and from the camp (Postings::purgeDead): a scout is picked from
+//       the whole roster, so they may belong to any party, to the camp, or to neither.
 
 std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
                                    GameState &state, std::mt19937 &rng);
@@ -61,7 +62,7 @@ bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &
 //       twice give the same answer, and what stops anything the player did at home while the party
 //       was away from reaching into the tower.
 
-void catchUp(Barracks &barracks, Roster &roster, GameState &state, TrainingCamp &camp,
+void catchUp(Postings &postings, Roster &roster, GameState &state,
              const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries,
              std::mt19937 &rng);
 // Pre: Every sortie in state.sorties must name a party that still exists.
@@ -104,9 +105,9 @@ std::vector<int> awayUnitIds(const GameState &state, const Barracks &barracks);
 //       This is who must not be touched at home: catchUp hands it to Roster::healRested so that
 //       resting never reaches a unit whose sortie has not been played out yet.
 
-void disbandParty(Barracks &barracks, GameState &state, int index);
-// Pre: 0 <= index < barracks.count() (throws std::out_of_range otherwise), and that party must
-//      not be in the tower (throws std::runtime_error otherwise).
+void disbandParty(Postings &postings, GameState &state, int index);
+// Pre: 0 <= index < postings.barracks().count() (throws std::out_of_range otherwise), and that
+//      party must not be in the tower (throws std::runtime_error otherwise).
 // Post: The party is gone and its members belong to no party. Every sortie still names the SAME
 //       party it named before: those with a higher index are moved down by one, in step with the
 //       Barracks. The only way to disband a party -- calling Barracks::disband directly while a
