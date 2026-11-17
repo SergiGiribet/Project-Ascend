@@ -890,7 +890,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
         std::cout << "  They reach the captive and cut them loose." << std::endl;
         return clearFloor(floor, team, roster, state, injuries, rng);
     }
-    return true;
+    throw std::logic_error("resolveFloor: no resolution for this objective type");
 }
 
 std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
