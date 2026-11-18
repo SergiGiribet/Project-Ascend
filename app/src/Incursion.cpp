@@ -642,10 +642,11 @@ enum class StepResult {
 
 // Plays ONE step of a floor that enterFloor opened -- for a Hold, one round -- advancing fs and
 // hurting the party as it goes. If that step is the floor's last, it also closes the floor in the
-// same call (loseFloor or clearFloor, and the result says which): there is never an empty step
-// that only reports the end, because from 6c-3 every step costs time. fs must come from
-// enterFloor for this same objective; calling again after Cleared or Lost is a bug. The rng
-// draws keep the order resolveFloor made them in -- move one and every sortie after it changes.
+// same call (loseFloor, clearFloor, or nobody left standing; the result says which): there is
+// never an empty step that only reports the end, because from 6c-3 every step costs time. fs
+// must come from enterFloor for this same objective; calling again after Cleared or Lost is a
+// bug. The rng draws keep the order resolveFloor made them in -- move one and every sortie after
+// it changes.
 static StepResult stepHold(int floor, const Objective &objective, Team &team, Roster &roster,
                            GameState &state, const std::vector<Injury> &injuries,
                            FloorState &fs, HoldState &hs, std::mt19937 &rng)
@@ -753,8 +754,8 @@ static StepResult stepSlay(int floor, const Objective &objective, Team &team,
 
 // Plays ONE pass of a Retrieve: the party searches, the floor notices them a little more, and then
 // whoever leads decides whether to push on. Closes the floor in the same call when they are caught,
-// when they stop, or when the floor takes the last of them -- and in that last case, if the thing
-// was already found, the floor counts as taken WITHOUT clearFloor: no pay, no residual incident.
+// when they stop, or when the floor takes the last of them -- and in that last case the floor is
+// lost even if the thing was already found: nobody is left to carry it out.
 static StepResult stepRetrieve(int floor, const Objective &objective, Team &team, Roster &roster,
                                GameState &state, const std::vector<Injury> &injuries,
                                FloorState &fs, RetrieveState &rs, std::mt19937 &rng)
@@ -799,7 +800,7 @@ static StepResult stepRetrieve(int floor, const Objective &objective, Team &team
         std::cout << "  " << fs.lastLine << "." << std::endl;
         if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
                   injuries, floor, fs.cause, danger / 6, danger / 3, rng))
-            return rs.found ? StepResult::Cleared : StepResult::Lost;
+            return StepResult::Lost;
     }
 
     if (pushesOn(team, roster, rs.found, rs.passes, rng))
@@ -841,9 +842,10 @@ static StepResult stepFloor(int floor, const Objective &objective, Team &team, R
 }
 
 // Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
-// the floor was cleared. Every early exit is a return, and the two that mean "cleared, and
-// then it took them anyway" return true on purpose -- the floor was taken; what happened
-// afterwards is a separate thing, and nothing here decides it.
+// the floor was cleared. Every early exit is a return. A floor cleared and then paid for on the
+// way out (clearFloor's residual incident, even if it takes the last of them) still returns true
+// on purpose -- the floor was taken; what happened afterwards is a separate thing. Dying before
+// the floor is done is not that: a Retrieve wiped after the find is lost, not taken.
 //
 // This is the seam. Today it still prints as it goes; when a sortie has to resolve with nobody
 // watching a console (2d-6), what changes is inside here and inside hurt/loseFloor/awardFloor,
