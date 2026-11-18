@@ -824,6 +824,53 @@ static StepResult stepRetrieve(int floor, const Objective &objective, Team &team
                : StepResult::Lost;
 }
 
+// Plays ONE round of a Rescue: the party gains ground on the captive, or is held and someone is
+// hurt. Closes the floor in the same call when they reach the captive, when the rounds run out
+// (the captive's clock, fixed: they arrive in time or they do not), or when nobody is left.
+static StepResult stepRescue(int floor, const Objective &objective, Team &team, Roster &roster,
+                             GameState &state, const std::vector<Injury> &injuries,
+                             FloorState &fs, RescueState &rs, std::mt19937 &rng)
+{
+    int danger = objective.difficulty;
+    int reach = danger / 4; // a party at parity covers this about half the time; a weaker one does not
+
+    int margin = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) - danger;
+    bool arrived = false;
+
+    if (margin > 0)
+    {
+        rs.progress += margin;
+        fs.lastLine = pickRandom(RESCUE_CLOSER, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+        arrived = rs.progress >= reach;
+    }
+    else
+    {
+        fs.lastLine = pickRandom(RESCUE_HELD, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+        if (!woundOne(team, roster, state, injuries, floor, fs.cause,
+                      HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
+        {
+            return StepResult::Lost;
+        }
+    }
+
+    ++rs.round;
+    if (!arrived && rs.round <= objective.rounds)
+        return StepResult::Ongoing;
+
+    if (rs.progress < reach)
+    {
+        std::cout << "  They are still a corridor away when the sound stops." << std::endl;
+        return StepResult::Lost;
+    }
+
+    std::cout << "  They reach the captive and cut them loose." << std::endl;
+    return clearFloor(floor, team, roster, state, injuries, rng)
+               ? StepResult::Cleared
+               : StepResult::Lost;
+}
+
 // Lets std::visit take one lambda per alternative: a struct that inherits every lambda's
 // operator(), and the guide that lets the compiler work out the lambdas' types.
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -837,7 +884,7 @@ static StepResult stepFloor(int floor, const Objective &objective, Team &team, R
         [&](HoldState &hs) { return stepHold(floor, objective, team, roster, state, injuries, fs, hs, rng); },
         [&](SlayState &ss) { return stepSlay(floor, objective, team, roster, state, injuries, fs, ss, rng); },
         [&](RetrieveState &rs) { return stepRetrieve(floor, objective, team, roster, state, injuries, fs, rs, rng); },
-        [](RescueState &) -> StepResult { throw std::logic_error("stepFloor: Rescue is not stepped yet"); },
+        [&](RescueState &rs) { return stepRescue(floor, objective, team, roster, state, injuries, fs, rs, rng); },
     }, fs.mission);
 }
 
@@ -855,62 +902,12 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
                          const std::vector<Injury> &injuries, std::mt19937 &rng)
 {
     FloorState fs = enterFloor(floor, objective, team, roster, state, encounters, rng);
-    int danger = objective.difficulty;
-
-    if (objective.type == ObjectiveType::Hold || objective.type == ObjectiveType::Slay
-        || objective.type == ObjectiveType::Retrieve)
+    StepResult result;
+    do
     {
-        StepResult result;
-        do
-        {
-            result = stepFloor(floor, objective, team, roster, state, injuries, fs, rng);
-        } while (result == StepResult::Ongoing);
-        return result == StepResult::Cleared;
-    }
-    else if (objective.type == ObjectiveType::Rescue)
-    {
-        int reach = danger / 4; // a party at parity covers this about half the time; a weaker one does not
-        int progress = 0;
-        bool wiped = false;
-        std::string lastLine;
-
-        for (int round = 1; round <= objective.rounds; round++)
-        {
-            int margin = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) - danger;
-
-            if (margin > 0) {
-                progress += margin;
-                lastLine = pickRandom(RESCUE_CLOSER, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-            
-                if (progress >= reach)
-                    break;
-            }
-            else 
-            {
-                lastLine = pickRandom(RESCUE_HELD, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-                if (!woundOne(team, roster, state, injuries, floor, fs.cause, 
-                    HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
-                {
-                    wiped = true;
-                    break;
-                }
-            }
-        }
-        if (wiped)
-            return false;
-        
-        if (progress < reach)
-        {
-            std::cout << "  They are still a corridor away when the sound stops." << std::endl;
-            return false;
-        }
-
-        std::cout << "  They reach the captive and cut them loose." << std::endl;
-        return clearFloor(floor, team, roster, state, injuries, rng);
-    }
-    throw std::logic_error("resolveFloor: no resolution for this objective type");
+        result = stepFloor(floor, objective, team, roster, state, injuries, fs, rng);
+    } while (result == StepResult::Ongoing);
+    return result == StepResult::Cleared;
 }
 
 std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
