@@ -46,7 +46,11 @@ int main()
         int party = postings.createParty("P");
         postings.assignToParty(1, party, roster);
         state.floorObjectives[1] = Objective{ObjectiveType::Retrieve, 60, 0};
-        Sortie sortie{party, 1, 0, seed};
+        Sortie sortie;
+        sortie.partyIndex = party;
+        sortie.floor = 1;
+        sortie.departedAt = 0;
+        sortie.seed = seed;
 
         std::streambuf *old = std::cout.rdbuf();
         std::ostringstream sink;

@@ -236,7 +236,7 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
     PendingParty onParty;
     PendingFloor onFloor;
     PendingReport onReport;
-    Sortie onSortie;   // no Pending twin: a Sortie is four scalars with defaults,
+    Sortie onSortie;   // no Pending twin: every field of a Sortie has a usable default,
                        // so unlike a Unit it can be filled in a line at a time.
     std::string section;
 

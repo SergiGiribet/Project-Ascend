@@ -106,7 +106,12 @@ int main()
                 check(!postings.camp().contains(2), "a trainee assigned to a party is still in the camp");
 
             state.floorObjectives[1] = Objective{ObjectiveType::Hold, 500, 3};
-            state.sorties.push_back(Sortie{party, 1, 0, seed});
+            Sortie sortie;
+            sortie.partyIndex = party;
+            sortie.floor = 1;
+            sortie.departedAt = 0;
+            sortie.seed = seed;
+            state.sorties.push_back(sortie);
             std::mt19937 rng(42);
             std::string error = quietly("", [&] {
                 catchUp(postings, roster, state, encounters, injuries, rng);
@@ -163,7 +168,12 @@ int main()
             barracks.assign(2, party, roster); // and 2 is out as well
             GameState state;
             state.floorObjectives[1] = Objective{ObjectiveType::Hold, 500, 3};
-            state.sorties.push_back(Sortie{party, 1, 0, seed});
+            Sortie sortie;
+            sortie.partyIndex = party;
+            sortie.floor = 1;
+            sortie.departedAt = 0;
+            sortie.seed = seed;
+            state.sorties.push_back(sortie);
             std::vector<Postings::Moved> moved;
             Postings postings = Postings::fromSave(barracks, camp, state, moved);
             if (seed == 0)
