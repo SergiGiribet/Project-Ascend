@@ -631,10 +631,268 @@ static FloorState enterFloor(int floor, const Objective &objective, const Team &
     return fs;
 }
 
+// What one step of a floor came to. Ongoing goes first on purpose: it is what a forgotten
+// initialisation gets, and one step too many costs a round, while a floor wrongly taken is a
+// reward nobody earned.
+enum class StepResult {
+    Ongoing,            // the floor is not over: call stepFloor again
+    Cleared,            // the floor is taken, even if it took them afterwards (see clearFloor)
+    Lost,               // the floor held them: wiped, driven off, or out of rounds
+};
+
+// Plays ONE step of a floor that enterFloor opened -- for a Hold, one round -- advancing fs and
+// hurting the party as it goes. If that step is the floor's last, it also closes the floor in the
+// same call (loseFloor, clearFloor, or nobody left standing; the result says which): there is
+// never an empty step that only reports the end, because from 6c-3 every step costs time. fs
+// must come from enterFloor for this same objective; calling again after Cleared or Lost is a
+// bug. The rng draws keep the order resolveFloor made them in -- move one and every sortie after
+// it changes.
+static StepResult stepHold(int floor, const Objective &objective, Team &team, Roster &roster,
+                           GameState &state, const std::vector<Injury> &injuries,
+                           FloorState &fs, HoldState &hs, std::mt19937 &rng)
+{
+    int danger = objective.difficulty;
+
+    int round = hs.round;
+    int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
+
+    if (roll >= danger)
+    {
+        fs.lastLine = pickRandom(HOLD_HELD, rng, fs.lastLine);
+        std::cout << "  Round " << round << ": " << fs.lastLine
+                  << "." << std::endl;
+    }
+    else
+    {
+        fs.lastLine = pickRandom(HOLD_GAVE_GROUND, rng, fs.lastLine);
+        std::cout << "  Round " << round << ": " << fs.lastLine
+                  << "." << std::endl;
+        ++hs.failures;
+        if (!woundOne(team, roster, state, injuries, floor, fs.cause,
+                      HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
+        {
+            return StepResult::Lost;
+        }
+    }
+
+    ++hs.round;
+    if (hs.round <= objective.rounds)
+        return StepResult::Ongoing;
+
+    if (hs.failures * 2 > objective.rounds)
+    {
+        std::cout << "  They are pushed off the floor." << std::endl;
+        loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
+        return StepResult::Lost;
+    }
+
+    std::cout << (hs.failures == 0 ? "  The line never broke."
+                                   : "  The line held, and it cost them.")
+              << std::endl;
+    return clearFloor(floor, team, roster, state, injuries, rng)
+               ? StepResult::Cleared
+               : StepResult::Lost;
+}
+
+static StepResult stepSlay(int floor, const Objective &objective, Team &team,
+                           Roster &roster, GameState &state, const std::vector<Injury> &injuries,
+                           FloorState &fs, SlayState &ss, std::mt19937 &rng)
+{
+    int danger = objective.difficulty;
+    int enemyHpStart = danger * 3 / 2;
+
+    int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
+    int margin = roll - danger;
+
+    if (margin >= 0)
+    {
+        std::uniform_int_distribution<int> critRoll(1, 100);
+        bool crit = critRoll(rng) <= SLAY_CRIT_CHANCE;
+
+        int hit = danger / 2 + margin;
+        if(crit)
+            hit += enemyHpStart / 2;
+        ss.enemyHp -= hit;
+
+        const std::vector<std::string> &bank =
+            (crit || margin >= luckSpan(danger)) ? SLAY_CRUSHED : SLAY_LANDED;
+        fs.lastLine = pickRandom(bank, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+    }
+    else
+    {
+        ++ss.failures;
+        const std::vector<std::string> &bank =
+            (margin >= -luckSpan(danger) / 2) ? SLAY_BLOCKED : SLAY_MISSED;
+        fs.lastLine = pickRandom(bank, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+
+        if(!woundOne(team, roster, state, injuries, floor, fs.cause, 
+                     SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
+        {
+            return StepResult::Lost;
+        }
+    }
+
+    if (ss.enemyHp > 0 && ss.failures < SLAY_COUNTERS_ENDURED)
+        return StepResult::Ongoing;
+    
+    if(ss.enemyHp > 0)
+    {
+        std::cout << "  " << describeSurvivor(ss.enemyHp, enemyHpStart) << std::endl;
+        loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
+        return StepResult::Lost;
+    }
+
+    std::cout << (ss.failures == 0 ? "  It falls without landing a blow."
+                                   : "  It falls, and they have paid for it.")
+              << std::endl;
+    return clearFloor(floor, team, roster, state, injuries, rng)
+                ? StepResult::Cleared
+                : StepResult::Lost;
+}
+
+// Plays ONE pass of a Retrieve: the party searches, the floor notices them a little more, and then
+// whoever leads decides whether to push on. Closes the floor in the same call when they are caught,
+// when they stop, or when the floor takes the last of them -- and in that last case the floor is
+// lost even if the thing was already found: nobody is left to carry it out.
+static StepResult stepRetrieve(int floor, const Objective &objective, Team &team, Roster &roster,
+                               GameState &state, const std::vector<Injury> &injuries,
+                               FloorState &fs, RetrieveState &rs, std::mt19937 &rng)
+{
+    int danger = objective.difficulty;
+    std::uniform_int_distribution<int> notice(1, 100);
+
+    rs.passes++;
+    rs.exposure += EXPOSURE_STEP;
+
+    if (floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) >= danger)
+    {
+        if (!rs.found)
+        {
+            rs.found = true;
+            fs.lastLine = pickRandom(RETRIEVE_FOUND, rng, fs.lastLine);
+            std::cout << "  " << fs.lastLine << "." << std::endl;
+        }
+        else
+        {
+            rs.extra += floor / 2;
+            fs.lastLine = pickRandom(RETRIEVE_MORE, rng, fs.lastLine);
+            std::cout << "  " << fs.lastLine << "." << std::endl;
+        }
+    }
+    else
+    {
+        fs.lastLine = pickRandom(RETRIEVE_NOTHING, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+    }
+
+    if (rs.exposure >= EXPOSURE_CAUGHT)
+    {
+        std::cout << "  They stayed too long. What lives here comes for them." << std::endl;
+        loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
+        return StepResult::Lost;
+    }
+
+    if (notice(rng) <= rs.exposure)
+    {
+        fs.lastLine = pickRandom(RETRIEVE_NOTICED, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+        if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
+                  injuries, floor, fs.cause, danger / 6, danger / 3, rng))
+            return StepResult::Lost;
+    }
+
+    if (pushesOn(team, roster, rs.found, rs.passes, rng))
+        return StepResult::Ongoing;
+
+    if (!rs.found)
+    {
+        std::cout << "  They give it up and go. Whatever the floor is keeping, it keeps."
+                  << std::endl;
+        return StepResult::Lost;
+    }
+
+    if (rs.extra > 0)
+    {
+        state.essence += rs.extra;
+        std::cout << "  They come out with more than they came for: " << rs.extra
+                  << " essence." << std::endl;
+    }
+    return clearFloor(floor, team, roster, state, injuries, rng)
+               ? StepResult::Cleared
+               : StepResult::Lost;
+}
+
+// Plays ONE round of a Rescue: the party gains ground on the captive, or is held and someone is
+// hurt. Closes the floor in the same call when they reach the captive, when the rounds run out
+// (the captive's clock, fixed: they arrive in time or they do not), or when nobody is left.
+static StepResult stepRescue(int floor, const Objective &objective, Team &team, Roster &roster,
+                             GameState &state, const std::vector<Injury> &injuries,
+                             FloorState &fs, RescueState &rs, std::mt19937 &rng)
+{
+    int danger = objective.difficulty;
+    int reach = danger / 4; // a party at parity covers this about half the time; a weaker one does not
+
+    int margin = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) - danger;
+    bool arrived = false;
+
+    if (margin > 0)
+    {
+        rs.progress += margin;
+        fs.lastLine = pickRandom(RESCUE_CLOSER, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+        arrived = rs.progress >= reach;
+    }
+    else
+    {
+        fs.lastLine = pickRandom(RESCUE_HELD, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+        if (!woundOne(team, roster, state, injuries, floor, fs.cause,
+                      HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
+        {
+            return StepResult::Lost;
+        }
+    }
+
+    ++rs.round;
+    if (!arrived && rs.round <= objective.rounds)
+        return StepResult::Ongoing;
+
+    if (rs.progress < reach)
+    {
+        std::cout << "  They are still a corridor away when the sound stops." << std::endl;
+        return StepResult::Lost;
+    }
+
+    std::cout << "  They reach the captive and cut them loose." << std::endl;
+    return clearFloor(floor, team, roster, state, injuries, rng)
+               ? StepResult::Cleared
+               : StepResult::Lost;
+}
+
+// Lets std::visit take one lambda per alternative: a struct that inherits every lambda's
+// operator(), and the guide that lets the compiler work out the lambdas' types.
+template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+static StepResult stepFloor(int floor, const Objective &objective, Team &team, Roster &roster,
+                            GameState &state, const std::vector<Injury> &injuries,
+                            FloorState &fs, std::mt19937 &rng)
+{
+    return std::visit(overloaded{
+        [&](HoldState &hs) { return stepHold(floor, objective, team, roster, state, injuries, fs, hs, rng); },
+        [&](SlayState &ss) { return stepSlay(floor, objective, team, roster, state, injuries, fs, ss, rng); },
+        [&](RetrieveState &rs) { return stepRetrieve(floor, objective, team, roster, state, injuries, fs, rs, rng); },
+        [&](RescueState &rs) { return stepRescue(floor, objective, team, roster, state, injuries, fs, rs, rng); },
+    }, fs.mission);
+}
+
 // Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
-// the floor was cleared. Every early exit is a return, and the two that mean "cleared, and
-// then it took them anyway" return true on purpose -- the floor was taken; what happened
-// afterwards is a separate thing, and nothing here decides it.
+// the floor was cleared. Every early exit is a return. A floor cleared and then paid for on the
+// way out (clearFloor's residual incident, even if it takes the last of them) still returns true
+// on purpose -- the floor was taken; what happened afterwards is a separate thing. Dying before
+// the floor is done is not that: a Retrieve wiped after the find is lost, not taken.
 //
 // This is the seam. Today it still prints as it goes; when a sortie has to resolve with nobody
 // watching a console (2d-6), what changes is inside here and inside hurt/loseFloor/awardFloor,
@@ -644,227 +902,12 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
                          const std::vector<Injury> &injuries, std::mt19937 &rng)
 {
     FloorState fs = enterFloor(floor, objective, team, roster, state, encounters, rng);
-    int danger = objective.difficulty;
-
-    if (objective.type == ObjectiveType::Hold)
+    StepResult result;
+    do
     {
-        int failures = 0;
-        bool wiped = false;
-        std::string lastLine; // fed back to pickRandom so no two rounds read the same
-
-        for (int round = 1; round <= objective.rounds; round++)
-        {
-            int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
-
-            if (roll >= danger)
-            {
-                lastLine = pickRandom(HOLD_HELD, rng, lastLine);
-                std::cout << "  Round " << round << ": " << lastLine
-                          << "." << std::endl;
-            }
-            else
-            {
-                lastLine = pickRandom(HOLD_GAVE_GROUND, rng, lastLine);
-                std::cout << "  Round " << round << ": " << lastLine
-                          << "." << std::endl;
-                ++failures;
-                if (!woundOne(team, roster, state, injuries, floor, fs.cause,
-                              HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
-                {
-                    wiped = true;
-                    break;
-                }
-            }
-        }
-
-        if (wiped)
-            return false;
-
-        if (failures * 2 > objective.rounds)
-        {
-            std::cout << "  They are pushed off the floor." << std::endl;
-            loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
-            return false;
-        }
-
-        std::cout << (failures == 0 ? "  The line never broke."
-                                    : "  The line held, and it cost them.")
-                  << std::endl;
-        return clearFloor(floor, team, roster, state, injuries, rng);
-    }
-    else if (objective.type == ObjectiveType::Slay)
-    {
-        std::string lastLine; // as above: never the same line twice running
-        int enemyHpStart = danger * 3 / 2;
-        int enemyHp = enemyHpStart;
-        int failures = 0;
-        bool wiped = false;
-
-        while (enemyHp > 0 && failures < SLAY_COUNTERS_ENDURED)
-        {
-            int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
-            int margin = roll - danger;
-
-            if (margin >= 0)
-            {
-                std::uniform_int_distribution<int> critRoll(1, 100);
-                bool crit = critRoll(rng) <= SLAY_CRIT_CHANCE;
-
-                int hit = danger / 2 + margin;
-                if (crit)
-                    hit += enemyHpStart / 2;
-                enemyHp -= hit;
-
-                const std::vector<std::string> &bank =
-                    (crit || margin >= luckSpan(danger)) ? SLAY_CRUSHED : SLAY_LANDED;
-                lastLine = pickRandom(bank, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-            }
-            else
-            {
-                ++failures;
-                const std::vector<std::string> &bank =
-                    (margin >= -luckSpan(danger) / 2) ? SLAY_BLOCKED : SLAY_MISSED;
-                lastLine = pickRandom(bank, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-
-                if (!woundOne(team, roster, state, injuries, floor, fs.cause,
-                              SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
-                {
-                    wiped = true;
-                    break;
-                }
-            }
-        }
-
-        if (wiped)
-            return false;
-
-        if (enemyHp > 0)
-        {
-            std::cout << "  " << describeSurvivor(enemyHp, enemyHpStart) << std::endl;
-            loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
-            return false;
-        }
-
-        std::cout << (failures == 0 ? "  It falls without landing a blow."
-                                    : "  It falls, and they have paid for it.")
-                  << std::endl;
-        return clearFloor(floor, team, roster, state, injuries, rng);
-    }
-    else if (objective.type == ObjectiveType::Retrieve)
-    {
-        int passes = 0;
-        int exposure = 0;
-        int extra = 0;
-        bool found = false;
-        std::uniform_int_distribution<int> notice(1, 100);
-        std::string lastLine; // a search can run nine passes; repeats show
-
-        while (true)
-        {
-            passes++;
-            exposure += EXPOSURE_STEP;
-
-            if (floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) >= danger)
-            {
-                if (!found)
-                {
-                    found = true;
-                    lastLine = pickRandom(RETRIEVE_FOUND, rng, lastLine);
-                    std::cout << "  " << lastLine << "." << std::endl;
-                }
-                else
-                {
-                    extra += floor / 2;
-                    lastLine = pickRandom(RETRIEVE_MORE, rng, lastLine);
-                    std::cout << "  " << lastLine << "." << std::endl;
-                }
-            }
-            else
-            {
-                lastLine = pickRandom(RETRIEVE_NOTHING, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-            }
-
-            if (exposure >= EXPOSURE_CAUGHT)
-            {
-                std::cout << "  They stayed too long. What lives here comes for them." << std::endl;
-                loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
-                return false;
-            }
-
-            if (notice(rng) <= exposure)
-            {
-                lastLine = pickRandom(RETRIEVE_NOTICED, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-                if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
-                          injuries, floor, fs.cause, danger / 6, danger / 3, rng))
-                    return found;
-            }
-
-            if (!pushesOn(team, roster, found, passes, rng))
-                break;
-        }
-        if (!found)
-        {
-            std::cout << "  They give it up and go. Whatever the floor is keeping, it keeps."
-                      << std::endl;
-            return false;
-        }
-
-        if (extra > 0)
-        {
-            state.essence += extra;
-            std::cout << "  They come out with more than they came for: " << extra
-                      << " essence." << std::endl;
-        }
-        return clearFloor(floor, team, roster, state, injuries, rng);
-    }
-    else if (objective.type == ObjectiveType::Rescue)
-    {
-        int reach = danger / 4; // a party at parity covers this about half the time; a weaker one does not
-        int progress = 0;
-        bool wiped = false;
-        std::string lastLine;
-
-        for (int round = 1; round <= objective.rounds; round++)
-        {
-            int margin = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) - danger;
-
-            if (margin > 0) {
-                progress += margin;
-                lastLine = pickRandom(RESCUE_CLOSER, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-            
-                if (progress >= reach)
-                    break;
-            }
-            else 
-            {
-                lastLine = pickRandom(RESCUE_HELD, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-                if (!woundOne(team, roster, state, injuries, floor, fs.cause, 
-                    HOLD_DMG_MIN, HOLD_DMG_MAX, rng))
-                {
-                    wiped = true;
-                    break;
-                }
-            }
-        }
-        if (wiped)
-            return false;
-        
-        if (progress < reach)
-        {
-            std::cout << "  They are still a corridor away when the sound stops." << std::endl;
-            return false;
-        }
-
-        std::cout << "  They reach the captive and cut them loose." << std::endl;
-        return clearFloor(floor, team, roster, state, injuries, rng);
-    }
-    return true;
+        result = stepFloor(floor, objective, team, roster, state, injuries, fs, rng);
+    } while (result == StepResult::Ongoing);
+    return result == StepResult::Cleared;
 }
 
 std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
