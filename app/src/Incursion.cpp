@@ -751,6 +751,78 @@ static StepResult stepSlay(int floor, const Objective &objective, Team &team,
                 : StepResult::Lost;
 }
 
+// Plays ONE pass of a Retrieve: the party searches, the floor notices them a little more, and then
+// whoever leads decides whether to push on. Closes the floor in the same call when they are caught,
+// when they stop, or when the floor takes the last of them -- and in that last case, if the thing
+// was already found, the floor counts as taken WITHOUT clearFloor: no pay, no residual incident.
+static StepResult stepRetrieve(int floor, const Objective &objective, Team &team, Roster &roster,
+                               GameState &state, const std::vector<Injury> &injuries,
+                               FloorState &fs, RetrieveState &rs, std::mt19937 &rng)
+{
+    int danger = objective.difficulty;
+    std::uniform_int_distribution<int> notice(1, 100);
+
+    rs.passes++;
+    rs.exposure += EXPOSURE_STEP;
+
+    if (floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) >= danger)
+    {
+        if (!rs.found)
+        {
+            rs.found = true;
+            fs.lastLine = pickRandom(RETRIEVE_FOUND, rng, fs.lastLine);
+            std::cout << "  " << fs.lastLine << "." << std::endl;
+        }
+        else
+        {
+            rs.extra += floor / 2;
+            fs.lastLine = pickRandom(RETRIEVE_MORE, rng, fs.lastLine);
+            std::cout << "  " << fs.lastLine << "." << std::endl;
+        }
+    }
+    else
+    {
+        fs.lastLine = pickRandom(RETRIEVE_NOTHING, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+    }
+
+    if (rs.exposure >= EXPOSURE_CAUGHT)
+    {
+        std::cout << "  They stayed too long. What lives here comes for them." << std::endl;
+        loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
+        return StepResult::Lost;
+    }
+
+    if (notice(rng) <= rs.exposure)
+    {
+        fs.lastLine = pickRandom(RETRIEVE_NOTICED, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+        if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
+                  injuries, floor, fs.cause, danger / 6, danger / 3, rng))
+            return rs.found ? StepResult::Cleared : StepResult::Lost;
+    }
+
+    if (pushesOn(team, roster, rs.found, rs.passes, rng))
+        return StepResult::Ongoing;
+
+    if (!rs.found)
+    {
+        std::cout << "  They give it up and go. Whatever the floor is keeping, it keeps."
+                  << std::endl;
+        return StepResult::Lost;
+    }
+
+    if (rs.extra > 0)
+    {
+        state.essence += rs.extra;
+        std::cout << "  They come out with more than they came for: " << rs.extra
+                  << " essence." << std::endl;
+    }
+    return clearFloor(floor, team, roster, state, injuries, rng)
+               ? StepResult::Cleared
+               : StepResult::Lost;
+}
+
 // Lets std::visit take one lambda per alternative: a struct that inherits every lambda's
 // operator(), and the guide that lets the compiler work out the lambdas' types.
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -763,7 +835,7 @@ static StepResult stepFloor(int floor, const Objective &objective, Team &team, R
     return std::visit(overloaded{
         [&](HoldState &hs) { return stepHold(floor, objective, team, roster, state, injuries, fs, hs, rng); },
         [&](SlayState &ss) { return stepSlay(floor, objective, team, roster, state, injuries, fs, ss, rng); },
-        [](RetrieveState &) -> StepResult { throw std::logic_error("stepFloor: Retrieve is not stepped yet"); },
+        [&](RetrieveState &rs) { return stepRetrieve(floor, objective, team, roster, state, injuries, fs, rs, rng); },
         [](RescueState &) -> StepResult { throw std::logic_error("stepFloor: Rescue is not stepped yet"); },
     }, fs.mission);
 }
@@ -783,7 +855,8 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
     FloorState fs = enterFloor(floor, objective, team, roster, state, encounters, rng);
     int danger = objective.difficulty;
 
-    if (objective.type == ObjectiveType::Hold || objective.type == ObjectiveType::Slay)
+    if (objective.type == ObjectiveType::Hold || objective.type == ObjectiveType::Slay
+        || objective.type == ObjectiveType::Retrieve)
     {
         StepResult result;
         do
@@ -791,75 +864,6 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             result = stepFloor(floor, objective, team, roster, state, injuries, fs, rng);
         } while (result == StepResult::Ongoing);
         return result == StepResult::Cleared;
-    }
-    else if (objective.type == ObjectiveType::Retrieve)
-    {
-        int passes = 0;
-        int exposure = 0;
-        int extra = 0;
-        bool found = false;
-        std::uniform_int_distribution<int> notice(1, 100);
-        std::string lastLine; // a search can run nine passes; repeats show
-
-        while (true)
-        {
-            passes++;
-            exposure += EXPOSURE_STEP;
-
-            if (floorRoll(team, roster, objective.type, fs.traitMod, danger, rng) >= danger)
-            {
-                if (!found)
-                {
-                    found = true;
-                    lastLine = pickRandom(RETRIEVE_FOUND, rng, lastLine);
-                    std::cout << "  " << lastLine << "." << std::endl;
-                }
-                else
-                {
-                    extra += floor / 2;
-                    lastLine = pickRandom(RETRIEVE_MORE, rng, lastLine);
-                    std::cout << "  " << lastLine << "." << std::endl;
-                }
-            }
-            else
-            {
-                lastLine = pickRandom(RETRIEVE_NOTHING, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-            }
-
-            if (exposure >= EXPOSURE_CAUGHT)
-            {
-                std::cout << "  They stayed too long. What lives here comes for them." << std::endl;
-                loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
-                return false;
-            }
-
-            if (notice(rng) <= exposure)
-            {
-                lastLine = pickRandom(RETRIEVE_NOTICED, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-                if (!hurt(pickWeightedVictim(team, roster, rng), team, roster, state,
-                          injuries, floor, fs.cause, danger / 6, danger / 3, rng))
-                    return found;
-            }
-
-            if (!pushesOn(team, roster, found, passes, rng))
-                break;
-        }
-        if (!found)
-        {
-            std::cout << "  They give it up and go. Whatever the floor is keeping, it keeps."
-                      << std::endl;
-            return false;
-        }
-
-        if (extra > 0)
-        {
-            state.essence += extra;
-            std::cout << "  They come out with more than they came for: " << extra
-                      << " essence." << std::endl;
-        }
-        return clearFloor(floor, team, roster, state, injuries, rng);
     }
     else if (objective.type == ObjectiveType::Rescue)
     {
