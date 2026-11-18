@@ -693,6 +693,64 @@ static StepResult stepHold(int floor, const Objective &objective, Team &team, Ro
                : StepResult::Lost;
 }
 
+static StepResult stepSlay(int floor, const Objective &objective, Team &team,
+                           Roster &roster, GameState &state, const std::vector<Injury> &injuries,
+                           FloorState &fs, SlayState &ss, std::mt19937 &rng)
+{
+    int danger = objective.difficulty;
+    int enemyHpStart = danger * 3 / 2;
+
+    int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
+    int margin = roll - danger;
+
+    if (margin >= 0)
+    {
+        std::uniform_int_distribution<int> critRoll(1, 100);
+        bool crit = critRoll(rng) <= SLAY_CRIT_CHANCE;
+
+        int hit = danger / 2 + margin;
+        if(crit)
+            hit += enemyHpStart / 2;
+        ss.enemyHp -= hit;
+
+        const std::vector<std::string> &bank =
+            (crit || margin >= luckSpan(danger)) ? SLAY_CRUSHED : SLAY_LANDED;
+        fs.lastLine = pickRandom(bank, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+    }
+    else
+    {
+        ++ss.failures;
+        const std::vector<std::string> &bank =
+            (margin >= -luckSpan(danger) / 2) ? SLAY_BLOCKED : SLAY_MISSED;
+        fs.lastLine = pickRandom(bank, rng, fs.lastLine);
+        std::cout << "  " << fs.lastLine << "." << std::endl;
+
+        if(!woundOne(team, roster, state, injuries, floor, fs.cause, 
+                     SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
+        {
+            return StepResult::Lost;
+        }
+    }
+
+    if (ss.enemyHp > 0 && ss.failures < SLAY_COUNTERS_ENDURED)
+        return StepResult::Ongoing;
+    
+    if(ss.enemyHp > 0)
+    {
+        std::cout << "  " << describeSurvivor(ss.enemyHp, enemyHpStart) << std::endl;
+        loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
+        return StepResult::Lost;
+    }
+
+    std::cout << (ss.failures == 0 ? "  It falls without landing a blow."
+                                   : "  It falls, and they have paid for it.")
+              << std::endl;
+    return clearFloor(floor, team, roster, state, injuries, rng)
+                ? StepResult::Cleared
+                : StepResult::Lost;
+}
+
 // Lets std::visit take one lambda per alternative: a struct that inherits every lambda's
 // operator(), and the guide that lets the compiler work out the lambdas' types.
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -704,7 +762,7 @@ static StepResult stepFloor(int floor, const Objective &objective, Team &team, R
 {
     return std::visit(overloaded{
         [&](HoldState &hs) { return stepHold(floor, objective, team, roster, state, injuries, fs, hs, rng); },
-        [](SlayState &) -> StepResult { throw std::logic_error("stepFloor: Slay is not stepped yet"); },
+        [&](SlayState &ss) { return stepSlay(floor, objective, team, roster, state, injuries, fs, ss, rng); },
         [](RetrieveState &) -> StepResult { throw std::logic_error("stepFloor: Retrieve is not stepped yet"); },
         [](RescueState &) -> StepResult { throw std::logic_error("stepFloor: Rescue is not stepped yet"); },
     }, fs.mission);
@@ -725,7 +783,7 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
     FloorState fs = enterFloor(floor, objective, team, roster, state, encounters, rng);
     int danger = objective.difficulty;
 
-    if (objective.type == ObjectiveType::Hold)
+    if (objective.type == ObjectiveType::Hold || objective.type == ObjectiveType::Slay)
     {
         StepResult result;
         do
@@ -733,66 +791,6 @@ static bool resolveFloor(int floor, const Objective &objective, Team &team, Rost
             result = stepFloor(floor, objective, team, roster, state, injuries, fs, rng);
         } while (result == StepResult::Ongoing);
         return result == StepResult::Cleared;
-    }
-    else if (objective.type == ObjectiveType::Slay)
-    {
-        std::string lastLine; // as above: never the same line twice running
-        int enemyHpStart = danger * 3 / 2;
-        int enemyHp = enemyHpStart;
-        int failures = 0;
-        bool wiped = false;
-
-        while (enemyHp > 0 && failures < SLAY_COUNTERS_ENDURED)
-        {
-            int roll = floorRoll(team, roster, objective.type, fs.traitMod, danger, rng);
-            int margin = roll - danger;
-
-            if (margin >= 0)
-            {
-                std::uniform_int_distribution<int> critRoll(1, 100);
-                bool crit = critRoll(rng) <= SLAY_CRIT_CHANCE;
-
-                int hit = danger / 2 + margin;
-                if (crit)
-                    hit += enemyHpStart / 2;
-                enemyHp -= hit;
-
-                const std::vector<std::string> &bank =
-                    (crit || margin >= luckSpan(danger)) ? SLAY_CRUSHED : SLAY_LANDED;
-                lastLine = pickRandom(bank, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-            }
-            else
-            {
-                ++failures;
-                const std::vector<std::string> &bank =
-                    (margin >= -luckSpan(danger) / 2) ? SLAY_BLOCKED : SLAY_MISSED;
-                lastLine = pickRandom(bank, rng, lastLine);
-                std::cout << "  " << lastLine << "." << std::endl;
-
-                if (!woundOne(team, roster, state, injuries, floor, fs.cause,
-                              SLAY_DMG_MIN, SLAY_DMG_MAX, rng))
-                {
-                    wiped = true;
-                    break;
-                }
-            }
-        }
-
-        if (wiped)
-            return false;
-
-        if (enemyHp > 0)
-        {
-            std::cout << "  " << describeSurvivor(enemyHp, enemyHpStart) << std::endl;
-            loseFloor(floor, team, roster, state, injuries, fs.cause, danger, rng);
-            return false;
-        }
-
-        std::cout << (failures == 0 ? "  It falls without landing a blow."
-                                    : "  It falls, and they have paid for it.")
-                  << std::endl;
-        return clearFloor(floor, team, roster, state, injuries, rng);
     }
     else if (objective.type == ObjectiveType::Retrieve)
     {
