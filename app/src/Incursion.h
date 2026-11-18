@@ -51,6 +51,25 @@ std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roste
 //       what the player was shown is what they will face. The seed is drawn from `rng` here and
 //       never again: from this line on, the sortie owes nothing to anything that happens at home.
 
+// What one step of a floor came to. Ongoing goes first on purpose: it is what a forgotten
+// initialisation gets, and one step too many costs a round, while a floor wrongly taken is a
+// reward nobody earned.
+enum class StepResult {
+    Ongoing,            // the floor is not over: call again
+    Cleared,            // the floor is taken, even if it took them afterwards (see clearFloor)
+    Lost,               // the floor held them: wiped, driven off, or out of rounds
+};
+
+StepResult advanceSortie(Sortie &sortie, Team &team, Roster &roster, GameState &state,
+                         const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries);
+// Pre: `team` must be the party named by sortie.partyIndex, and the floor's objective must already
+//      be in state.floorObjectives. Calling again after Cleared or Lost is a bug.
+// Post: Does ONE thing per call. If the party has not entered yet (sortie.fs is empty) it enters --
+//       the heading, the encounter, the trait roll -- and returns Ongoing. Otherwise it plays one
+//       step, and if that step ends the floor it also closes it (the record, the dead purged, the
+//       closing lines) and returns Cleared or Lost. Everything carried from one call to the next
+//       lives in `sortie`, which is why it takes it by reference -- and what the save will store.
+
 bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &state,
                    const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries);
 // Pre: `team` must be the party named by sortie.partyIndex, and the floor's objective must already

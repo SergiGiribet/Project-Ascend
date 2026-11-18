@@ -631,15 +631,6 @@ static FloorState enterFloor(int floor, const Objective &objective, const Team &
     return fs;
 }
 
-// What one step of a floor came to. Ongoing goes first on purpose: it is what a forgotten
-// initialisation gets, and one step too many costs a round, while a floor wrongly taken is a
-// reward nobody earned.
-enum class StepResult {
-    Ongoing,            // the floor is not over: call stepFloor again
-    Cleared,            // the floor is taken, even if it took them afterwards (see clearFloor)
-    Lost,               // the floor held them: wiped, driven off, or out of rounds
-};
-
 // Plays ONE step of a floor that enterFloor opened -- for a Hold, one round -- advancing fs and
 // hurting the party as it goes. If that step is the floor's last, it also closes the floor in the
 // same call (loseFloor, clearFloor, or nobody left standing; the result says which): there is
@@ -950,19 +941,30 @@ static void finishSortie(const Sortie &sortie, bool cleared, Team &team, Roster 
     }
 }
 
+StepResult advanceSortie(Sortie &sortie, Team &team, Roster &roster, GameState &state,
+                         const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries)
+{
+    if (!sortie.fs)
+    {
+        enterSortie(sortie, team, roster, state, encounters);
+        return StepResult::Ongoing;
+    }
+    StepResult result = stepSortie(sortie, team, roster, state, injuries);
+    if (result != StepResult::Ongoing)
+        finishSortie(sortie, result == StepResult::Cleared, team, roster, state);
+    return result;
+}
+
 bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &state,
                    const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries)
 {
     Sortie s = sortie;      // the caller's stays untouched: looking twice gives the same answer
-    enterSortie(s, team, roster, state, encounters);
     StepResult result;
     do
     {
-        result = stepSortie(s, team, roster, state, injuries);
+        result = advanceSortie(s, team, roster, state, encounters, injuries);
     } while (result == StepResult::Ongoing);
-    bool cleared = result == StepResult::Cleared;
-    finishSortie(s, cleared, team, roster, state);
-    return cleared;
+    return result == StepResult::Cleared;
 }
 
 std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
