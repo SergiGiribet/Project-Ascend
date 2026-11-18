@@ -888,26 +888,81 @@ static StepResult stepFloor(int floor, const Objective &objective, Team &team, R
     }, fs.mission);
 }
 
-// Resolves ONE floor: the encounter, the objective, and everything it costs. Returns true if
-// the floor was cleared. Every early exit is a return. A floor cleared and then paid for on the
-// way out (clearFloor's residual incident, even if it takes the last of them) still returns true
-// on purpose -- the floor was taken; what happened afterwards is a separate thing. Dying before
-// the floor is done is not that: a Retrieve wiped after the find is lost, not taken.
-//
-// This is the seam. Today it still prints as it goes; when a sortie has to resolve with nobody
-// watching a console (2d-6), what changes is inside here and inside hurt/loseFloor/awardFloor,
-// not in runIncursion.
-static bool resolveFloor(int floor, const Objective &objective, Team &team, Roster &roster,
-                         GameState &state, const std::vector<Encounter> &encounters,
-                         const std::vector<Injury> &injuries, std::mt19937 &rng)
+// Opens the sortie: seeds its rng, prints the heading and enters the floor. The order is
+// resolveSortie's from before 6c-2 and must stay so: objectiveFor may draw, and enterFloor's draws
+// come after it.
+// Pre: sortie.fs is empty -- the party has not entered yet -- and `team` is the party it names.
+// Post: sortie.fs holds the floor as enterFloor opened it, and sortie.rng carries on from there.
+//       team and roster are const: entering cannot hurt anyone.
+static void enterSortie(Sortie &sortie, const Team &team, const Roster &roster, GameState &state,
+                        const std::vector<Encounter> &encounters)
 {
-    FloorState fs = enterFloor(floor, objective, team, roster, state, encounters, rng);
+    sortie.rng.seed(sortie.seed);
+    Objective objective = objectiveFor(sortie.floor, state, sortie.rng);
+
+    state.incursionCount++;
+    std::cout << std::endl;
+    std::cout << "=== Sortie " << state.incursionCount << ": floor " << sortie.floor
+              << " ===" << std::endl;
+    std::cout << std::endl;
+
+    sortie.fs = enterFloor(sortie.floor, objective, team, roster, state, encounters, sortie.rng);
+}
+
+// Plays ONE step of a sortie already on its floor.
+// Pre: enterSortie has run on this sortie, and the last step did not return Cleared or Lost.
+// Post: as stepFloor. The objective is read with at(), never objectiveFor: objectiveFor may draw,
+//       and a draw here would shift every roll after it.
+//
+// This is the seam. Today a step still prints as it goes; when a sortie has to resolve with nobody
+// watching a console (2d-6), what changes is inside the steps and inside hurt/loseFloor/awardFloor.
+static StepResult stepSortie(Sortie &sortie, Team &team, Roster &roster, GameState &state,
+                             const std::vector<Injury> &injuries)
+{
+    const Objective &objective = state.floorObjectives.at(sortie.floor);
+    return stepFloor(sortie.floor, objective, team, roster, state, injuries,
+                     sortie.fs.value(), sortie.rng);
+}
+
+// Closes the sortie: raises the tower record if the floor was new and taken, strikes the dead from
+// the party and prints how it ended.
+// Pre: the last step returned Cleared (cleared == true) or Lost (cleared == false). A floor cleared
+//      and then paid for on the way out (clearFloor's residual incident, even if it takes the last
+//      of them) is still taken -- what happened afterwards is a separate thing. Dying before the
+//      floor is done is not that: a Retrieve wiped after the find is lost, not taken.
+static void finishSortie(const Sortie &sortie, bool cleared, Team &team, Roster &roster, GameState &state)
+{
+    if (cleared && sortie.floor > state.highestFloor)
+        state.highestFloor = sortie.floor;
+    
+    team.purgeDeadMembers(roster);
+
+    std::cout << std::endl;
+    std::cout << (cleared ? "=== Floor taken ===" : "=== Floor held them ===")
+              << std::endl;
+    std::cout << "Tower record: floor " << state.highestFloor
+              << "  |  Essence: " << state.essence << std::endl;
+    if (!team.getMembersIds().empty())
+    {
+        std::cout << "They come back down still carrying their wounds. Only rest away from"
+                  << " the tower will mend them." << std::endl;
+        team.printTeam(roster);
+    }
+}
+
+bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &state,
+                   const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries)
+{
+    Sortie s = sortie;      // the caller's stays untouched: looking twice gives the same answer
+    enterSortie(s, team, roster, state, encounters);
     StepResult result;
     do
     {
-        result = stepFloor(floor, objective, team, roster, state, injuries, fs, rng);
+        result = stepSortie(s, team, roster, state, injuries);
     } while (result == StepResult::Ongoing);
-    return result == StepResult::Cleared;
+    bool cleared = result == StepResult::Cleared;
+    finishSortie(s, cleared, team, roster, state);
+    return cleared;
 }
 
 std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roster &roster,
@@ -965,40 +1020,6 @@ std::optional<Sortie> launchSortie(int partyIndex, const Team &team, const Roste
     sortie.departedAt   = nowSeconds();
     sortie.seed         = static_cast<unsigned int>(rng());
     return sortie;
-}
-
-bool resolveSortie(const Sortie &sortie, Team &team, Roster &roster, GameState &state,
-                    const std::vector<Encounter> &encounters, const std::vector<Injury> &injuries)
-{
-    std::mt19937 rng(sortie.seed);
-    Objective objective = objectiveFor(sortie.floor, state, rng);
-
-    state.incursionCount++;
-    std::cout << std::endl;
-    std::cout << "=== Sortie " << state.incursionCount << ": floor " << sortie.floor
-              << " ===" << std::endl;
-
-    std::cout << std::endl;
-
-    bool cleared = resolveFloor(sortie.floor, objective, team, roster, state, encounters,
-                                injuries, rng);
-    if (cleared && sortie.floor > state.highestFloor)
-        state.highestFloor = sortie.floor;
-
-    team.purgeDeadMembers(roster);
-
-    std::cout << std::endl;
-    std::cout << (cleared ? "=== Floor taken ===" : "=== Floor held them ===")
-              << std::endl;
-    std::cout << "Tower record: floor " << state.highestFloor
-              << "  |  Essence: " << state.essence << std::endl;
-    if (!team.getMembersIds().empty())
-    {
-        std::cout << "They come back down still carrying their wounds. Only rest away from"
-                  << " the tower will mend them." << std::endl;
-        team.printTeam(roster);
-    }
-    return cleared;
 }
 
 bool partyIsAway(const GameState &state, int partyIndex)
