@@ -12,6 +12,7 @@ several teams and sorties that take time, which moved the save system forward an
 back to last on purpose; 2d-3 shipped on 2026-08-26 and its measurement put an economy pass ahead
 of both save and time. Brought up to date on 2026-10-13: 2d-4 and 2d-5 shipped, 2d-6 half built,
 how a sortie takes time decided (*2d-6* below), milestones added (§8), and §7's numbers re-measured.
+T2 (the ImGui front-end) dropped on 2026-11-21: the product's visuals are Godot (§7).
 
 Read alongside: the [Phase 0 baseline](technical-documentation.md), the
 [Phase 1 additions](technical-documentation-phase1.md), the [style guide](style-guide.md), and
@@ -858,22 +859,12 @@ to instant and repeatable.
 caller print it. Build it, watch it work, then decide whether to generalise the pattern across
 `Incursion.cpp` — incrementally, one screen at a time, never as one big rewrite.
 
-### T2 — A Dear ImGui front-end
+### T2 — A Dear ImGui front-end  *(dropped 2026-11-21)*
 
-Not an engine — a **window plus widgets** bolted onto the existing C++:
-
-- **raylib** (or SDL2) opens the window, owns the frame loop, reads the mouse and keyboard.
-- **Dear ImGui** draws the panels: roster tables, unit cards, the tower view, tooltips, timers.
-
-Why it fits this project specifically: ImGui is **immediate mode** — every frame you rebuild the
-whole interface from current state, top to bottom. That is *already* what this game does each time
-it reprints the roster on opening a menu. The mental model transfers with no translation, so it is
-a **change of façade, not a rewrite**, and 100% of the C++ (and of the C++ being learned) survives.
-
-Sequence: T1 must be far enough along that at least one screen is fed by data instead of `cout`.
-Start with the roster (pure display, no input), then the team screen, then the incursion view.
-The console front-end keeps working the whole time — two renderers over one simulation is the
-point of T1, and the console one is what the bot and the session logs use.
+It was there to prove the shape of the UI cheaply while keeping 100% of the code in C++: raylib
+for the window, Dear ImGui for the panels. Dropped because the product's visuals are Godot, and an
+interim front-end would be a whole interface built to be thrown away. Iterating a UI in GDScript is
+as cheap as in ImGui. What T2 had worked out about the order of screens now lives in T4.
 
 ### T3 — Save system  *(done 2026-09-04, as 2d-5)*
 
@@ -895,10 +886,27 @@ in-flight training, and eventually expeditions in progress with their clocks.
 **Decided 2026-08-18**, and not a fresh evaluation: it is the engine already intended, already
 worked with, and open source — which matters to this project on principle.
 
-It arrives last because by then everything it needs exists: a simulation that speaks in data (T1),
-a UI whose shape has been proven in ImGui (T2), and state that can be written to disk (T3). The
-simulation stays C++ through **GDExtension**, so Godot owns presentation, input, scenes and
-export, and the rules stay in the code they were learned in.
+It arrives last because by then everything it needs exists: a simulation that speaks in data (T1)
+and state that can be written to disk (T3). The simulation stays C++ through **GDExtension**, so
+Godot owns presentation, input, scenes and export, and the rules stay in the code they were
+learned in. Since T2 was dropped (2026-11-21), T4 follows T1 directly.
+
+**The seam.** What keeps the engine from leaking into the rules:
+
+- **The core stays plain C++.** No Godot `#include` anywhere in it; it builds as the console game
+  as it does today, so the tests, `equivalence.sh` and the bot keep working without the engine.
+- **One bridge class** (a `RefCounted`) calls the core and translates its results into
+  `Dictionary` and `Array` for GDScript. The core's classes (`Unit`, `Team`...) never become Godot
+  objects.
+- **Exceptions stop at the bridge.** `godot-cpp` builds without them by default, and one that
+  reaches the engine takes it down.
+- **The save goes through `user://`**, not a path relative to the executable.
+- **All visuals are GDScript:** scenes, UI, animation, sound. No presentation code in C++.
+
+**Sequence.** T1 must be far enough along that at least one screen is fed by data instead of
+`cout`. Start with the roster (pure display, no input), then the team screen, then the incursion
+view. The console front-end keeps working the whole time: two renderers over one simulation is
+the point of T1, and the console one is what the bot and the session logs use.
 
 Ruled out on the way: **Unreal** (C++ native but wildly oversized for a management game — you
 fight the engine) and **Unity** (C#, which would mean abandoning both the codebase and the
@@ -906,7 +914,7 @@ language being learned).
 
 ### Ordering rule
 
-None of T2, T3 or T4 begins before **the Phase 2 gate flips** (an informed bot beating a blind
+Neither T3 nor T4 begins before **the Phase 2 gate flips** (an informed bot beating a blind
 one, §5). T1 is the exception and starts now, because it is the only one that makes the current
 design work *faster* rather than prettier. T3 became the second exception on 2026-08-21, for the
 reason given there. Re-read on 2026-10-13 and kept: the question of *when Godot* has the same
@@ -926,7 +934,7 @@ it would be a snapshot of something about to be left behind.
 |---|---|---|
 | **Playtest** | 2d-6 closed | people who know it is a test, playing with time running. It answers what no bot can: **does the curve feel like a wall?** |
 | **Demo** | 2d closed (after 2d-7) | something to show: the whole loop with time, a save and a tuned curve |
-| **Demo 1, then Godot** | 2e closed and the gate flipped | personalities, the closing measurement, and the start of T2/T4 |
+| **Demo 1, then Godot** | 2e closed and the gate flipped | personalities, the closing measurement, and the start of T4 |
 
 **2d-7 uses two sources.** The **bench** gives the slope -- thousands of samples per cell; a handful
 of human players cannot, at ~10 points of noise per 25 floors (see the backlog). The **playtest
