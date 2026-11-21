@@ -132,6 +132,45 @@ void saveGame(const std::string &path, const GameState &state, const Roster &ros
         out << "floor " << s.floor << "\n";
         out << "departed " << s.departedAt << "\n";
         out << "seed " << s.seed << "\n";
+
+        if (s.fs)
+        {
+            const FloorState &fs = *s.fs;
+
+            std::visit(overloaded{
+                [&](const HoldState &h)
+                {
+                    out << "mission hold\n";
+                    out << "round " << h.round << "\n";
+                    out << "failures " << h.failures << "\n";
+                },
+                [&](const SlayState &sl)
+                {
+                    out << "mission slay\n";
+                    out << "enemyHp " << sl.enemyHp << "\n";
+                    out << "failures " << sl.failures << "\n";
+                },
+                [&](const RetrieveState &rt)
+                {
+                    out << "mission retrieve\n";
+                    out << "passes " << rt.passes << "\n";
+                    out << "exposure " << rt.exposure << "\n";
+                    out << "extra " << rt.extra << "\n";
+                    out << "found " << (rt.found ? 1 : 0) << "\n";
+                },
+                [&](const RescueState &rs)
+                {
+                    out << "mission rescue\n";
+                    out << "round " << rs.round << "\n";
+                    out << "progress " << rs.progress << "\n";
+                },
+            }, fs.mission);
+
+            out << "cause " << fs.cause << "\n";
+            out << "traitMod " << fs.traitMod << "\n";
+            out << "lastLine " << fs.lastLine << "\n";
+            out << "rng " << s.rng << "\n";
+        }
     }
 }
 
