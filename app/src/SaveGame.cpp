@@ -275,8 +275,10 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
     PendingParty onParty;
     PendingFloor onFloor;
     PendingReport onReport;
-    Sortie onSortie;   // no Pending twin: every field of a Sortie has a usable default,
-                       // so unlike a Unit it can be filled in a line at a time.
+    Sortie onSortie;   // no Pending twin: every field of a Sortie has a usable default, so
+                       // unlike a Unit it can be filled in a line at a time -- with one rule for
+                       // the floor state: its block opens with the "mission" line, which creates
+                       // fs and picks the alternative every field after it is written into.
     std::string section;
 
     auto closeSection = [&]()
@@ -462,6 +464,57 @@ bool loadGame(const std::string &path, GameState &state, Roster &roster,
             else if (key == "floor")        onSortie.floor      = std::stoi(value);
             else if (key == "departed")     onSortie.departedAt = std::stoll(value);
             else if (key == "seed")         onSortie.seed       = static_cast<unsigned int>(std::stoul(value));
+            else if (key == "mission")
+            {
+                onSortie.fs.emplace();
+                if (value == "hold")            onSortie.fs->mission = HoldState{};
+                else if (value == "slay")       onSortie.fs->mission = SlayState{};
+                else if (value == "retrieve")   onSortie.fs->mission = RetrieveState{};
+                else if (value == "rescue")     onSortie.fs->mission = RescueState{};
+                else
+                    throw std::runtime_error("Save file has an unknown mission: " + value);
+            }
+            else
+            {
+                if (!onSortie.fs)
+                    throw std::runtime_error("Save file has floor state before its mission line: " + key);
+
+                FloorState &fs = *onSortie.fs;
+                if (key == "cause")             fs.cause = value;
+                else if (key == "traitMod")     fs.traitMod = std::stoi(value);
+                else if (key == "lastLine")     fs.lastLine = value;
+                else if (key == "rng")
+                {
+                    std::istringstream ss(value);
+                    if (!(ss >> onSortie.rng))
+                        throw std::runtime_error("Save file has an unreadable rng state");
+                }
+                else
+                    std::visit(overloaded{
+                        [&](HoldState &h)
+                        {
+                            if (key == "round")         h.round = std::stoi(value);
+                            else if (key == "failures") h.failures = std::stoi(value);
+                        },
+                        [&](SlayState &sl)
+                        {
+                            if (key == "enemyHp")       sl.enemyHp = std::stoi(value);
+                            else if (key == "failures") sl.failures = std::stoi(value);
+                        },
+                        [&](RetrieveState &rt)
+                        {
+                            if (key == "passes")        rt.passes = std::stoi(value);
+                            else if (key == "exposure") rt.exposure = std::stoi(value);
+                            else if (key == "extra")    rt.extra = std::stoi(value);
+                            else if (key == "found")    rt.found = (std::stoi(value) != 0);
+                        },
+                        [&](RescueState &rs)
+                        {
+                            if (key == "round")         rs.round = std::stoi(value);
+                            else if (key == "progress") rs.progress = std::stoi(value);
+                        },
+                    }, fs.mission);
+            }
             continue;
         }
 
