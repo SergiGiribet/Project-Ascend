@@ -862,11 +862,6 @@ static StepResult stepRescue(int floor, const Objective &objective, Team &team, 
                : StepResult::Lost;
 }
 
-// Lets std::visit take one lambda per alternative: a struct that inherits every lambda's
-// operator(), and the guide that lets the compiler work out the lambdas' types.
-template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-
 static StepResult stepFloor(int floor, const Objective &objective, Team &team, Roster &roster,
                             GameState &state, const std::vector<Injury> &injuries,
                             FloorState &fs, std::mt19937 &rng)

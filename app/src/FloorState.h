@@ -42,4 +42,10 @@ struct FloorState {
     std::variant<HoldState, SlayState, RetrieveState, RescueState> mission;
 };
 
+// Lets std::visit take one lambda per alternative: a struct that inherits every lambda's
+// operator(), and the guide that lets the compiler work out the lambdas' types.
+template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template <class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+
 #endif
